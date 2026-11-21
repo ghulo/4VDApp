@@ -561,7 +561,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     /** The top of one business: its powers grid. The 4VD developer too. */
     mainAdmin: [authenticated, requireRole('developer', 'main_admin')] as RequestHandler[],
     /** The business's own leaders: see who from 4VD opened it (support visits). */
-    leaders: [authenticated, requireRole('developer', 'main_admin', 'admin')] as RequestHandler[],
+    leaders: [authenticated, requireRole('developer', 'main_admin', 'owner', 'admin')] as RequestHandler[],
   };
 
   return {

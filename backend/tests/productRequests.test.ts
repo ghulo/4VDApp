@@ -96,12 +96,13 @@ describe('product requests', () => {
     expect(await productNamed('Bravo water 1L')).toBeDefined();
   });
 
-  it('should let the owner edit products but not delete them, and keep employees out', async () => {
+  it('should let the owner edit and delete products, and keep employees out', async () => {
     const id = await createTestProduct(context, tokens.admin);
     const product = await context.db.selectFrom('products').select('category_id').where('id', '=', id).executeTakeFirstOrThrow();
     const body = { name: 'Oak Chair', categoryId: product.category_id, price: 120 };
     await api().put(`/api/products/${id}`).set(auth('owner')).send(body).expect(200);
     await api().put(`/api/products/${id}`).set(auth('employee')).send(body).expect(403);
-    await api().delete(`/api/products/${id}`).set(auth('owner')).expect(403);
+    await api().delete(`/api/products/${id}`).set(auth('employee')).expect(403);
+    await api().delete(`/api/products/${id}`).set(auth('owner')).expect(200);
   });
 });

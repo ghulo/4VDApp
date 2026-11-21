@@ -75,13 +75,13 @@ describe('carwashes', () => {
     expect((await addCarwash({ name: 'Carwash' })).status).toBe(201);
   });
 
-  it('should only let managers change the list, and show staff the open ones', async () => {
+  it('should only let managers and the owner change the list, and show staff the open ones', async () => {
     const employeeToken = await loginAs(context, 'employee');
     const ownerToken = await loginAs(context, 'owner');
 
     expect((await addCarwash({ name: 'Nope' }, employeeToken)).status).toBe(403);
-    expect((await addCarwash({ name: 'Nope' }, ownerToken)).status).toBe(403);
-    expect(await places({}, employeeToken)).toHaveLength(1);
+    expect((await addCarwash({ name: 'Yes' }, ownerToken)).status).toBe(201);
+    expect(await places({}, employeeToken)).toHaveLength(2);
   });
 
   it('should stop a closed carwash adding its monthly expenses', async () => {

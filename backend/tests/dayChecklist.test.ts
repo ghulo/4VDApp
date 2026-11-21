@@ -65,13 +65,16 @@ describe('end-of-day checklist', () => {
 
   it('should give the counter only its own steps, for today', async () => {
     const employeeToken = await loginAs(context, 'employee');
+    const accountantToken = await loginAs(context, 'accountant');
     const ownerToken = await loginAs(context, 'owner');
     const shift = (await checklist(employeeToken, '?date=2026-01-05')).body.data;
     expect(shift.day).toBe(today());
     expect(shift.steps.map((entry: { kind: string }) => entry.kind)).toEqual(['drawer', 'drawer', 'carwash']);
     expect(shift.details).toBeNull();
     expect((await checklist(ownerToken)).status).toBe(200);
-    expect((await request(context.app).put('/api/day/no-expenses').set(auth(ownerToken)).send({ none: true })).status).toBe(403);
+    expect((await request(context.app).put('/api/day/no-expenses').set(auth(employeeToken)).send({ none: true })).status).toBe(403);
+    expect((await request(context.app).put('/api/day/no-expenses').set(auth(accountantToken)).send({ none: true })).status).toBe(403);
+    expect((await request(context.app).put('/api/day/no-expenses').set(auth(ownerToken)).send({ none: true })).status).toBe(200);
   });
 });
 

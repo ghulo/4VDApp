@@ -14,7 +14,9 @@ import type { StoredRole, UserRole } from '../database/types.js';
  *   everything, always. Never stored as a role inside a business.
  * - main_admin: the top role inside one business: everything, hands out the top roles.
  * - admin: runs the shop day to day (products, stock, people below them, settings).
- * - owner: sees the whole business, decides requests, and adds and edits products.
+ * - owner: runs the family business: every power and every page, like the
+ *   main admin (the roles grid can't take any away). Only the main admin
+ *   changes the grid and hands out the top roles.
  * - employee: sells and sends requests from the counter.
  * - family: browses.
  * - accountant: reads the money side (books, VAT, bills, invoices, expenses,
@@ -25,8 +27,11 @@ export const POWERS = ['sell', 'oversee', 'products', 'manage', 'books', 'filing
 export type Power = (typeof POWERS)[number];
 export type Grants = Record<Power, UserRole[]>;
 
-/** The roles a main admin can give or take powers from (developer and main admin always have them all). */
-export const EDITABLE_ROLES: UserRole[] = ['admin', 'owner', 'employee', 'accountant', 'family'];
+/** The roles that always hold every power, whatever the business's grid says. */
+const EVERYTHING: UserRole[] = ['developer', 'main_admin', 'owner'];
+
+/** The roles a main admin can give or take powers from (the developer, the main admin and the owner always have them all). */
+export const EDITABLE_ROLES: UserRole[] = ['admin', 'employee', 'accountant', 'family'];
 
 /**
  * Powers that can't be changed: someone must always be able to manage people
@@ -34,7 +39,7 @@ export const EDITABLE_ROLES: UserRole[] = ['admin', 'owner', 'employee', 'accoun
  */
 export const LOCKED_POWERS: Power[] = ['manage'];
 
-const OVERSEERS: UserRole[] = ['developer', 'main_admin', 'admin', 'owner'];
+const OVERSEERS: UserRole[] = [...EVERYTHING, 'admin'];
 const SELLERS: UserRole[] = [...OVERSEERS, 'employee'];
 
 export const DEFAULT_GRANTS: Grants = {
@@ -45,22 +50,22 @@ export const DEFAULT_GRANTS: Grants = {
   /** Add products and change their details, price, barcode and photo (deleting stays with managers). */
   products: OVERSEERS,
   /** Change products, stock, people and settings. */
-  manage: ['developer', 'main_admin', 'admin'],
+  manage: [...EVERYTHING, 'admin'],
   /** Read the books, VAT, bills, invoices, expenses, reports and the customer and supplier lists. */
   books: [...OVERSEERS, 'accountant'],
   /** Mark a VAT month as filed. */
   filing: [...OVERSEERS, 'accountant'],
   /** Reopen a filed VAT month. */
-  reopen: ['developer', 'main_admin', 'owner', 'accountant'],
+  reopen: [...EVERYTHING, 'accountant'],
   /** Write and reverse hand-written entries in the books. */
-  entries: ['developer', 'main_admin', 'admin', 'accountant'],
+  entries: [...EVERYTHING, 'admin', 'accountant'],
   /** Read the customer list and a customer's page: the counter (for tabs) and the accountant. */
   customers: [...SELLERS, 'accountant'],
   /** Open and print an invoice: the counter (its own, checked in the service) and the accountant. */
   documents: [...SELLERS, 'accountant'],
-  payroll: ['developer', 'main_admin', 'owner', 'accountant'],
+  payroll: [...EVERYTHING, 'accountant'],
   /** Bring products, suppliers and customers in from another program, and undo an import (Settings → Import). */
-  import: ['developer', 'main_admin'],
+  import: EVERYTHING,
 };
 
 /**
@@ -72,7 +77,7 @@ const grids = new Map<number, Grants>();
 
 /**
  * The grid for the saved changes: the defaults with the changes on top. Only
- * editable roles move; the developer and main admin keep everything and locked
+ * editable roles move; the developer, main admin and owner keep everything and locked
  * powers keep their default.
  */
 export function gridFrom(changes: Partial<Grants>): Grants {

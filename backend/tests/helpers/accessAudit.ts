@@ -50,17 +50,17 @@ const WHO = {
   /** The whole business and its products, decisions on requests. */
   overseers: ['owner', 'admin', 'developer'],
   /** People, stock, settings. */
-  managers: ['admin', 'developer'],
+  managers: ['owner', 'admin', 'developer'],
   /** Employees, pay and leave. */
   payroll: ['accountant', 'owner', 'developer'],
   /** Hand-written book entries, the opening balance, fixed assets. */
-  entries: ['accountant', 'admin', 'developer'],
-  /** Who from 4VD opened the business: the people who run it (main admin, admins). */
-  leaders: ['admin', 'developer'],
+  entries: ['accountant', 'owner', 'admin', 'developer'],
+  /** Who from 4VD opened the business: the people who run it (main admin, owner, admins). */
+  leaders: ['owner', 'admin', 'developer'],
   /** Roles, wiping data, restore points. */
   developer: ['developer'],
-  /** Settings → Import: the main admin (not a caller here) and the developer. */
-  importers: ['developer'],
+  /** Settings → Import: the main admin (not a caller here), the owner and the developer. */
+  importers: ['owner', 'developer'],
 } satisfies Record<string, readonly Caller[]>;
 
 const ACCESS: Record<keyof typeof WHO, string[]> = {

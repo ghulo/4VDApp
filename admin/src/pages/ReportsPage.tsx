@@ -12,6 +12,8 @@ import { RevenueChart } from '../components/RevenueChart';
 import { BusyHoursCard, CategoriesCard, PatternCards, TopProductsCard, usePatterns } from '../components/SalesPatterns';
 import { analyticsApi, exportsApi, reportsApi } from '../services/api';
 import { useT } from '../i18n/useT';
+import { useCurrentUser } from '../auth/useAuth';
+import { shownTo } from '../navigation/sections';
 import { errorMessage } from '../utils/errors';
 import { formatHeadlineMoney, formatMoney, formatPercent } from '../utils/format';
 import { usePeriodParams } from '../utils/usePeriodParams';
@@ -23,6 +25,7 @@ export type ReportsView = 'figures' | 'team' | 'counter' | 'profit' | 'downloads
 
 export function ReportsPage({ view }: { view: ReportsView }) {
   const t = useT();
+  const seesPrices = shownTo(useCurrentUser().role, { to: '/prices', overseersOnly: true });
   const { period, from, to, range, rangeKey, comparedRange, changePeriod, compare, changeCompare } = usePeriodParams('this-month');
 
   if (view !== 'figures') {
@@ -52,7 +55,17 @@ export function ReportsPage({ view }: { view: ReportsView }) {
             {range.waitingForDates && <p className="field-hint">{t.reports.waitingForDates(range.label)}</p>}
             {compare === 'last-year' && <p className="field-hint">{t.periods.comparedLastYear}</p>}
             {current.revenueWithoutCost > 0 && (
-              <p className="field-hint">{t.reports.revenueWithoutCost(formatMoney(current.revenueWithoutCost))}</p>
+              <p className="field-hint">
+                {t.reports.revenueWithoutCost(formatMoney(current.revenueWithoutCost))}
+                {seesPrices && (
+                  <>
+                    {' '}
+                    <Link className="text-link" to="/prices?show=noCost">
+                      {t.reports.seeNoCost}
+                    </Link>
+                  </>
+                )}
+              </p>
             )}
           </>
         )}

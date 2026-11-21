@@ -370,6 +370,8 @@ export interface PeriodTotals {
   stockLosses: number;
   lossUnitsWithoutCost: number;
   revenueWithoutCost: number;
+  /** Different products sold without a cost price; their sales are left out of profit. Missing from an older API. */
+  productsWithoutCost?: number;
   cost: number;
   profit: number;
   margin: number | null;

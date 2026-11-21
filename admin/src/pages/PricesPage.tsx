@@ -1,6 +1,7 @@
 import { Calculator, DownloadSimple, FileXls, Tag, UploadSimple } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type ChangeEvent, type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { Pagination } from '../components/Pagination';
 import { SearchInput } from '../components/SearchInput';
@@ -101,7 +102,9 @@ export function PricesPage() {
   const [source, setSource] = useState<Source>('editor');
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState('');
-  const [show, setShow] = useState<Show>('all');
+  // A link can open the list already filtered, e.g. ?show=noCost from a profit note.
+  const [params] = useSearchParams();
+  const [show, setShow] = useState<Show>(() => SHOW.find((option) => option === params.get('show')) ?? 'all');
   const [page, setPage] = useState(1);
   const [fromCostOpen, setFromCostOpen] = useState(false);
   const [fileResult, setFileResult] = useState<PriceFilePlan | null>(null);

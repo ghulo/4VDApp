@@ -220,6 +220,7 @@ function TodayCard() {
 function TodayFigures({ lowCount }: { lowCount: number | undefined }) {
   const t = useT();
   const { places: openCarwashes } = useCarwashes();
+  const seesPrices = shownTo(useCurrentUser().role, { to: '/prices', overseersOnly: true });
   // Same query as the Today strip, so this costs no extra request.
   const { today } = useTodaySummary();
   const day = useDayChecklist();
@@ -231,43 +232,59 @@ function TodayFigures({ lowCount }: { lowCount: number | undefined }) {
   // Only worth saying once some are in: "Not entered" already covers none.
   const someCarwashesMissing = carwashEntered && openCarwashes.length > 1 && carwash.byCarwash.length < openCarwashes.length;
 
+  const withoutCost = current.productsWithoutCost ?? 0;
   return (
-    <StatGrid>
-      <StatTile
-        icon={Coins}
-        label={t.overview.profitToday}
-        value={formatHeadlineMoney(current.profit)}
-        hint={t.overview.itemsSold(current.unitsSold)}
-        to="/sales"
-      />
-      <StatTile
-        icon={Drop}
-        label={t.overview.carwashTile}
-        value={formatHeadlineMoney(carwash.current.total)}
-        words={!carwashEntered && t.overview.notEntered}
-        hint={someCarwashesMissing ? t.overview.carwashSome(carwash.byCarwash.length, openCarwashes.length) : undefined}
-        to="/carwash"
-      />
-      <StatTile
-        icon={Package}
-        label={t.overview.restockTile}
-        value={lowCount ?? '–'}
-        words={lowCount === 0 && t.overview.restockNone}
-        hint={t.overview.restockHint}
-        tone={lowCount ? 'warn' : 'default'}
-        to="/inventory?status=low"
-      />
-      {day.data && (
+    <>
+      <StatGrid>
         <StatTile
-          icon={MoonStars}
-          label={t.overview.closingTile}
-          value={`${day.data.done} / ${day.data.total}`}
-          hint={day.data.allDone ? t.overview.closingDone : closingDue ? t.overview.closingDue : t.overview.closingLeft(day.data.total - day.data.done)}
-          tone={closingDue ? 'warn' : 'default'}
-          to="/day"
+          icon={Coins}
+          label={t.overview.profitToday}
+          value={formatHeadlineMoney(current.profit)}
+          hint={t.overview.itemsSold(current.unitsSold)}
+          to="/sales"
         />
+        <StatTile
+          icon={Drop}
+          label={t.overview.carwashTile}
+          value={formatHeadlineMoney(carwash.current.total)}
+          words={!carwashEntered && t.overview.notEntered}
+          hint={someCarwashesMissing ? t.overview.carwashSome(carwash.byCarwash.length, openCarwashes.length) : undefined}
+          to="/carwash"
+        />
+        <StatTile
+          icon={Package}
+          label={t.overview.restockTile}
+          value={lowCount ?? '–'}
+          words={lowCount === 0 && t.overview.restockNone}
+          hint={t.overview.restockHint}
+          tone={lowCount ? 'warn' : 'default'}
+          to="/inventory?status=low"
+        />
+        {day.data && (
+          <StatTile
+            icon={MoonStars}
+            label={t.overview.closingTile}
+            value={`${day.data.done} / ${day.data.total}`}
+            hint={day.data.allDone ? t.overview.closingDone : closingDue ? t.overview.closingDue : t.overview.closingLeft(day.data.total - day.data.done)}
+            tone={closingDue ? 'warn' : 'default'}
+            to="/day"
+          />
+        )}
+      </StatGrid>
+      {withoutCost > 0 && (
+        <p className="overview-note">
+          {t.overview.profitLeavesOut(withoutCost)}
+          {seesPrices && (
+            <>
+              {' '}
+              <Link className="text-link" to="/prices?show=noCost">
+                {t.overview.seeNoCost}
+              </Link>
+            </>
+          )}
+        </p>
       )}
-    </StatGrid>
+    </>
   );
 }
 

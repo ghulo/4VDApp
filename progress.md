@@ -59,6 +59,20 @@ UI and features (ask first):
 
 ## To test by hand
 
+**Phones** (Task 4, 2026-11-21)
+- [ ] iPhone (Safari and Add to Home Screen): nothing sits under the notch or the home bar; turned sideways, nothing under the notch
+- [ ] iPhone: tap a field in an Add card near the bottom: the card moves up above the keyboard, Save stays visible; the bottom tabs hide while typing
+- [ ] Android: the same; the page gets shorter for the keyboard and nothing hides behind it
+- [ ] Phone Counter: opening the till, closing a panel or after a sale, the keyboard doesn't pop up; tapping the scan box gives the number pad
+- [ ] Phone Counter camera: scan 3 different products and one twice (take it out of view, then back): each goes in once, "Added: … ×2" shows, the phone buzzes; an unknown code says "Not added"; the Light key works on Android; Done closes
+- [ ] Phone Counter: the bottom bar shows Scan and "Pay €…"; Pay opens the payment and scrolls to it; the keys are two across and Albanian names fit; Log out is in the Till menu and asks first
+- [ ] Shop PC with a USB scanner: the Counter still focuses the scan box after every step (nothing changed there)
+- [ ] Staff Products on a phone: the big Scan key at the bottom opens the camera and goes to the product
+- [ ] Portal on a phone: adding products doesn't move the list; the bottom bar "n products · € · Review" opens the basket; Empty basket and Sign out ask; the ⋮ menu changes language and light/dark
+- [ ] Owner on a phone in Albanian: bottom tabs Kreu / Hyrëse / Shitje / Stoku / Menyja, none cut; avatar menu has Light / Dark / Auto
+- [ ] Phone offline, open a page not opened before: "No internet…" with Try again, not the browser's page
+- [ ] Stock count and write-off on a phone with an Albanian keyboard: "2,5" kg goes in
+
 **Till speed** (Task 3, 2026-11-20)
 - [ ] Shop PC with the full shelf: after Record sale, Paid shows at once and the next scan goes in without a pause; the sold product's stock in F3 is lower straight away
 - [ ] A delivery received on a phone shows on the till's stock within about 3 minutes, without a reload

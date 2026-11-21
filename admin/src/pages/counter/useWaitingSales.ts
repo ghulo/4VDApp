@@ -165,6 +165,15 @@ export function useWaitingSales(
       ...localStore.read().filter((sale) => sale.businessId === ownerRef.current.businessId).map((sale) => sale.key),
       ...localSentStore.read().filter((hold) => hold.businessId === ownerRef.current.businessId).map((hold) => hold.key),
     ],
+    /**
+     * A sale 4VD just recorded at Pay: it stays off the shelf until a shelf asked for from now on counts it, like a sent
+     * waiting sale (kept on this PC, so a reload or a saved copy of the shelf never shows it again). False when it couldn't be written.
+     */
+    holdSent(key: string, items: ReadonlyArray<{ productId: number; quantity: number }>): boolean {
+      const kept = keepSent(localSentStore, { key, businessId: ownerRef.current.businessId, items, ackedAt: Date.now() });
+      setSentHolds(localSentStore.read());
+      return kept;
+    },
     /** The till has this shelf now: sent sales it counts are no longer held. */
     settleShelf(shelf: TillShelf) {
       dropCounted(localSentStore, ownerRef.current.businessId, shelf);

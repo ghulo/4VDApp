@@ -272,7 +272,8 @@ export function CounterPage() {
     canOversee(user.role),
     printer.lookup,
   );
-  heldKeys.current = waiting.heldKeys;
+  // Sales on their way from a basket (Pay pressed, no answer yet) are named too: a shelf that counts one already says so.
+  heldKeys.current = () => [...waiting.heldKeys(), ...baskets.flatMap((basket) => (basket.pending?.businessId === businessId ? [basket.pending.key] : []))];
   // The shelf as this till sees it: 4VD's, less what the sales held on this PC took that it doesn't count yet.
   const shelf = useMemo(() => shelfAfterSale(products.data?.products, heldOff(waiting.held, products.data)), [products.data, waiting.held]);
   // A new shelf: the sent sales it counts are no longer held.
@@ -789,7 +790,7 @@ export function CounterPage() {
    * only its small day figures again, and marks the rest out of date for the pages that show it.
    * Without a sale (waiting sales just sent): everything the till shows is fetched again.
    */
-  const refreshAfterSale = (sold?: { sale: BasketSale; basket: Basket; payment: Payment }) => {
+  const refreshAfterSale = (sold?: { sale: BasketSale; basket: Basket; payment: Payment; key: string }) => {
     if (!sold) {
       for (const key of ['sales', 'inventory', 'products', 'analytics', 'notifications', 'reports', 'activity', 'customers', 'cash', 'documents', 'money', 'expiry']) {
         void queryClient.invalidateQueries({ queryKey: [key] });
@@ -797,7 +798,7 @@ export function CounterPage() {
       void today.refetch();
       return;
     }
-    const { sale, basket, payment } = sold;
+    const { sale, basket, payment, key } = sold;
     const plan = afterSaleRefresh({
       tab: payment.paidBy === 'tab',
       customer: Boolean(basket.customerId),
@@ -807,13 +808,13 @@ export function CounterPage() {
     });
     for (const key of plan.stale) void queryClient.invalidateQueries({ queryKey: key, refetchType: 'none' });
     for (const key of plan.refetch) void queryClient.invalidateQueries({ queryKey: key });
-    if (sale.again) {
-      // Recorded by an earlier copy (sent before a reload): this PC's shelf may or may not count it already, so it is fetched.
-      void queryClient.invalidateQueries({ queryKey: shelfKey });
-      return;
-    }
-    // The shelf here was fetched before the sale went (ShelfGate threw away any fetch that may count it): it loses what was sold.
-    patchShelf(queryClient, businessId, sale.sales);
+    // Held off the shelf until a shelf asked for from now on counts it (kept on this PC: a reload or a saved copy of the shelf
+    // never shows it again). The shelf here was fetched before the sale went (ShelfGate threw away any fetch that may count it),
+    // or names it when it counts it already (a copy recorded before a reload). If the hold can't be kept, the shelf here loses it instead.
+    const items = sale.sales.map((one) => ({ productId: one.productId, quantity: one.quantity }));
+    if (!waiting.holdSent(key, items) && !sale.again) patchShelf(queryClient, businessId, sale.sales);
+    // Recorded by an earlier copy (sent before a reload): this PC's shelf may or may not count it already, so it is fetched.
+    if (sale.again) void queryClient.invalidateQueries({ queryKey: shelfKey });
   };
 
   const setReached = useCallback((ok: boolean) => setUnreachable(!ok), []);
@@ -1162,7 +1163,7 @@ export function CounterPage() {
       ? { total: result.total, documentId: result.invoice.id, number: result.invoice.number }
       : { total: attempt.total, documentId: 0, number: t.counter.waitingToSend };
     // Kept on this PC instead, the sale stays off the shelf here while it waits (waiting.held), so the next basket can't sell it again.
-    if (result) refreshAfterSale({ sale: result, basket, payment });
+    if (result) refreshAfterSale({ sale: result, basket, payment, key });
     const receiptLines = result
       ? result.sales.map((sale) => {
           const product = byId.get(sale.productId);

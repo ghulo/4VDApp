@@ -59,6 +59,11 @@ UI and features (ask first):
 
 ## To test by hand
 
+**Words and sign-in** (copy task, 2026-11-21: 1150f712, 6ef62deb)
+- [ ] In Shqip: price promotions say "Zbritje/Zbritjet" (menu, page title, the Counter), price quotes still say "Oferta"; Updates says "Njoftimet" (To do tabs, the bell)
+- [ ] Sign in as an owner, an employee and the accountant (password, Google, passkey if set): each lands in 4VD itself; nothing mentions "the team app" or sends you to another app
+- [ ] An account with no role in any business: sign-in says "This account has no access to 4VD yet. Ask the person who runs the shop to give you a role." (and its Albanian)
+
 **Effort, weight and copy** (Task 7, 2026-11-21)
 - [ ] Stock → Add product: the cursor is in the Barcode box; scan or type a code, fill name, category and price, save with no photo: the product opens with its barcode. A code already used by another product: the product is still saved and its page says the barcode was refused
 - [ ] Expenses → Add: the cursor is in Amount, the category says "Choose a category" and Save stays grey until you pick one

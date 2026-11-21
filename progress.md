@@ -69,6 +69,10 @@ UI and features (ask first):
 - [ ] Print again on a Not printed row whose receipt did come out: no second receipt, its number goes on the invoice
 - [ ] A form with typed work (a new bill), press Ctrl R or close the window: "Leave without saving?" asks, Stay keeps the work, Leave goes
 - [ ] A PC that two businesses use: a sale or Not printed receipt from one never shows in the other
+- [ ] Print again on a receipt marked "check the printer": as staff it says to ask an owner; as an owner it asks "Did a receipt come out for this sale?" and prints only after OK
+- [ ] Same PC, sign out of one business and sign in to the other, open the Counter, go offline and restart: only the second business's products and customers
+- [ ] Counter: Switch person with a PIN, then pull the cable and restart: the new person is signed in, not the one who left
+- [ ] Two Counter windows on one PC: sell the last unit in one, close both, go offline and restart: the product shows 0, not 1 (known open: Task 5b item 5)
 
 **Accountant month, figures, pickers** (Task 6, 2026-11-21)
 - [ ] VAT → pick last month → Sales book → Purchase book → VAT: the same month stays picked on each tab

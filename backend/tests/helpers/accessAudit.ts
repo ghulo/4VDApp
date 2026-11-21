@@ -182,6 +182,8 @@ const ACCESS: Record<keyof typeof WHO, string[]> = {
     'GET /api/attention/',
     'GET /api/expiry/',
     'GET /api/expiry/short-dated',
+    // The carwash names: bill and expense forms on the money side ask which carwash.
+    'GET /api/carwash/places',
   ],
   counter: [
     'GET /api/sales/checkouts/mine',
@@ -192,7 +194,6 @@ const ACCESS: Record<keyof typeof WHO, string[]> = {
     'GET /api/returns/refund-info',
     'PUT /api/documents/:id/fiscal-receipt',
     'GET /api/reports/my-sales',
-    'GET /api/carwash/places',
     'GET /api/carwash/today',
     'PUT /api/carwash/:day',
     'GET /api/cash-counts/today',
@@ -254,6 +255,9 @@ const ACCESS: Record<keyof typeof WHO, string[]> = {
     'POST /api/files/customer/:id',
   ],
   money: [
+    // Adding a supplier bill: the accountant too (bills only; the service refuses product lines for them).
+    'POST /api/bills/preview',
+    'POST /api/bills/',
     'GET /api/sales/',
     'GET /api/sales/checkouts',
     'GET /api/documents/',
@@ -426,8 +430,6 @@ const ACCESS: Record<keyof typeof WHO, string[]> = {
     'DELETE /api/serials/:id',
     'GET /api/orders/usual-suppliers',
     'POST /api/bills/repeats/:id/stop',
-    'POST /api/bills/preview',
-    'POST /api/bills/',
     'PUT /api/bills/:id',
     'POST /api/bills/:id/payments',
     'POST /api/bills/:id/payments/:paymentId/void',

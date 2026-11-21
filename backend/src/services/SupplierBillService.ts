@@ -4,7 +4,7 @@ import { addBillAssets, returnBillAssets, voidBillAssets } from './assets/billAs
 import { EXPENSE_CATEGORIES, type ExpensePlace } from '../constants/expenses.js';
 import { SYSTEM_STOCK_REASONS } from '../constants/stock.js';
 import type { MoneyPlaceKind, SupplierPaymentMethod } from '../database/types.js';
-import { ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
+import { ForbiddenError, ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { BillFilters, BillLineRecord, BillRecord, NewBillLine, PaymentRecord, RepeatRecord, SupplierBillRepository } from '../repositories/SupplierBillRepository.js';
 import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
 import { isUniqueViolation } from '../utils/databaseErrors.js';
@@ -384,7 +384,15 @@ export class SupplierBillService {
     });
   }
 
-  async create(input: NewBillInput, actorId: number, now = new Date()): Promise<SupplierBillDto> {
+  /**
+   * `onlyTheBill`: the accountant, who may add the bill itself (costs,
+   * equipment, VAT, an order's bill by its total) but never products on it:
+   * those put goods into stock and change what the products cost.
+   */
+  async create(input: NewBillInput, actorId: number, now = new Date(), onlyTheBill = false): Promise<SupplierBillDto> {
+    if (onlyTheBill && ((input.lines ?? []).some((line) => line.kind === 'product') || (input.prices ?? []).length > 0)) {
+      throw new ForbiddenError('Only the owner can add products on a bill: they go into stock and change what the products cost. Leave product lines out, or ask the owner.');
+    }
     const id = await this.transactions.run((repos) => createBill(repos, input, actorId, { today: this.today(now) }));
     return this.get(id!);
   }

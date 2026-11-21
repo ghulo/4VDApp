@@ -3,7 +3,11 @@ import type { Container } from '../container.js';
 import { createBillController } from '../controllers/billController.js';
 import { readImage } from './profileRoutes.js';
 
-/** Supplier bills and their payments. The people who run the shop handle them; the accountant reads them. */
+/**
+ * Supplier bills and their payments. The people who run the shop handle them;
+ * the accountant reads them and may add a bill (its costs, VAT and amount,
+ * never goods into stock or product prices: the service refuses those).
+ */
 export function createBillRoutes({ supplierBillService, guards }: Container): Router {
   const controller = createBillController(supplierBillService);
   const router = Router();
@@ -12,13 +16,13 @@ export function createBillRoutes({ supplierBillService, guards }: Container): Ro
   router.get('/summary', ...guards.books, controller.summary);
   router.get('/repeats', ...guards.books, controller.repeats);
   router.post('/repeats/:id/stop', ...guards.oversee, controller.stopRepeat);
-  router.post('/preview', ...guards.oversee, controller.preview);
+  router.post('/preview', ...guards.billWriters, controller.preview);
   // A customs paper waiting for its bill: look, put it on one, or throw it away.
   router.get('/customs/:id', ...guards.oversee, controller.customsPaper);
   router.post('/customs/:id/attach', ...guards.oversee, controller.attachCustomsPaper);
   router.delete('/customs/:id', ...guards.oversee, controller.discardCustomsPaper);
   router.get('/:id', ...guards.books, controller.get);
-  router.post('/', ...guards.oversee, controller.create);
+  router.post('/', ...guards.billWriters, controller.create);
   router.put('/:id', ...guards.oversee, controller.update);
   router.post('/:id/payments', ...guards.oversee, controller.pay);
   router.post('/:id/payments/:paymentId/void', ...guards.oversee, controller.voidPayment);

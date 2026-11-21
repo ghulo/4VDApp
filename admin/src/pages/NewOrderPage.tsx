@@ -6,8 +6,9 @@ import { useCurrentUser } from '../auth/useAuth';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { Button, ButtonLink, Card, Combobox, DataTable, EmptyState, Field, PageHeader } from '../components/ui';
 import { useT } from '../i18n/useT';
-import { ordersApi, productsApi, reportsApi, suppliersApi } from '../services/api';
-import type { Supplier } from '../services/types';
+import { ordersApi, reportsApi, suppliersApi } from '../services/api';
+import { ProductPicker } from '../components/ProductPicker';
+import type { Product, Supplier } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatMoney } from '../utils/format';
 import { useWarnBeforeLeaving } from '../utils/useWarnBeforeLeaving';
@@ -73,7 +74,6 @@ function NewOrderForm({ suppliers, onOrder }: { suppliers: Supplier[]; onOrder: 
   const queryClient = useQueryClient();
   const [params] = useSearchParams();
   const suggestions = useQuery({ queryKey: ['reports', 'reorder'], queryFn: reportsApi.reorderSuggestions });
-  const products = useQuery({ queryKey: ['products', 'all-for-orders'], queryFn: () => productsApi.list({ page: 1, limit: 100 }) });
   const usual = useQuery({ queryKey: ['orders', 'usual-suppliers'], queryFn: ordersApi.usualSuppliers });
   // Opened from a supplier's page, the order starts with that supplier chosen.
   const [supplierId, setSupplierId] = useState(() => (suppliers.some((row) => String(row.id) === params.get('supplier')) ? params.get('supplier')! : ''));
@@ -84,7 +84,6 @@ function NewOrderForm({ suppliers, onOrder }: { suppliers: Supplier[]; onOrder: 
   const [note, setNote] = useState('');
 
   const supplier = suppliers.find((row) => String(row.id) === supplierId);
-  const costOf = (productId: number) => products.data?.items.find((product) => product.id === productId)?.costPrice ?? null;
   // Suggested lines: what's running low, for the chosen supplier when we know who usually supplies it.
   const suggested: DraftLine[] = (suggestions.data ?? [])
     .filter((row) => row.suggestedOrder > 0 && !onOrder.has(row.productId))
@@ -94,7 +93,7 @@ function NewOrderForm({ suppliers, onOrder }: { suppliers: Supplier[]; onOrder: 
       productName: row.productName,
       include: focus === null || row.productId === focus,
       quantity: String(row.suggestedOrder),
-      unitCost: costOf(row.productId) === null ? '' : String(costOf(row.productId)),
+      unitCost: row.costPrice === null ? '' : String(row.costPrice),
     }));
   const lines = [...suggested, ...extra.filter((line) => !suggested.some((row) => row.productId === line.productId))].map((line) => ({
     ...line,
@@ -129,9 +128,8 @@ function NewOrderForm({ suppliers, onOrder }: { suppliers: Supplier[]; onOrder: 
     setEdits((current) => ({ ...current, [productId]: { ...current[productId], ...patch } }));
   }
 
-  function addProduct(value: string) {
-    const product = products.data?.items.find((item) => item.id === Number(value));
-    if (!product || lines.some((line) => line.productId === product.id)) return;
+  function addProduct(product: Product) {
+    if (lines.some((line) => line.productId === product.id)) return;
     setExtra((current) => [
       ...current,
       { productId: product.id, productName: product.name, include: true, quantity: '1', unitCost: product.costPrice == null ? '' : String(product.costPrice) },
@@ -227,16 +225,13 @@ function NewOrderForm({ suppliers, onOrder }: { suppliers: Supplier[]; onOrder: 
             />
           )}
           <div className="buy-add-line">
-            <Combobox
+            <ProductPicker
               label={t.orders.addProduct}
               placeholder={t.orders.chooseProduct}
-              disabled={products.isPending}
               value=""
               resetAfterPick
-              onChange={(id) => id && addProduct(id)}
-              options={(products.data?.items ?? [])
-                .filter((product) => !lines.some((line) => line.productId === product.id))
-                .map((product) => ({ value: String(product.id), label: product.name, hint: product.barcode ?? undefined }))}
+              onPick={(product) => product && addProduct(product)}
+              exclude={(product) => lines.some((line) => line.productId === product.id)}
             />
           </div>
         </Card>

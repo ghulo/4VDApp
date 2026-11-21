@@ -1,6 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { TEAM_APP_URL, useFinishSignIn } from '../auth/finishSignIn';
-import { OpenTheApp } from '../components/OpenTheApp';
+import { useFinishSignIn } from '../auth/finishSignIn';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { useAuth } from '../auth/useAuth';
@@ -147,9 +146,6 @@ function LinkActionPage({ title, action, done }: { title: string; action: (token
           <Link to="/login" className="button button--primary button--wide">
             {t.auth.logIn}
           </Link>
-          <p className="field-hint">
-            {t.auth.staff} <a href={TEAM_APP_URL}>{t.auth.openTheApp}</a> {t.auth.andLogIn}
-          </p>
         </>
       )}
       <FormError error={run.error} />
@@ -179,7 +175,7 @@ export function AcceptInvitePage() {
   useEffect(() => showBrand(inviteBrand), [inviteBrand]);
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
-  const { finish, sentToApp } = useFinishSignIn();
+  const { finish, noAccess } = useFinishSignIn();
   const { language, setLanguage } = useLanguage();
   const { state: auth, logout } = useAuth();
 
@@ -266,8 +262,10 @@ export function AcceptInvitePage() {
       title={t.auth.join(shopName)}
       subtitle={t.auth.invitedAs({ by: invitedBy, email, role: t.common.roles[role] })}
     >
-      {sentToApp ? (
-        <OpenTheApp />
+      {noAccess ? (
+        <p className="form-error" role="alert">
+          {t.auth.noAccess}
+        </p>
       ) : (
         <>
           <form onSubmit={handleSubmit} noValidate>

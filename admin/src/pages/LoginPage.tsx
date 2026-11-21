@@ -13,7 +13,6 @@ import { CopyButton, QrCode } from '../components/TwoStepCard';
 import { ApiError } from '../services/apiClient';
 import { errorMessage } from '../utils/errors';
 import { useFinishSignIn } from '../auth/finishSignIn';
-import { OpenTheApp } from '../components/OpenTheApp';
 import { Button, PasswordField } from '../components/ui';
 import { activeCatalogue, useT } from '../i18n/useT';
 import { useLinkBrand } from '../theme/useLinkBrand';
@@ -61,7 +60,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const redirectTo = (location.state as { from?: string } | null)?.from ?? '/';
-  const { finish, sentToApp } = useFinishSignIn(redirectTo);
+  const { finish, noAccess } = useFinishSignIn(redirectTo);
   const t = useT();
   const linkBrand = useLinkBrand();
 
@@ -161,10 +160,12 @@ export function LoginPage() {
     }
   }
 
-  if (sentToApp) {
+  if (noAccess) {
     return (
-      <AuthShell brand={linkBrand} title={t.auth.signedIn}>
-        <OpenTheApp />
+      <AuthShell brand={linkBrand} title={t.auth.logIn}>
+        <p className="form-error" role="alert">
+          {t.auth.noAccess}
+        </p>
       </AuthShell>
     );
   }

@@ -1,7 +1,6 @@
 import { DeviceMobile, DownloadSimple, ShieldCheck } from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
-import { TEAM_APP_URL } from '../auth/finishSignIn';
 import { LogoMark } from '../components/LogoMark';
 import { buttonClass } from '../components/ui';
 import { LanguageSwitch } from '../i18n/LanguageSwitch';
@@ -148,7 +147,7 @@ export function DownloadPage() {
               {t.phone.title}
             </h2>
             <p className="download__text">{t.phone.body}</p>
-            <a href={TEAM_APP_URL} className={buttonClass({ variant: 'secondary' })}>
+            <a href="/" className={buttonClass({ variant: 'secondary' })}>
               {t.phone.action}
             </a>
           </section>

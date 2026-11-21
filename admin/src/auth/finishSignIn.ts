@@ -3,17 +3,14 @@ import { useNavigate } from 'react-router';
 import type { LoginResult } from '../services/types';
 import { useAuth } from './useAuth';
 
-/** Where staff use 4VD; the dashboard is only for admins. */
-export const TEAM_APP_URL = import.meta.env.VITE_TEAM_APP_URL ?? 'http://localhost:8081';
-
-/** After an invite or Google sign-in: admins land on the dashboard (or where they were going), everyone else is sent to the app. */
+/** After an invite or Google sign-in: they land in 4VD (or where they were going); a role with no access gets `noAccess`. */
 export function useFinishSignIn(to = '/') {
   const { adoptSession } = useAuth();
   const navigate = useNavigate();
-  const [sentToApp, setSentToApp] = useState(false);
+  const [noAccess, setNoAccess] = useState(false);
   const finish = async (result: LoginResult) => {
     if ((await adoptSession(result)) === 'signedIn') navigate(to, { replace: true });
-    else setSentToApp(true);
+    else setNoAccess(true);
   };
-  return { finish, sentToApp };
+  return { finish, noAccess };
 }

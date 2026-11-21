@@ -290,7 +290,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await loadPermissions();
     if (!canUseDashboard(user.role)) {
       await authApi.logout();
-      throw new Error(activeCatalogue().auth.dashboardOnly);
+      throw new Error(activeCatalogue().auth.noAccess);
     }
     applyTheme(user.theme);
     // A new person here: nothing fetched before belongs to them.
@@ -309,14 +309,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   /**
    * Keep a session started elsewhere (invite accepted, Google sign-in). Only
    * the developer, admins, the owner and the accountant use the dashboard; for anyone else the
-   * tokens are dropped and the caller sends them to the team app instead.
+   * tokens are dropped and the caller shows that they have no access.
    */
-  const adoptSession = useCallback(async (result: LoginResult, place?: Pick<User, 'businessId' | 'businesses'>, switched?: SwitchStart): Promise<'signedIn' | 'notAdmin'> => {
+  const adoptSession = useCallback(async (result: LoginResult, place?: Pick<User, 'businessId' | 'businesses'>, switched?: SwitchStart): Promise<'signedIn' | 'noAccess'> => {
     sessionHint.set();
     await loadPermissions();
     if (!canUseDashboard(result.user.role)) {
       await authApi.logout().catch(() => undefined);
-      return 'notAdmin';
+      return 'noAccess';
     }
     applyTheme(result.user.theme);
     // A new person here. The Counter handing over keeps its business (`place`): its data stays, only the person changes,

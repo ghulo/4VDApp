@@ -16,7 +16,6 @@ const TRANSLATED = [
   'src/components/SectionTabs.tsx',
   'src/components/LogoMark.tsx',
   'src/components/ManagersOnly.tsx',
-  'src/components/OpenTheApp.tsx',
   'src/components/Pagination.tsx',
   'src/components/PushSettingsPanel.tsx',
   'src/components/RequireAuth.tsx',

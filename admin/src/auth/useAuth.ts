@@ -14,9 +14,9 @@ export interface AuthContextValue {
   /** Signs in, or hands back the code step (or the two-step setup a manager asked for). */
   login: (email: string, password: string) => Promise<SignInStep | null>;
   logout: () => Promise<void>;
-  /** Keep a session from an invite or Google; 'notAdmin' means send them to the employee app. */
+  /** Keep a session from an invite or Google; 'noAccess' means their role can't use 4VD. */
   /** `place`: the Counter handing over keeps its business and the businesses for the picker. */
-  adoptSession: (result: LoginResult, place?: Pick<User, 'businessId' | 'businesses'>, switched?: SwitchStart) => Promise<'signedIn' | 'notAdmin'>;
+  adoptSession: (result: LoginResult, place?: Pick<User, 'businessId' | 'businesses'>, switched?: SwitchStart) => Promise<'signedIn' | 'noAccess'>;
   /** Replace the signed-in person's details after they edit their profile. */
   updateUser: (user: User) => void;
   /** A switch (here or in another tab) isn't settled: who is signed in is being checked, and the till doesn't sell meanwhile. */

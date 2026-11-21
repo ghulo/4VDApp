@@ -5,6 +5,7 @@ import { Link } from 'react-router';
 import { canReopen } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
 import { ErrorNotice, Loading } from '../components/Feedback';
+import { Pagination } from '../components/Pagination';
 import {
   Badge,
   Button,
@@ -863,6 +864,9 @@ function VatYear({ year: start, month, onPick }: { year: number; month: string; 
 
 /* ---------- The sales book and the purchase book ---------- */
 
+/** Lines on one page of a book. */
+const BOOK_PAGE = 100;
+
 export function SalesBookPage() {
   return <VatBookPage kind="sales" />;
 }
@@ -880,6 +884,13 @@ function VatBookPage({ kind }: { kind: BookKind }) {
   const [showEmpty, setShowEmpty] = useState(false);
   const vat = useVatMonth(month);
   const items = useMemo(() => bookItems(kind, vat.data?.items ?? []), [kind, vat.data]);
+  // Each line's number in the whole book, worked out once (not by searching the list per row).
+  const numbers = useMemo(() => new Map(items.map((item, index) => [item, index + 1])), [items]);
+  // A long month shows a page at a time; the totals and the downloads still cover the whole book.
+  const [paging, setPaging] = useState({ month, page: 1 });
+  const pageCount = Math.max(Math.ceil(items.length / BOOK_PAGE), 1);
+  const page = paging.month === month ? Math.min(paging.page, pageCount) : 1;
+  const shown = useMemo(() => items.slice((page - 1) * BOOK_PAGE, page * BOOK_PAGE), [items, page]);
   const boxes = useMemo(() => {
     const all = bookBoxes(kind);
     return showEmpty ? all : all.filter((box) => items.some((item) => (item.boxes[box] ?? 0) !== 0));
@@ -915,7 +926,7 @@ function VatBookPage({ kind }: { kind: BookKind }) {
         <div aria-busy={vat.isFetching}>
           <DataTable<VatItem>
             caption={w.caption(formatMonth(month))}
-            rows={items}
+            rows={shown}
             rowKey={(item) => `${item.kind}:${item.ref}`}
             density="compact"
             toolbar={
@@ -945,7 +956,7 @@ function VatBookPage({ kind }: { kind: BookKind }) {
               </EmptyState>
             }
             columns={[
-              { header: w.no, className: 'books-date', cell: (item) => items.indexOf(item) + 1 },
+              { header: w.no, className: 'books-date', cell: (item) => numbers.get(item) },
               { header: w.date, className: 'books-date', cell: (item) => formatDate(`${item.date}T12:00:00`) },
               {
                 header: w.number,
@@ -987,6 +998,15 @@ function VatBookPage({ kind }: { kind: BookKind }) {
               { header: w.vat18, align: 'end', cell: (item) => moneyOrDash(boxSum(item, VAT_18[kind])) },
               { header: w.vat8, align: 'end', cell: (item) => moneyOrDash(boxSum(item, VAT_8[kind])) },
             ]}
+            footer={
+              items.length > BOOK_PAGE && (
+                <Pagination
+                  meta={{ page, limit: BOOK_PAGE, total: items.length }}
+                  onPageChange={(next) => setPaging({ month, page: next })}
+                  itemLabel={w.linesWord}
+                />
+              )
+            }
             totals={[
               w.totals,
               '',

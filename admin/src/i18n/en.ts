@@ -4405,6 +4405,7 @@ export const en = {
     pdf: 'PDF (print)',
     edi: 'For EDI upload',
     ediHint: 'A file to upload in EDI under “Ngarko Librin”.',
+    linesWord: 'lines',
     tillDay: 'Till sales',
     saleCount: (count: number) => `${count} ${count === 1 ? 'sale' : 'sales'}`,
   },

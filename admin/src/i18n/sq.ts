@@ -4378,6 +4378,7 @@ export const sq: Catalogue = {
     pdf: 'PDF (printo)',
     edi: 'Për ngarkim në EDI',
     ediHint: 'Një skedar për ta ngarkuar në EDI te “Ngarko Librin”.',
+    linesWord: 'rreshta',
     tillDay: 'Shitjet në arkë',
     saleCount: (count) => `${count} shitje`,
   },

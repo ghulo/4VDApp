@@ -1893,7 +1893,14 @@ export interface BillScan {
   /** A customs paper: the import bills it may go on, best first, and the one it clearly belongs to. */
   customs: { bills: CustomsCandidate[]; matchId: number | null } | null;
   /** The delivery staff already put into stock that this bill came with: confirming sets costs, it doesn't receive again. */
-  arrival?: { orderId: number; by: string | null; at: string; lines: Array<{ productId: number; productName: string; quantity: number }> } | null;
+  arrival?: {
+    orderId: number;
+    by: string | null;
+    at: string;
+    lines: Array<{ productId: number; productName: string; quantity: number }>;
+    /** The bill clearly names another supplier than the one staff picked. */
+    billSupplier?: string | null;
+  } | null;
 }
 
 /** An import bill a customs paper may go on, and why it was put forward. */

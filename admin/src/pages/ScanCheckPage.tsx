@@ -3,6 +3,7 @@ import { LocationSelect } from '../components/LocationSelect';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
+import { canOversee } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
 import { BillFields } from '../components/BillParts';
 import { ErrorNotice, Loading } from '../components/Feedback';
@@ -216,6 +217,8 @@ function CheckForm({ scan, onSupplier }: { scan: BillScan; onSupplier: (id: stri
   const [categoryId, setCategoryId] = useState(() => (scan.previous?.categoryId ? String(scan.previous.categoryId) : ''));
   const [locationId, setLocationId] = useState<number | null>(scan.previous?.locationId ?? null);
   const [discarding, setDiscarding] = useState(false);
+  // The accountant saves a delivery's bill; throwing a scan away stays with those who run the shop.
+  const mayDiscard = canOversee(useCurrentUser().role);
 
   const kept = decisions.filter((decision) => decision.choice !== SKIP);
   const anyNew = kept.some((decision) => decision.choice === NEW);
@@ -322,6 +325,11 @@ function CheckForm({ scan, onSupplier }: { scan: BillScan; onSupplier: (id: stri
           </p>
         )}
         {scan.arrival && <ArrivalNotice arrival={scan.arrival} />}
+        {scan.arrival?.billSupplier && (
+          <p className="notice notice--warn" role="status">
+            {t.scans.arrivalOtherSupplier(scan.arrival.billSupplier, scan.supplier?.name ?? '')}
+          </p>
+        )}
         {scan.previous && <p className="notice">{t.scans.previousChoices}</p>}
         {reading.remarks && <p className="notice">{t.scans.remarks(reading.remarks)}</p>}
 
@@ -420,30 +428,32 @@ function CheckForm({ scan, onSupplier }: { scan: BillScan; onSupplier: (id: stri
           <p id="scan-why" className="field-hint">
             {blocker ?? (scan.arrival ? t.scans.arrivalAfter : t.scans.afterConfirm)}
           </p>
-          <div className="scan-discard">
-            {discarding ? (
-              <>
-                <p>{t.scans.discardSure}</p>
-                {discard.isError && (
-                  <p className="form-error" role="alert">
-                    {errorMessage(discard.error)}
-                  </p>
-                )}
-                <div className="form-actions">
-                  <Button size="sm" variant="ghost" onClick={() => setDiscarding(false)}>
-                    {t.scans.keep}
-                  </Button>
-                  <Button size="sm" variant="danger" disabled={discard.isPending} onClick={() => discard.mutate()}>
-                    {t.scans.yesDiscard}
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <Button size="sm" variant="danger-text" onClick={() => setDiscarding(true)}>
-                {t.scans.discard}
-              </Button>
-            )}
-          </div>
+          {mayDiscard && (
+            <div className="scan-discard">
+              {discarding ? (
+                <>
+                  <p>{t.scans.discardSure}</p>
+                  {discard.isError && (
+                    <p className="form-error" role="alert">
+                      {errorMessage(discard.error)}
+                    </p>
+                  )}
+                  <div className="form-actions">
+                    <Button size="sm" variant="ghost" onClick={() => setDiscarding(false)}>
+                      {t.scans.keep}
+                    </Button>
+                    <Button size="sm" variant="danger" disabled={discard.isPending} onClick={() => discard.mutate()}>
+                      {t.scans.yesDiscard}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <Button size="sm" variant="danger-text" onClick={() => setDiscarding(true)}>
+                  {t.scans.discard}
+                </Button>
+              )}
+            </div>
+          )}
         </Card>
       </div>
     </form>

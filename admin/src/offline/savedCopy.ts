@@ -147,7 +147,8 @@ export function answerSettles(askedAt: number, now = Date.now()): boolean {
   const note = readSwitch();
   if (!note) return true;
   const ended = note.ended ?? (now - note.began > SWITCH_MAX_MS ? note.began + SWITCH_MAX_MS : undefined);
-  return ended !== undefined && askedAt > ended;
+  // The same moment counts: the switch's cookies were set before its end was noted.
+  return ended !== undefined && askedAt >= ended;
 }
 
 /** 4VD named who is signed in here (or refused the switch for certain): the saved sign-in may be written again. */

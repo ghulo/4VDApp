@@ -199,6 +199,9 @@ export function CounterPage() {
   const lastBusiness = useRef(user.businessId);
   if (user.businessId !== undefined) lastBusiness.current = user.businessId;
   const businessId = user.businessId ?? lastBusiness.current ?? 0;
+  // The till's own reads name the person and business they are for: once someone else is signed in here (a switch, another
+  // tab), 4VD refuses them, so another business's data never lands in this till (nor is saved on this PC as its own).
+  const tillOwner = businessId === 0 ? undefined : { expectOwner: { businessId, userId: user.id } };
   // Connected but the server didn't answer (Wi-Fi up, internet down): the Counter works as offline until it answers again.
   const [unreachable, setUnreachable] = useState(false);
   const online = connected && !unreachable;
@@ -214,16 +217,14 @@ export function CounterPage() {
     queryFn: (): Promise<TillShelf> =>
       gate.load(shelfKey, async () => {
         const askedAt = Date.now();
-        // For this person in this business only: once someone else is signed in here (a switch, another tab), 4VD refuses
-        // it, so another business's shelf never lands under this one (nor is saved as it).
-        return { ...(await counterApi.tillShelf(heldKeys.current(), { expectOwner: { businessId, userId: user.id } })), askedAt };
+        return { ...(await counterApi.tillShelf(heldKeys.current(), tillOwner)), askedAt };
       }),
     staleTime: 60_000,
     refetchInterval: SHELF_REFRESH_MS,
     enabled: businessId !== 0,
   });
-  // The till's other saved data is asked for the same way (useTillCopy keeps it on this PC).
-  const tillOwner = { expectOwner: { businessId, userId: user.id } };
+  // The till's other saved data is asked for the same way (useTillCopy keeps it on this PC). Not named while the business
+  // isn't known yet (a Switch person under way): nothing is saved for business 0 anyway.
   const settings = useQuery({ queryKey: ['counter', 'settings'], queryFn: () => counterApi.settings(tillOwner) });
   const shopSettings = useQuery({ queryKey: ['settings'], queryFn: () => settingsApi.get(tillOwner) });
   // Whether anyone may sell past what 4VD thinks is on the shelf; refused until the rule is known.
@@ -403,6 +404,13 @@ export function CounterPage() {
   // Who is at the till right now: a send that started for someone else stops before its next request.
   const ownerNow = useRef(owner);
   ownerNow.current = owner;
+  // A Switch person just happened: everything is fetched again now that the screen is the new person's.
+  const refetchAsNew = useRef(false);
+  useEffect(() => {
+    if (!refetchAsNew.current) return;
+    refetchAsNew.current = false;
+    void queryClient.invalidateQueries();
+  }, [user.id, queryClient]);
   // The till notes 4VD refused, for whoever is at the till now: kept with whose they are, so another person or business never sees them.
   const ownerKey = `${owner.businessId}:${owner.userId}`;
   const [refusedNotes, setRefusedNotes] = useState(() => ({ owner: ownerKey, entries: refusedEntries(localEventStore, owner) }));
@@ -1027,6 +1035,7 @@ export function CounterPage() {
   function sendAgain() {
     const pending = current.pending;
     if (!pending || payingRef.current) return;
+    if (signInUnsure) return complain(t.counter.checkingWho);
     if (!pendingHere(pending)) return complain(t.counter.pendingOther);
     if (settledHere(current.id, pending)) return;
     void pay(pending.payment).catch((error: unknown) => complain(errorMessage(error)));
@@ -1452,6 +1461,7 @@ export function CounterPage() {
   }
 
   async function runReport(kind: 'x' | 'z') {
+    if (signInUnsure) return complain(t.counter.checkingWho);
     const printed = await printer.send(kind === 'x' ? '4VD-X' : '4VD-Z', kind === 'x' ? xReportJob() : zReportJob(business.data?.brand.name ?? '4VD'));
     if (!printed.ok) {
       setPrintNote({ ok: false, text: printed.message });
@@ -2334,8 +2344,9 @@ export function CounterPage() {
           switchDone.current = true;
           closePanel();
           await adoptSession(result, { businessId: user.businessId ?? businessId, businesses: user.businesses });
-          // Everything on screen was the last person's: My day, permissions, the lists.
-          void queryClient.invalidateQueries();
+          // Everything on screen was the last person's (My day, permissions, the lists): fetched again once the screen is
+          // the new person's, so the till's reads name them, not the one who left.
+          refetchAsNew.current = true;
           say(t.counter.switchedTo(result.user.name));
         }}
       />

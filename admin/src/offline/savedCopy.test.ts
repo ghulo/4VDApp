@@ -57,7 +57,8 @@ describe('the saved sign-in', () => {
     expect(answerSettles(1_100, 1_200)).toBe(false);
     switchEnded(1_300);
     expect(answerSettles(1_250, 1_400)).toBe(false);
-    expect(answerSettles(1_301, 1_400)).toBe(true);
+    // Asked the moment it ended (the recheck right after a lost answer) settles it.
+    expect(answerSettles(1_300, 1_400)).toBe(true);
     // A switch whose tab closed before it ended: over by two minutes later.
     holdSavedMe(10_000);
     expect(answerSettles(20_000, 30_000)).toBe(false);

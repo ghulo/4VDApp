@@ -14,7 +14,7 @@ import { hashKey, type QueryClient, type QueryKey } from '@tanstack/react-query'
 import type { Permissions } from '../auth/permissions';
 import type { User } from '../services/types';
 import { ApiError } from '../services/apiClient';
-import { tillShelfKey, type TillShelf } from '../pages/counter/shelfAfterSale';
+import { olderShelf, tillShelfKey, type TillShelf } from '../pages/counter/shelfAfterSale';
 
 const ME_KEY = '4vd.offline.me';
 
@@ -193,22 +193,47 @@ async function withStore<T>(mode: IDBTransactionMode, work: (store: IDBObjectSto
 /**
  * Keep the till's data for this person in this business (the newest copy replaces the last; the shelf is the business's).
  * Only while the sign-in it was started under (`since`, from currentIdentity) is still the one here: checked as the write
- * is queued, so a sign-out's clear always comes after it or refuses it. Answers the shelf that is now saved (null: none
- * was written), so the sales held off it can be let go only once a saved shelf counts them.
+ * is queued, so a sign-out's clear always comes after it or refuses it. The shelf is written only when asked (`withShelf`:
+ * it changed in this page) and never over a newer saved one: another Counter open on this PC with an older shelf never
+ * puts sold units back. Answers the shelf that is now saved (null: none was written), so the sales held off it can be
+ * let go only once a saved shelf counts them.
  */
-export async function saveTillCopy(client: QueryClient, owner: { businessId: number; userId: number }, since: number): Promise<TillShelf | null> {
+export async function saveTillCopy(client: QueryClient, owner: { businessId: number; userId: number }, since: number, withShelf = true): Promise<TillShelf | null> {
   if (since !== identity) return null;
-  const copy = copyOf(client, owner.businessId);
-  if (copy.queries.length === 0) return null;
-  const shelf = copy.queries.filter((query) => isShelf(query.key, owner.businessId));
-  const rest = { savedAt: copy.savedAt, queries: copy.queries.filter((query) => !isShelf(query.key, owner.businessId)) };
-  await withStore('readwrite', (store) => {
-    if (since !== identity) throw new Error('Another person is signed in here now');
-    // One transaction: both are written, or neither.
-    const last = store.put(rest, copyId(owner));
-    return shelf.length > 0 ? store.put({ savedAt: copy.savedAt, queries: shelf } satisfies TillCopy, shelfId(owner.businessId)) : last;
-  });
-  return (shelf[0]?.data as TillShelf | undefined) ?? null;
+  if (copyOf(client, owner.businessId).queries.length === 0) return null;
+  let written: TillShelf | null = null;
+  const db = await open();
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const transaction = db.transaction(STORE, 'readwrite');
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error ?? new Error('IndexedDB refused'));
+      transaction.onabort = () => reject(transaction.error ?? new Error('IndexedDB aborted'));
+      if (since !== identity) {
+        transaction.abort();
+        return reject(new Error('Another person is signed in here now'));
+      }
+      // Read as the write is queued: two saves from this page go in the order their data was read.
+      const copy = copyOf(client, owner.businessId);
+      const shelf = copy.queries.find((query) => isShelf(query.key, owner.businessId));
+      const rest = copy.queries.filter((query) => !isShelf(query.key, owner.businessId));
+      const store = transaction.objectStore(STORE);
+      // One transaction: the person's copy and the shelf are written together, or neither.
+      if (rest.length > 0) store.put({ savedAt: copy.savedAt, queries: rest } satisfies TillCopy, copyId(owner));
+      const mine = shelf?.data as TillShelf | undefined;
+      if (!withShelf || !shelf || typeof mine?.askedAt !== 'number') return;
+      const stored = store.get(shelfId(owner.businessId)) as IDBRequest<TillCopy | undefined>;
+      stored.onsuccess = () => {
+        const theirs = stored.result?.queries[0]?.data as Partial<TillShelf> | undefined;
+        if (olderShelf(mine, theirs)) return;
+        store.put({ savedAt: copy.savedAt, queries: [shelf] } satisfies TillCopy, shelfId(owner.businessId));
+        written = mine;
+      };
+    });
+  } finally {
+    db.close();
+  }
+  return written;
 }
 
 /** Fill the till's empty queries from this person's saved copy for this business. False when there was none (or it is too old). */

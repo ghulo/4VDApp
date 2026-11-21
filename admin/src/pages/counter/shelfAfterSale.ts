@@ -52,6 +52,15 @@ export interface TillShelf {
   counted: string[] | null;
   /** When the till asked for it (ms): a sale 4VD answered before this is in it. */
   askedAt: number;
+  /** When this till last took a sale off it itself (ms): of two copies of one fetch, the later one has more sales off. */
+  patchedAt?: number;
+}
+
+/** Whether this shelf is older than that one: asked for earlier, or the same fetch with fewer of this till's sales taken off. */
+export function olderShelf(shelf: Pick<TillShelf, 'askedAt' | 'patchedAt'>, than: Partial<Pick<TillShelf, 'askedAt' | 'patchedAt'>> | undefined): boolean {
+  if (typeof than?.askedAt !== 'number') return false;
+  if (shelf.askedAt !== than.askedAt) return shelf.askedAt < than.askedAt;
+  return (shelf.patchedAt ?? 0) < (than.patchedAt ?? 0);
 }
 
 /** Every till shelf (each business has its own); under ['products'], so whatever marks products out of date marks it too. */
@@ -65,7 +74,9 @@ export const tillShelfKey = (businessId: number) => [...TILL_SHELF, businessId] 
  * that may already count it.
  */
 export function patchShelf(client: QueryClient, businessId: number, sold: ReadonlyArray<{ productId: number; quantity: number }>): void {
-  client.setQueryData<TillShelf>(tillShelfKey(businessId), (shelf) => (shelf ? { ...shelf, products: shelfAfterSale(shelf.products, sold)! } : shelf));
+  client.setQueryData<TillShelf>(tillShelfKey(businessId), (shelf) =>
+    shelf ? { ...shelf, products: shelfAfterSale(shelf.products, sold)!, patchedAt: Math.max(Date.now(), (shelf.patchedAt ?? 0) + 1) } : shelf,
+  );
 }
 
 /**

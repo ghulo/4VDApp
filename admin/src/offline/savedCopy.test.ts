@@ -106,13 +106,23 @@ function fakeIndexedDB() {
   const db = {
     close() {},
     transaction() {
-      const tx: { oncomplete?: () => void; objectStore: () => unknown } = { objectStore: () => store };
+      let aborted = false;
+      const tx: { oncomplete?: () => void; onabort?: () => void; objectStore: () => unknown; abort: () => void } = {
+        objectStore: () => store,
+        abort: () => {
+          aborted = true;
+          later(() => tx.onabort?.());
+        },
+      };
       let open = 0;
       const ask = <T,>(run: () => T) => {
-        const request: { result?: T } = {};
+        const request: { result?: T; onsuccess?: () => void } = {};
         open += 1;
         later(() => {
+          if (aborted) return;
           request.result = run();
+          // A request made from onsuccess belongs to the same transaction (it isn't done yet).
+          request.onsuccess?.();
           open -= 1;
           if (open === 0) tx.oncomplete?.();
         });
@@ -160,6 +170,40 @@ describe("the till's copy on this PC", () => {
     expect(await restoreTillCopy(other, { businessId: 3, userId: 8 })).toBe(true);
     expect(other.getQueryData(tillShelfKey(3))).toEqual(shelf);
     expect(other.getQueryData(['customers'])).toBeUndefined();
+  });
+
+  it('never puts an older shelf over a newer one another Counter on this PC saved', async () => {
+    const { rows, api } = fakeIndexedDB();
+    vi.stubGlobal('indexedDB', api);
+    const savedShelf = () => (rows.get('shelf:3') as { queries: Array<{ data: unknown }> } | undefined)?.queries[0]?.data;
+    // Counter A sold the last one: its shelf (asked at 20) says none left.
+    const a = new QueryClient();
+    a.setQueryData(tillShelfKey(3), { products: [{ id: 1, stock: 0 }], counted: [], askedAt: 20 });
+    expect(await saveTillCopy(a, owner, currentIdentity())).toEqual({ products: [{ id: 1, stock: 0 }], counted: [], askedAt: 20 });
+    // Counter B still has the shelf from before the sale (asked at 10): its customers are kept, its shelf is not.
+    const b = new QueryClient();
+    b.setQueryData(tillShelfKey(3), { products: [{ id: 1, stock: 1 }], counted: [], askedAt: 10 });
+    b.setQueryData(['customers'], [{ id: 5 }]);
+    expect(await saveTillCopy(b, { businessId: 3, userId: 8 }, currentIdentity())).toBeNull();
+    expect(savedShelf()).toEqual({ products: [{ id: 1, stock: 0 }], counted: [], askedAt: 20 });
+    expect(rows.has('3:8')).toBe(true);
+    // The same fetch with a sale taken off it here later wins; the copy from before that sale doesn't.
+    a.setQueryData(tillShelfKey(3), { products: [{ id: 1, stock: 0 }, { id: 2, stock: 3 }], counted: [], askedAt: 20, patchedAt: 30 });
+    expect(await saveTillCopy(a, owner, currentIdentity())).not.toBeNull();
+    const before = new QueryClient();
+    before.setQueryData(tillShelfKey(3), { products: [{ id: 1, stock: 0 }, { id: 2, stock: 4 }], counted: [], askedAt: 20 });
+    expect(await saveTillCopy(before, owner, currentIdentity())).toBeNull();
+    expect(savedShelf()).toMatchObject({ patchedAt: 30 });
+  });
+
+  it('writes the shelf only when it changed in this page, never because the customers did', async () => {
+    const { rows, api } = fakeIndexedDB();
+    vi.stubGlobal('indexedDB', api);
+    const client = new QueryClient();
+    client.setQueryData(tillShelfKey(3), shelf);
+    client.setQueryData(['customers'], [{ id: 1 }]);
+    expect(await saveTillCopy(client, owner, currentIdentity(), false)).toBeNull();
+    expect([...rows.keys()]).toEqual(['3:7']);
   });
 
   it('never writes a copy for someone who signed out while it was on its way', async () => {

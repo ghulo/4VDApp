@@ -1,6 +1,6 @@
 import { hashKey, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
-import type { TillShelf } from '../pages/counter/shelfAfterSale';
+import { type TillShelf, tillShelfKey } from '../pages/counter/shelfAfterSale';
 import { currentIdentity, restoreTillCopy, saveTillCopy, tillCopyKeys } from './savedCopy';
 
 /** How long after a change the copy is written: a burst of answers (the till starting) makes one write. */
@@ -25,19 +25,26 @@ export function useTillCopy(owner: { businessId: number; userId: number }, shelf
     // Written only while this person is still the one signed in here: a write left over after a sign-out is dropped.
     const since = currentIdentity();
     const watched = new Set(tillCopyKeys(businessId).map((key) => hashKey(key)));
+    const shelfHash = hashKey(tillShelfKey(businessId));
+    // The shelf is written only when it changed here (fetched, or a sale taken off it), never because the customers did.
+    let shelfChanges = 0;
+    let shelfSaved = 0;
     let timer: number | undefined;
     const save = () => {
       window.clearTimeout(timer);
       timer = undefined;
+      const upTo = shelfChanges;
       // Once the shelf is saved, the sales it counts may stop being held (never before: a crash in between would bring them back).
-      void saveTillCopy(client, { businessId, userId }, since)
+      void saveTillCopy(client, { businessId, userId }, since, upTo > shelfSaved)
         .then((shelf) => {
+          shelfSaved = Math.max(shelfSaved, upTo);
           if (shelf) savedRef.current(shelf);
         })
         .catch(() => undefined);
     };
     const unsubscribe = client.getQueryCache().subscribe((event) => {
       if (event.type !== 'updated' || event.action.type !== 'success' || !watched.has(event.query.queryHash)) return;
+      if (event.query.queryHash === shelfHash) shelfChanges += 1;
       window.clearTimeout(timer);
       timer = window.setTimeout(save, SAVE_AFTER_MS);
     });

@@ -14,6 +14,8 @@ export interface BillScanRecord {
   bill_id: number | null;
   order_id: number | null;
   confirmation: unknown;
+  /** The delivery staff already put into stock, when the bill was photographed with it. */
+  arrived_order_id: number | null;
 }
 
 export interface SupplierCodeRecord {
@@ -26,10 +28,16 @@ export interface SupplierCodeRecord {
 export class BillScanRepository {
   constructor(private readonly db: DatabaseClient) {}
 
-  async create(input: { mediaIds: string[]; reading: unknown; scannedBy: number | null; emailFrom?: string | null }): Promise<number> {
+  async create(input: { mediaIds: string[]; reading: unknown; scannedBy: number | null; emailFrom?: string | null; arrivedOrderId?: number | null }): Promise<number> {
     const row = await this.db
       .insertInto('bill_scans')
-      .values({ media_ids: input.mediaIds, reading: JSON.stringify(input.reading), scanned_by: input.scannedBy, email_from: input.emailFrom ?? null })
+      .values({
+        media_ids: input.mediaIds,
+        reading: JSON.stringify(input.reading),
+        scanned_by: input.scannedBy,
+        email_from: input.emailFrom ?? null,
+        arrived_order_id: input.arrivedOrderId ?? null,
+      })
       .returning('id')
       .executeTakeFirstOrThrow();
     return row.id;
@@ -53,7 +61,13 @@ export class BillScanRepository {
         's.bill_id',
         's.order_id',
         's.confirmation',
+        's.arrived_order_id',
       ]);
+  }
+
+  /** The bill photographed with a delivery staff put into stock, unless it was thrown away. */
+  async findForArrival(orderId: number): Promise<BillScanRecord | undefined> {
+    return this.scans().where('s.arrived_order_id', '=', orderId).where('s.status', '!=', 'discarded').orderBy('s.id').executeTakeFirst();
   }
 
   async findById(id: number): Promise<BillScanRecord | undefined> {

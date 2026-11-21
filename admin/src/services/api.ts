@@ -767,8 +767,16 @@ export const billsApi = {
 
 export const billScansApi = {
   /** Pages as base64; photos are shrunk first, PDFs go whole. */
-  scan: async (pages: Array<{ mime: string; data: string }>) =>
-    (await apiRequest<{ id: number; supplierName: string | null; number: string | null; lines: number }>('/bill-scans', { method: 'POST', body: { pages } })).data,
+  /** `arrivedOrderId`: the bill of a delivery already put into stock (it then adds no goods again). */
+  /** `owner`: who sent it (a delivery's photo); refused if someone else is signed in by the time it arrives. */
+  scan: async (pages: Array<{ mime: string; data: string }>, arrivedOrderId?: number, owner?: { businessId: number; userId: number }) =>
+    (
+      await apiRequest<{ id: number; supplierName: string | null; number: string | null; lines: number }>('/bill-scans', {
+        method: 'POST',
+        body: { pages, ...(arrivedOrderId !== undefined && { arrivedOrderId }) },
+        expectOwner: owner,
+      })
+    ).data,
   waiting: async () => (await apiRequest<WaitingScan[]>('/bill-scans')).data,
   get: async (id: number, supplierId?: number) => (await apiRequest<BillScan>(`/bill-scans/${id}`, { query: { supplierId } })).data,
   confirm: async (id: number, input: ConfirmScanInput) =>

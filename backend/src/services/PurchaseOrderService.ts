@@ -1,10 +1,14 @@
+import { createHash } from 'node:crypto';
 import type { ProductUnit } from '../database/types.js';
 import type { CostReason } from '../i18n/activityText.js';
 import { SYSTEM_STOCK_REASONS } from '../constants/stock.js';
 import { ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { OrderBillRecord, OrderLineRecord, OrderRecord, OrderStatus, PurchaseOrderRepository, SupplierFields, SupplierRecord } from '../repositories/PurchaseOrderRepository.js';
 import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
+import { NOTIFICATION_TYPES } from '../constants/notifications.js';
+import { isUniqueViolation } from '../utils/databaseErrors.js';
 import { roundMoney } from '../utils/money.js';
+import { rolesWith } from '../utils/roles.js';
 import { applyStockChange } from './InventoryService.js';
 import { pickLocation } from './StockDocumentService.js';
 import { type BillInput, createBill } from './SupplierBillService.js';
@@ -52,6 +56,8 @@ export interface NewOrderInput {
 }
 
 export interface ReceiveInput {
+  /** The key of this press: sent again after a lost answer, the same press with the same contents is "done". */
+  requestKey?: string;
   /** `unitCost` left out keeps the ordered cost. */
   lines: Array<{ lineId: number; receivedQuantity: number; unitCost?: number | null; expiresOn?: string | null }>;
   /** Copy the delivered prices onto the products' cost prices. */
@@ -62,9 +68,19 @@ export interface ReceiveInput {
   locationId?: number | null;
 }
 
+/** A delivery that came without an order, as staff ticked it off: what came, counted on the spot. */
+export interface ArrivalInput {
+  /** The key of this press, made on the phone: a second copy of it puts nothing in twice. */
+  key: string;
+  supplierId: number;
+  note: string | null;
+  lines: Array<{ productId: number; quantity: number; expiresOn: string | null }>;
+}
+
 /** An open order for the team app, which ticks deliveries off at the counter and never sees costs. */
 export interface DeliveryDto {
   id: number;
+  supplierId: number;
   supplierName: string;
   note: string | null;
   createdAt: string;
@@ -122,6 +138,11 @@ export class PurchaseOrderService {
 
   async suppliers(): Promise<SupplierDto[]> {
     return this.orderRepository.findSuppliers();
+  }
+
+  /** The suppliers as the counter picks one when goods come: names only. */
+  async supplierNames(): Promise<Array<{ id: number; name: string }>> {
+    return (await this.orderRepository.findSuppliers()).map(({ id, name }) => ({ id, name }));
   }
 
   async addSupplier(input: SupplierFields, actorId: number): Promise<SupplierDto> {
@@ -193,6 +214,7 @@ export class PurchaseOrderService {
       .filter((order) => order.status === 'open')
       .map((order) => ({
         id: order.id,
+        supplierId: order.supplier.id,
         supplierName: order.supplier.name,
         note: order.note,
         createdAt: order.createdAt,
@@ -236,17 +258,113 @@ export class PurchaseOrderService {
   async receive(id: number, input: ReceiveInput, actor: { id: number; canSetCosts: boolean }, now = new Date()): Promise<OrderDto> {
     const actorId = actor.id;
     if (!actor.canSetCosts) {
-      input = { lines: input.lines.map((line) => ({ ...line, unitCost: undefined })), updateCostPrices: false };
+      input = { ...input, lines: input.lines.map((line) => ({ ...line, unitCost: undefined })), updateCostPrices: false };
     }
-    await this.transactions.run((repos) => receiveOrder(repos, id, input, actorId, now));
+    const press = input.requestKey ? { key: input.requestKey.toLowerCase(), hash: receiveFingerprint(input) } : undefined;
+    try {
+      await this.transactions.run((repos) => receiveOrder(repos, id, input, actorId, now, press));
+    } catch (error) {
+      // An answer lost on the way: only the very same press, sending the very same thing, is told it is done.
+      if (error instanceof ConflictError && press) {
+        const before = await this.orderRepository.receivedBy(id);
+        if (before?.key === press.key) {
+          if (before.hash === press.hash) return this.get(id);
+          throw new ConflictError('This delivery was already ticked off with other counts or details. Open the order to see what went in; nothing was changed now.');
+        }
+      }
+      throw error;
+    }
     return this.get(id);
   }
 
+  /**
+   * A delivery that came without an order, ticked off at the counter: an
+   * order is made from what was counted and received at once, so the goods
+   * are in stock now and the owner is told. Nothing is booked yet: like any
+   * delivery received without its bill, the units come in at the product's
+   * cost price and the books wait for the bill (the photo staff take of it
+   * goes to the bill scanner, linked to this order). The same key twice
+   * returns the first delivery: an answer lost on the way never puts the
+   * goods in twice.
+   */
+  async arrived(input: ArrivalInput, actor: { id: number; name: string }, now = new Date()): Promise<{ id: number; repeated: boolean }> {
+    const earlier = await this.orderRepository.findByArrivalKey(input.key);
+    if (earlier !== undefined) return this.repeatOf(earlier, input);
+    const productIds = input.lines.map((line) => line.productId);
+    if (new Set(productIds).size !== productIds.length) throw new ValidationError('Each product can only be on a delivery once');
+    const supplier = await this.orderRepository.findSupplier(input.supplierId);
+    if (!supplier) throw new NotFoundError(`Supplier ${input.supplierId} does not exist`);
+    try {
+      const id = await this.transactions.run(async (repos) => {
+        const products = await repos.products.findByIds(productIds, true);
+        if (products.length !== productIds.length) throw new NotFoundError('One of the products does not exist');
+        const costs = new Map(products.map((product) => [product.id, product.cost_price === null ? null : Number(product.cost_price)]));
+        const orderId = await repos.orders.createOrder({
+          supplierId: supplier.id,
+          note: input.note,
+          createdBy: actor.id,
+          arrivalKey: input.key,
+          // At the cost price the product has now: the bill sets the real one.
+          lines: input.lines.map((line) => ({ productId: line.productId, quantity: line.quantity, unitCost: costs.get(line.productId) ?? null })),
+        });
+        const lines = await repos.orders.findLines([orderId]);
+        const expires = new Map(input.lines.map((line) => [line.productId, line.expiresOn]));
+        await receiveOrder(
+          repos,
+          orderId,
+          { updateCostPrices: false, lines: lines.map((line) => ({ lineId: line.id, receivedQuantity: line.quantity, expiresOn: expires.get(line.product_id) ?? null })) },
+          actor.id,
+          now,
+          { key: input.key.toLowerCase(), hash: arrivalFingerprint(input) },
+        );
+        const units = input.lines.reduce((sum, line) => sum + line.quantity, 0);
+        await repos.activityLog.create({
+          userId: actor.id,
+          action: 'order.arrived',
+          entityType: 'order',
+          entityId: orderId,
+          say: { key: 'deliveryArrived', params: { orderId, supplier: supplier.name, units } },
+          details: { supplierId: supplier.id, lines: input.lines, note: input.note },
+        });
+        await repos.notifications.createForRoles(rolesWith('oversee'), {
+          type: NOTIFICATION_TYPES.DELIVERY_ARRIVED,
+          write: (t) => ({ title: t.deliveryArrivedTitle(supplier.name), message: t.deliveryArrivedMessage({ name: actor.name, products: input.lines.length }) }),
+          link: `/orders/${orderId}`,
+        });
+        return orderId;
+      });
+      return { id, repeated: false };
+    } catch (error) {
+      // The same press arrived twice at once: the other copy put the goods in.
+      if (isUniqueViolation(error)) {
+        const first = await this.orderRepository.findByArrivalKey(input.key);
+        if (first !== undefined) return this.repeatOf(first, input);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * The same key again is the same press sent twice, but only when it says
+   * the same as when it first went in (supplier, counts, best-before dates,
+   * note), whatever a bill changed on the order since: a count changed after
+   * the first copy went in is refused, so nobody is told 5 went in when 3 did.
+   */
+  private async repeatOf(orderId: number, input: ArrivalInput): Promise<{ id: number; repeated: true }> {
+    const first = await this.orderRepository.receivedBy(orderId);
+    if (first?.hash !== arrivalFingerprint(input)) {
+      throw new ConflictError(`This delivery was already put into stock with other counts (order #${orderId}). Check that order; don't count it again.`);
+    }
+    return { id: orderId, repeated: true };
+  }
+
   async cancel(id: number, actorId: number, now = new Date()): Promise<OrderDto> {
-    const order = await this.orderRepository.findOrder(id);
-    if (!order) throw new NotFoundError(`Order ${id} does not exist`);
-    if (order.status !== 'open') throw new ConflictError('This order is already closed');
     await this.transactions.run(async (repos) => {
+      // Locked and read inside: a delivery ticked off at the same moment wins, and the order is then closed, not cancelled.
+      await repos.orders.lock(id);
+      const order = await repos.orders.findOrder(id);
+      if (!order) throw new NotFoundError(`Order ${id} does not exist`);
+      if (order.status !== 'open') throw new ConflictError('This order is already closed');
       await repos.orders.close(id, 'cancelled', actorId, now);
       await repos.activityLog.create({
         userId: actorId,
@@ -283,9 +401,54 @@ export async function changeCost(
   });
 }
 
-export async function receiveOrder(repos: TransactionalRepositories, id: number, input: ReceiveInput, actorId: number, now: Date): Promise<void> {
+/** A fingerprint of what one press of "it came" sent, the key aside: the same press sent again must match it. */
+export function receiveFingerprint(input: ReceiveInput): string {
+  return fingerprint({
+    lines: [...input.lines]
+      .sort((a, b) => a.lineId - b.lineId)
+      .map((line) => [line.lineId, line.receivedQuantity, line.unitCost ?? null, line.expiresOn ?? null]),
+    updateCostPrices: input.updateCostPrices,
+    locationId: input.locationId ?? null,
+    bill: input.bill ?? null,
+  });
+}
+
+/** The same for a delivery that came without an order. */
+export function arrivalFingerprint(input: ArrivalInput): string {
+  return fingerprint({
+    supplierId: input.supplierId,
+    note: input.note ?? null,
+    lines: [...input.lines].sort((a, b) => a.productId - b.productId).map((line) => [line.productId, line.quantity, line.expiresOn ?? null]),
+  });
+}
+
+function fingerprint(value: unknown): string {
+  return createHash('sha256').update(stableJson(value)).digest('hex');
+}
+
+/** JSON with object keys sorted, so the same contents always give the same text. */
+function stableJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
+  if (value && typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>).filter(([, item]) => item !== undefined);
+    return `{${entries.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([key, item]) => `${JSON.stringify(key)}:${stableJson(item)}`).join(',')}}`;
+  }
+  return JSON.stringify(value ?? null);
+}
+
+/** `press`: the key of the press that ticks it off and what it sent, kept so only that press sent again is "done". */
+export async function receiveOrder(
+  repos: TransactionalRepositories,
+  id: number,
+  input: ReceiveInput,
+  actorId: number,
+  now: Date,
+  press?: { key: string; hash: string },
+): Promise<void> {
+    await repos.orders.lock(id);
     const order = await repos.orders.findOrder(id);
     if (!order) throw new NotFoundError(`Order ${id} does not exist`);
+    if (order.status === 'received') throw new ConflictError('This delivery was already ticked off. Open the order to see what went in; nothing was changed now.');
     if (order.status !== 'open') throw new ConflictError('This order is already closed');
     const lines = await repos.orders.findLines([id]);
     const locationId = await pickLocation(repos, input.locationId, 'in');
@@ -336,6 +499,7 @@ export async function receiveOrder(repos: TransactionalRepositories, id: number,
       units += quantity;
     }
     await repos.orders.close(id, 'received', actorId, now);
+    if (press) await repos.orders.setReceivedBy(id, press.key, press.hash);
     if (input.bill) await createBill(repos, { ...input.bill, supplierId: order.supplier_id, orderId: id }, actorId);
     await repos.activityLog.create({
       userId: actorId,
@@ -343,6 +507,6 @@ export async function receiveOrder(repos: TransactionalRepositories, id: number,
       entityType: 'order',
       entityId: id,
       say: { key: 'orderReceived', params: { orderId: id, supplier: order.supplier_name, units } },
-      details: { ...input },
+      details: { ...input, requestKey: undefined },
     });
 }

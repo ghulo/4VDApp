@@ -33,6 +33,8 @@ export interface MyRequest {
 /** A supplier order on its way, as the counter sees it (no costs). */
 export interface Delivery {
   id: number;
+  /** Left out by an older server. */
+  supplierId?: number;
   supplierName: string;
   note: string | null;
   createdAt: string;
@@ -74,6 +76,9 @@ export const MY_SALES_KEY = ['reports', 'my-sales'];
 export const DELIVERIES_KEY = ['orders', 'deliveries'];
 export const FAVORITES_KEY = ['favorites'];
 
+/** Who a write is for: the business and the person signed in when it was made. */
+export type Owner = { businessId: number; userId: number };
+
 export const teamApi = {
   mySales: async ({ startDate, endDate, previousStartDate, previousEndDate }: RangeWithPrevious) =>
     (await apiRequest<MySales>('/reports/my-sales', { query: { startDate, endDate, previousStartDate, previousEndDate } })).data,
@@ -92,8 +97,19 @@ export const teamApi = {
   },
 
   deliveries: async () => (await apiRequest<Delivery[]>('/orders/deliveries')).data,
-  receive: async (orderId: number, lines: Array<{ lineId: number; receivedQuantity: number; expiresOn: string | null }>) => {
-    await apiRequest(`/orders/${orderId}/receive`, { method: 'POST', body: { lines } });
+  /** The suppliers to pick from when goods come: names only. */
+  deliverySuppliers: async () => (await apiRequest<Array<{ id: number; name: string }>>('/orders/delivery-suppliers')).data,
+  /**
+   * A delivery that came without an order: into stock at once. The same key
+   * with the same counts twice puts it in once. `owner`: who pressed Save;
+   * refused (409) if someone else is signed in by the time it arrives.
+   */
+  arrived: async (input: { key: string; supplierId: number; lines: Array<{ productId: number; quantity: number; expiresOn: string | null }> }, owner?: Owner) =>
+    (await apiRequest<{ id: number; repeated: boolean }>('/orders/arrived', { method: 'POST', body: input, expectOwner: owner })).data,
+  /** Sent again with the same counts after a lost answer, it is taken once and answers success. */
+  /** `requestKey`: made once per press and sent with every try, so only that same press is told "done". */
+  receive: async (orderId: number, lines: Array<{ lineId: number; receivedQuantity: number; expiresOn: string | null }>, owner?: Owner, requestKey?: string) => {
+    await apiRequest(`/orders/${orderId}/receive`, { method: 'POST', body: { lines, ...(requestKey && { requestKey }) }, expectOwner: owner });
   },
 
   carwashToday: async () => (await apiRequest<{ day: string; carwashes: CarwashToday[] }>('/carwash/today')).data,

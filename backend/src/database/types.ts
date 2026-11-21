@@ -957,6 +957,11 @@ export interface PurchaseOrdersTable {
   created_at: CreatedAt;
   closed_by: number | null;
   closed_at: Date | null;
+  /** Set when staff ticked off a delivery that came without an order: the key of that press (one delivery per key). */
+  arrival_key: ColumnType<string | null, string | null | undefined, never>;
+  /** The press that ticked the order off (its key) and a fingerprint of what it sent: only that same press sent again is "done". */
+  received_key: string | null;
+  received_hash: string | null;
 }
 
 export interface PurchaseOrderLinesTable {
@@ -1178,6 +1183,8 @@ export interface BillScansTable {
   confirmation: ColumnType<unknown, string | null | undefined, string | null>;
   /** Set when the bill came by email: who sent it. */
   email_from: ColumnType<string | null, string | null | undefined, string | null>;
+  /** The delivery staff already put into stock (an order made at the counter): confirming sets its costs and saves its bill, adding no goods. */
+  arrived_order_id: ColumnType<number | null, number | null | undefined, never>;
 }
 
 export type BillEmailStatus = 'waiting' | 'read' | 'failed' | 'duplicate' | 'removed';

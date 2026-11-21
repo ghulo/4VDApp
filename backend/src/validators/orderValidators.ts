@@ -54,6 +54,8 @@ export const newOrderSchema = z.object({
 });
 
 export const receiveOrderSchema = z.object({
+  /** The key of this press, made by the page: the same press sent again (a lost answer) is told "done", nothing else is. */
+  requestKey: z.string().uuid().optional(),
   locationId: idSchema.nullish(),
   lines: z
     .array(
@@ -199,6 +201,25 @@ export const scanUploadSchema = z.object({
     )
     .min(1, 'add a photo or PDF of the bill')
     .max(6, 'at most 6 pages'),
+  /** The delivery staff just put into stock without an order, when this is its bill. */
+  arrivedOrderId: idSchema.nullish(),
+});
+
+/** A delivery that came without an order, ticked off at the counter. */
+export const arrivalSchema = z.object({
+  key: z.string().uuid(),
+  supplierId: idSchema,
+  note: optional(500),
+  lines: z
+    .array(
+      z.object({
+        productId: idSchema,
+        quantity: quantitySchema(100_000),
+        expiresOn: calendarDaySchema.nullish().transform((value) => value ?? null),
+      }),
+    )
+    .min(1, 'add at least one product')
+    .max(200),
 });
 
 export const scanQuerySchema = z.object({ supplierId: z.coerce.number().int().positive().optional() });

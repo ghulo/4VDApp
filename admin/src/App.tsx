@@ -141,7 +141,6 @@ const StaffTabsPage = lazyPage(() => import('./pages/staff/StaffTabsPage'), 'Sta
 const StaffTabPage = lazyPage(() => import('./pages/staff/StaffTabsPage'), 'StaffTabPage');
 const StaffCountsPage = lazyPage(() => import('./pages/staff/StaffCountsPage'), 'StaffCountsPage');
 const StaffCountPage = lazyPage(() => import('./pages/staff/StaffCountsPage'), 'StaffCountPage');
-const ScanBillPage = lazyPage(() => import('./pages/staff/ScanBillPage'), 'ScanBillPage');
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -253,7 +252,7 @@ const router = createBrowserRouter(
         <Route path="new-product" element={<NewProductPage />} />
         <Route path="deliveries" element={<DeliveriesPage />} />
         <Route path="kit" element={<KitPage />} />
-        <Route path="scan-bill" element={<ScanBillPage />} />
+        <Route path="scan-bill" element={<Navigate to="/deliveries" replace />} />
         <Route path="tabs/:id" element={<StaffTabPage />} />
         <Route path="counts/:id/count" element={<StaffCountPage />} />
         <Route element={<SectionTabs tabs={SECTIONS.inbox} labelKey="inbox" />}>

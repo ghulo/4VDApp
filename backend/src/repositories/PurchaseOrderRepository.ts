@@ -82,6 +82,8 @@ export interface OrderRecord {
   created_at: Date;
   closed_by_name: string | null;
   closed_at: Date | null;
+  /** Staff ticked it off when it came without an order: made and received in one go. */
+  came_unordered: boolean;
 }
 
 /** The supplier's bill for an order, with what is still owed on it. */
@@ -159,7 +161,23 @@ export class PurchaseOrderRepository {
         'o.created_at',
         'c.name as closed_by_name',
         'o.closed_at',
+        sql<boolean>`o.arrival_key is not null`.as('came_unordered'),
       ]);
+  }
+
+  /** The order staff made for a delivery that came without one, by the key of that press. */
+  /** The press that ticked this order off and the fingerprint of what it sent (both null when it was sent without a key). */
+  async receivedBy(id: number): Promise<{ key: string | null; hash: string | null } | undefined> {
+    const row = await this.db.selectFrom('purchase_orders').select(['received_key', 'received_hash']).where('id', '=', id).executeTakeFirst();
+    return row && { key: row.received_key, hash: row.received_hash };
+  }
+
+  async setReceivedBy(id: number, key: string, hash: string): Promise<void> {
+    await this.db.updateTable('purchase_orders').set({ received_key: key, received_hash: hash }).where('id', '=', id).execute();
+  }
+
+  async findByArrivalKey(key: string): Promise<number | undefined> {
+    return (await this.db.selectFrom('purchase_orders').select('id').where('arrival_key', '=', key).executeTakeFirst())?.id;
   }
 
   /** Open orders first (oldest first), then the most recent closed ones. */
@@ -173,6 +191,14 @@ export class PurchaseOrderRepository {
 
   async findOrder(id: number): Promise<OrderRecord | undefined> {
     return this.ordersQuery().where('o.id', '=', id).executeTakeFirst();
+  }
+
+  /**
+   * Holds the order until the transaction ends, so two people ticking off the
+   * same delivery at once take turns: the second sees it already received.
+   */
+  async lock(id: number): Promise<void> {
+    await this.db.selectFrom('purchase_orders').select('id').where('id', '=', id).forUpdate().execute();
   }
 
   /** Bills for these orders; voided ones left out. */
@@ -209,10 +235,12 @@ export class PurchaseOrderRepository {
     note: string | null;
     createdBy: number;
     lines: Array<{ productId: number; quantity: number; unitCost: number | null }>;
+    /** A delivery that came without an order: the key of the press that ticked it off. */
+    arrivalKey?: string;
   }): Promise<number> {
     const order = await this.db
       .insertInto('purchase_orders')
-      .values({ supplier_id: input.supplierId, note: input.note, created_by: input.createdBy })
+      .values({ supplier_id: input.supplierId, note: input.note, created_by: input.createdBy, ...(input.arrivalKey && { arrival_key: input.arrivalKey }) })
       .returning('id')
       .executeTakeFirstOrThrow();
     await this.db
@@ -253,6 +281,10 @@ export class PurchaseOrderRepository {
       .set({ received_quantity: receivedQuantity, unit_cost: unitCost })
       .where('id', '=', lineId)
       .execute();
+  }
+
+  async setLineCost(lineId: number, unitCost: number | null): Promise<void> {
+    await this.db.updateTable('purchase_order_lines').set({ unit_cost: unitCost }).where('id', '=', lineId).execute();
   }
 
   async close(id: number, status: 'received' | 'cancelled', by: number, at: Date): Promise<void> {

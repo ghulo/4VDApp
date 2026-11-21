@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import type { PurchaseOrderService } from '../services/PurchaseOrderService.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 import { canManage, canOversee } from '../utils/roles.js';
-import { newOrderSchema, receiveOrderSchema, supplierSchema } from '../validators/orderValidators.js';
+import { arrivalSchema, newOrderSchema, receiveOrderSchema, supplierSchema } from '../validators/orderValidators.js';
 import { idParamsSchema, parseInput } from '../validators/validate.js';
 
 export function createOrderController(orderService: PurchaseOrderService) {
@@ -53,6 +53,15 @@ export function createOrderController(orderService: PurchaseOrderService) {
       const order = await orderService.receive(id, parseInput(receiveOrderSchema, req.body), actor);
       // The counter gets a plain answer; costs stay with the people who run the shop.
       sendSuccess(res, canOversee(req.user!.role) ? order : { id: order.id, status: order.status }, { message: 'Delivery received' });
+    },
+
+    async supplierNames(_req: Request, res: Response): Promise<void> {
+      sendSuccess(res, await orderService.supplierNames());
+    },
+
+    async arrived(req: Request, res: Response): Promise<void> {
+      const result = await orderService.arrived(parseInput(arrivalSchema, req.body), { id: req.user!.id, name: req.user!.name });
+      sendSuccess(res, result, { statusCode: result.repeated ? 200 : 201, message: 'Delivery put into stock' });
     },
 
     async cancel(req: Request, res: Response): Promise<void> {

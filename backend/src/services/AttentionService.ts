@@ -4,7 +4,7 @@ import { canManage, canOversee, canReadBooks, canSell, hasPower } from '../utils
 import type { PayrollService } from './payroll/PayrollService.js';
 import { zonedDay, zonedHour } from '../utils/zonedDates.js';
 import type { PortalRepository } from '../repositories/PortalRepository.js';
-import type { BillScanRepository } from '../repositories/BillScanRepository.js';
+import type { BillScanRecord, BillScanRepository } from '../repositories/BillScanRepository.js';
 import type { BillEmailRepository } from '../repositories/BillEmailRepository.js';
 import type { OfflineShortfallRepository } from '../repositories/OfflineShortfallRepository.js';
 import type { ApprovalService } from './ApprovalService.js';
@@ -125,7 +125,7 @@ export class AttentionService {
     const todo = canOversee(role)
       ? [...(await this.overseer(role, t, now)), ...(await this.books(t, now)), ...(await this.questions(t))]
       : canReadBooks(role)
-        ? await this.books(t, now)
+        ? [...(await this.books(t, now)), ...(await this.arrivalBills(t))]
         : canSell(role)
           ? await this.counter(role, t, now)
           : [];
@@ -133,6 +133,11 @@ export class AttentionService {
     if (canManage(role)) todo.push(...(await this.lockedPins(t)));
     todo.sort((a, b) => ORDER[a.severity] - ORDER[b.severity]);
     return { todo, count: todo.filter((item) => item.severity !== 'idea').length };
+  }
+
+  /** The accountant's: bills of deliveries staff already put into stock, which they may check and save. */
+  private async arrivalBills(t: ServerMessages): Promise<TodoItem[]> {
+    return (await this.billScans.findWaiting()).filter((scan) => scan.arrived_order_id !== null).map((scan) => scanTodo(scan, t));
   }
 
   /** Overseers: requests, the shop's state, unchecked cash and, from closing time, the day. */
@@ -159,18 +164,7 @@ export class AttentionService {
         to: '/inbox',
       });
     }
-    for (const scan of scans) {
-      const reading = scan.reading as { supplier?: { name?: string | null }; number?: string | null };
-      items.push({
-        key: `bill_scan:${scan.id}`,
-        kind: 'bill_scan',
-        severity: 'check',
-        title: t.todo.billScanTitle(reading.supplier?.name ?? null),
-        detail: t.todo.billScanDetail({ name: scan.scanned_by_name, number: reading.number ?? null, emailFrom: scan.email_from }),
-        verb: 'checkBill',
-        to: `/bills/scans/${scan.id}`,
-      });
-    }
+    for (const scan of scans) items.push(scanTodo(scan, t));
     // A finished import, until someone has looked at a few of its products (Settings → Import).
     for (const done of hasPower(role, 'import') && this.imports ? await this.imports.toCheck() : []) {
       items.push({
@@ -413,4 +407,18 @@ export class AttentionService {
   private closingDay(role: UserRole, now: Date) {
     return zonedHour(now, this.timeZone) >= CLOSING_HOUR ? this.dayService.forDay(role, undefined, now) : Promise.resolve(null);
   }
+}
+
+/** A scanned bill waiting to be checked, as a To do line. */
+function scanTodo(scan: BillScanRecord, t: ServerMessages): TodoItem {
+  const reading = scan.reading as { supplier?: { name?: string | null }; number?: string | null };
+  return {
+    key: `bill_scan:${scan.id}`,
+    kind: 'bill_scan',
+    severity: 'check',
+    title: t.todo.billScanTitle(reading.supplier?.name ?? null),
+    detail: t.todo.billScanDetail({ name: scan.scanned_by_name, number: reading.number ?? null, emailFrom: scan.email_from }),
+    verb: 'checkBill',
+    to: `/bills/scans/${scan.id}`,
+  };
 }

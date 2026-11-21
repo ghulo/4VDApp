@@ -43,6 +43,8 @@ export interface ServerMessages {
   billEmailTitle: string;
   portalOrderTitle: string;
   portalOrderMessage: (p: { name: string; total: number; lines: number }) => string;
+  deliveryArrivedTitle: (supplier: string) => string;
+  deliveryArrivedMessage: (p: { name: string; products: number }) => string;
   importDoneTitle: string;
   importDoneMessage: (p: { products: number; changed: number; suppliers: number; customers: number }) => string;
   portalChangeAgreedTitle: string;
@@ -357,6 +359,8 @@ export const en: ServerMessages = {
   productPending: ({ name, product, price }) => `${name} wants to add ${product} at ${price}.`,
   billEmailedPending: ({ sender, supplier, lines }) => `A bill${supplier ? ` from ${supplier}` : ''} came by email from ${sender} (${lines} ${lines === 1 ? 'line' : 'lines'}).`,
   billEmailTitle: 'Bill by email',
+  deliveryArrivedTitle: (supplier) => `Delivery from ${supplier}, without an order`,
+  deliveryArrivedMessage: (p) => `${p.name} put ${p.products} ${p.products === 1 ? 'product' : 'products'} into stock. Check what came; its bill waits in To do.`,
   portalOrderTitle: 'Order from the portal',
   portalOrderMessage: (p) => `${p.name} sent an order of ${money(p.total, 'en')} (${p.lines} ${p.lines === 1 ? 'line' : 'lines'})`,
   importDoneTitle: 'Your import is done',
@@ -703,6 +707,8 @@ export const sq: ServerMessages = {
   productPending: ({ name, product, price }) => `${name} do të shtojë ${product} me ${price}.`,
   billEmailedPending: ({ sender, supplier, lines }) => `Një faturë${supplier ? ` nga ${supplier}` : ''} erdhi me email nga ${sender} (${lines} ${lines === 1 ? 'rresht' : 'rreshta'}).`,
   billEmailTitle: 'Faturë me email',
+  deliveryArrivedTitle: (supplier) => `Furnizim nga ${supplier}, pa porosi`,
+  deliveryArrivedMessage: (p) => `${p.name} futi ${p.products} ${p.products === 1 ? 'produkt' : 'produkte'} në stok. Kontrollo çfarë erdhi; fatura e tij pret te Për t’u bërë.`,
   portalOrderTitle: 'Porosi nga portali',
   portalOrderMessage: (p) => `${p.name} dërgoi një porosi prej ${money(p.total, 'sq')} (${p.lines} ${p.lines === 1 ? 'rresht' : 'rreshta'})`,
   importDoneTitle: 'Importi përfundoi',

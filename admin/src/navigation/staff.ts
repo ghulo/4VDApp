@@ -5,7 +5,7 @@ import type { UserRole } from '../services/types';
 
 /** The staff layout's bottom tabs: what the team app had, in the same order. */
 export const STAFF_TABS: Array<{ to: string; key: keyof Catalogue['staff']['nav']; icon: Icon; also?: string[] }> = [
-  { to: '/', key: 'home', icon: House, also: ['/my-sales', '/shift', '/new-product', '/deliveries', '/to-deliver', '/tabs', '/counts', '/scan-bill'] },
+  { to: '/', key: 'home', icon: House, also: ['/my-sales', '/shift', '/new-product', '/deliveries', '/to-deliver', '/tabs', '/counts'] },
   { to: '/catalog', key: 'products', icon: Package },
   { to: '/counter', key: 'sell', icon: CashRegister },
   { to: '/profile', key: 'account', icon: UserCircle },

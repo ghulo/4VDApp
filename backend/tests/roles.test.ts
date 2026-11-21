@@ -43,13 +43,15 @@ describe('the owner', () => {
     expect(response.status).toBe(201);
   });
 
-  it('should not change products, settings or people', async () => {
-    const attempts = [
-      request(context.app).post('/api/categories').set(auth(ownerToken)).send({ name: 'Lamps' }),
-      request(context.app).put('/api/settings').set(auth(ownerToken)).send({ returnWindowDays: 3 }),
-      request(context.app).post('/api/invites').set(auth(ownerToken)).send({ email: 'x@example.com', role: 'employee' }),
-    ];
-    for (const response of await Promise.all(attempts)) expect(response.status).toBe(403);
+  it('should change products, settings and people like the main admin', async () => {
+    expect((await request(context.app).post('/api/categories').set(auth(ownerToken)).send({ name: 'Lamps' })).status).toBe(201);
+    expect((await request(context.app).put('/api/settings').set(auth(ownerToken)).send({ returnWindowDays: 3 })).status).toBe(200);
+    expect((await request(context.app).post('/api/invites').set(auth(ownerToken)).send({ email: 'x@example.com', role: 'employee' })).status).toBe(201);
+  });
+
+  it('should still leave the roles grid and the top roles to the main admin', async () => {
+    expect((await request(context.app).put('/api/permissions').set(auth(ownerToken)).send({ powers: {}, pages: {} })).status).toBe(403);
+    expect((await request(context.app).post('/api/invites').set(auth(ownerToken)).send({ email: 'y@example.com', role: 'admin' })).status).toBe(403);
   });
 
   it('should get stock alerts and the reports like the people who run the shop', async () => {

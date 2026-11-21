@@ -71,10 +71,12 @@ describe('expenses', () => {
     expect(summary.netProfit.current).toBe(70);
   });
 
-  it('should let only managers add, and refuse future days and zero amounts', async () => {
+  it('should let only managers and the owner add, and refuse future days and zero amounts', async () => {
+    const accountantToken = await loginAs(context, 'accountant');
     const ownerToken = await loginAs(context, 'owner');
-    expect((await add({ day: '2026-09-03', amount: 10, category: 'rent', place: 'shop' }, ownerToken)).status).toBe(403);
-    expect((await request(context.app).get('/api/expenses').set(auth(ownerToken)).query({ startDate: '2026-09-01', endDate: '2026-09-30' })).status).toBe(200);
+    expect((await add({ day: '2026-09-03', amount: 10, category: 'rent', place: 'shop' }, accountantToken)).status).toBe(403);
+    expect((await add({ day: '2026-09-03', amount: 10, category: 'rent', place: 'shop' }, ownerToken)).status).toBe(201);
+    expect((await request(context.app).get('/api/expenses').set(auth(accountantToken)).query({ startDate: '2026-09-01', endDate: '2026-09-30' })).status).toBe(200);
     expect((await add({ day: '2999-01-01', amount: 10, category: 'rent', place: 'shop' })).status).toBe(400);
     expect((await add({ day: '2026-09-03', amount: 0, category: 'rent', place: 'shop' })).status).toBe(400);
     expect((await add({ day: '2026-09-03', amount: 10, category: 'stock', place: 'shop' })).status).toBe(400);

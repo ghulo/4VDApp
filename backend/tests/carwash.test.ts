@@ -59,12 +59,12 @@ describe('carwash takings', () => {
     expect((await save('2026-10-01', { carwash: 5 })).status).toBe(400);
   });
 
-  it('should let the owner see it but only managers enter it', async () => {
+  it('should let the owner see and enter it, and keep employees out of the list', async () => {
     const ownerToken = await loginAs(context, 'owner');
     const employeeToken = await loginAs(context, 'employee');
 
     expect((await list(OCTOBER, ownerToken)).status).toBe(200);
-    expect((await save('2026-10-01', { carwash: 10, change: 0 }, ownerToken)).status).toBe(403);
+    expect((await save('2026-10-01', { carwash: 10, change: 0 }, ownerToken)).status).toBe(200);
     expect((await list(OCTOBER, employeeToken)).status).toBe(403);
   });
 

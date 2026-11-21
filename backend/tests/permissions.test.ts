@@ -28,7 +28,7 @@ describe('roles and what they may do', () => {
     const response = await request(context.app).get('/api/permissions').set(auth(employeeToken));
 
     expect(response.status).toBe(200);
-    expect(response.body.data.powers.oversee).toEqual(['developer', 'main_admin', 'admin', 'owner']);
+    expect(response.body.data.powers.oversee).toEqual(['developer', 'main_admin', 'owner', 'admin']);
     expect(response.body.data.powers).toEqual(response.body.data.defaults);
   });
 
@@ -39,27 +39,56 @@ describe('roles and what they may do', () => {
     const saved = await save({ powers: { oversee: ['admin', 'owner', 'employee'] }, pages: {} });
 
     expect(saved.status).toBe(200);
-    expect(saved.body.data.powers.oversee).toEqual(['developer', 'main_admin', 'admin', 'owner', 'employee']);
+    expect(saved.body.data.powers.oversee).toEqual(['developer', 'main_admin', 'owner', 'admin', 'employee']);
     expect((await request(context.app).get('/api/activity').set(auth(employeeToken))).status).toBe(200);
   });
 
   it('should take a power away', async () => {
-    const ownerToken = await loginAs(context, 'owner');
+    const adminToken = await loginAs(context, 'admin');
     const productId = await createTestProduct(context, developerToken);
 
-    await save({ powers: { sell: ['admin', 'employee'] }, pages: {} });
+    await save({ powers: { sell: ['employee'] }, pages: {} });
 
-    const response = await request(context.app).post('/api/sales').set(auth(ownerToken)).send({ productId, quantity: 1 });
+    const response = await request(context.app).post('/api/sales').set(auth(adminToken)).send({ productId, quantity: 1 });
     expect(response.status).toBe(403);
   });
 
-  it('should keep managing people and settings with the developer and admins', async () => {
+  it('should keep managing people and settings with the developer, main admin, owner and admins', async () => {
+    const employeeToken = await loginAs(context, 'employee');
+
+    const saved = await save({ powers: { manage: ['employee'] }, pages: {} });
+
+    expect(saved.body.data.powers.manage).toEqual(['developer', 'main_admin', 'owner', 'admin']);
+    expect((await request(context.app).put('/api/settings').set(auth(employeeToken)).send({ returnWindowDays: 3 })).status).toBe(403);
+  });
+
+  it('should give the owner every power, whatever the grid says', async () => {
     const ownerToken = await loginAs(context, 'owner');
+    const productId = await createTestProduct(context, developerToken);
+    // A grid saved before, with the owner taken off everything it could be taken off.
+    const empty = { sell: [], oversee: [], products: [], books: [], filing: [], reopen: [], entries: [], customers: [], documents: [], payroll: [], import: [] };
+    const saved = await save({ powers: empty, pages: { '/books': ['accountant'] } });
 
-    const saved = await save({ powers: { manage: ['owner'] }, pages: {} });
+    for (const roles of Object.values(saved.body.data.powers as Record<string, string[]>)) expect(roles).toContain('owner');
+    expect(saved.body.data.editableRoles).not.toContain('owner');
+    expect((await request(context.app).post('/api/sales').set(auth(ownerToken)).send({ productId, quantity: 1 })).status).toBe(201);
+    expect((await request(context.app).put('/api/settings').set(auth(ownerToken)).send({ returnWindowDays: 3 })).status).toBe(200);
+    expect((await request(context.app).get('/api/support-visits').set(auth(ownerToken))).status).toBe(200);
+  });
 
-    expect(saved.body.data.powers.manage).toEqual(['developer', 'main_admin', 'admin']);
-    expect((await request(context.app).put('/api/settings').set(auth(ownerToken)).send({ returnWindowDays: 3 })).status).toBe(403);
+  it('should give the owner back what an older grid took away once read again', async () => {
+    // Saved before the owner held everything: the owner was on no list.
+    await context.db
+      .insertInto('settings')
+      .values({ business_id: 1, key: 'role_permissions', value: JSON.stringify({ powers: { entries: ['admin'], import: [], sell: ['admin', 'employee'] }, pages: {} }) } as never)
+      .execute();
+    context.container.permissionService.forget();
+
+    const response = await request(context.app).get('/api/permissions').set(auth(developerToken));
+
+    expect(response.body.data.powers.entries).toEqual(['developer', 'main_admin', 'owner', 'admin']);
+    expect(response.body.data.powers.import).toEqual(['developer', 'main_admin', 'owner']);
+    expect(response.body.data.powers.sell).toEqual(['developer', 'main_admin', 'owner', 'admin', 'employee']);
   });
 
   it('should let only the developer change the rules', async () => {
@@ -77,17 +106,17 @@ describe('roles and what they may do', () => {
   });
 
   it('should log each change and put it back from the history', async () => {
-    await save({ powers: { filing: ['admin', 'accountant'] }, pages: {} });
+    await save({ powers: { filing: ['accountant'] }, pages: {} });
 
     const history = await request(context.app).get('/api/permissions/history').set(auth(developerToken));
-    expect(history.body.data[0].changes).toEqual([{ role: 'owner', power: 'filing', on: false }]);
+    expect(history.body.data[0].changes).toEqual([{ role: 'admin', power: 'filing', on: false }]);
     const activity = await request(context.app).get('/api/activity').set(auth(developerToken));
-    expect(activity.body.data[0].summary).toBe('Changed what roles may do: owner may no longer file VAT');
+    expect(activity.body.data[0].summary).toBe('Changed what roles may do: admin may no longer file VAT');
 
     const restored = await request(context.app).post(`/api/permissions/history/${history.body.data[0].id}/restore`).set(auth(developerToken));
 
     expect(restored.status).toBe(200);
-    expect(restored.body.data.powers.filing).toEqual(['developer', 'main_admin', 'admin', 'owner', 'accountant']);
+    expect(restored.body.data.powers.filing).toEqual(['developer', 'main_admin', 'owner', 'admin', 'accountant']);
   });
 
   it('should read the saved rules again after a restart', async () => {
@@ -96,7 +125,7 @@ describe('roles and what they may do', () => {
 
     const response = await request(context.app).get('/api/permissions').set(auth(developerToken));
 
-    expect(response.body.data.powers.reopen).toEqual(['developer', 'main_admin', 'accountant']);
+    expect(response.body.data.powers.reopen).toEqual(['developer', 'main_admin', 'owner', 'accountant']);
   });
 });
 

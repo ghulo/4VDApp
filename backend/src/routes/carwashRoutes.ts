@@ -8,7 +8,8 @@ export function createCarwashRoutes({ carwashService, guards }: Container): Rout
 
   router.get('/', ...guards.oversee, controller.list);
   // The carwashes themselves: staff pick one when entering takings or counting cash; managers run the list.
-  router.get('/places', ...guards.staff, controller.carwashes);
+  // The carwash names: the counter, and the money side (bill and expense forms ask which carwash).
+  router.get('/places', ...guards.team, controller.carwashes);
   router.post('/places', ...guards.manage, controller.add);
   router.patch('/places/:id', ...guards.manage, controller.update);
   // Staff enter today's takings from the team app; the service keeps other days to managers.

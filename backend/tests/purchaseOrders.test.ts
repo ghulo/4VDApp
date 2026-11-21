@@ -128,13 +128,15 @@ describe('supplier orders', () => {
     expect(await stockOf(cheese)).toBe(3.5);
   });
 
-  it('should let the owner look but only managers order', async () => {
+  it('should let the accountant look but only managers and the owner order', async () => {
     const freshFoods = await supplier();
     const milk = await createTestProduct(context, adminToken, { name: 'Milk', price: 1.2, stock: 0 });
+    const accountantToken = await loginAs(context, 'accountant');
     const ownerToken = await loginAs(context, 'owner');
 
-    expect((await request(context.app).get('/api/orders').set(auth(ownerToken))).status).toBe(200);
-    expect((await request(context.app).post('/api/orders').set(auth(ownerToken)).send({ supplierId: freshFoods, lines: [{ productId: milk, quantity: 1 }] })).status).toBe(403);
+    expect((await request(context.app).get('/api/orders').set(auth(accountantToken))).status).toBe(200);
+    expect((await request(context.app).post('/api/orders').set(auth(accountantToken)).send({ supplierId: freshFoods, lines: [{ productId: milk, quantity: 1 }] })).status).toBe(403);
+    expect((await request(context.app).post('/api/orders').set(auth(ownerToken)).send({ supplierId: freshFoods, lines: [{ productId: milk, quantity: 1 }] })).status).toBe(201);
     expect((await request(context.app).post('/api/orders').set(auth()).send({ supplierId: freshFoods, lines: [] })).status).toBe(400);
     expect(
       (await request(context.app).post('/api/orders').set(auth()).send({ supplierId: freshFoods, lines: [{ productId: milk, quantity: 1 }, { productId: milk, quantity: 2 }] })).status,

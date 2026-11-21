@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import type { SupplierBillService } from '../services/SupplierBillService.js';
 import { sendSuccess } from '../utils/apiResponse.js';
+import { hasPower } from '../utils/roles.js';
 import { anyNewBillSchema, attachCustomsSchema, billFormSchema, billQuerySchema, billSchema, creditSchema, customsSchema, noCustomsSchema, paymentParamsSchema, paymentSchema, voidBillSchema } from '../validators/orderValidators.js';
 import { idParamsSchema, parseInput } from '../validators/validate.js';
 import { uploadedImage } from './profileController.js';
@@ -21,7 +22,9 @@ export function createBillController(billService: SupplierBillService) {
     },
 
     async create(req: Request, res: Response): Promise<void> {
-      sendSuccess(res, await billService.create(parseInput(anyNewBillSchema, req.body), req.user!.id), { statusCode: 201, message: 'Bill added' });
+      // The accountant (no oversee power) adds the bill only: no goods, product costs or prices.
+      const onlyTheBill = !hasPower(req.user!.role, 'oversee');
+      sendSuccess(res, await billService.create(parseInput(anyNewBillSchema, req.body), req.user!.id, new Date(), onlyTheBill), { statusCode: 201, message: 'Bill added' });
     },
 
     async preview(req: Request, res: Response): Promise<void> {

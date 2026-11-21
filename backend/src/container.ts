@@ -546,6 +546,8 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     team: [authenticated, requireAnyPower('sell', 'books')] as RequestHandler[],
     /** The money side: the books, VAT, bills, invoices, expenses and reports; the accountant too. */
     books: [authenticated, requirePower('books')] as RequestHandler[],
+    /** Supplier bills: the people who run the shop, and the accountant (bills only: never stock, products or their costs). */
+    billWriters: [authenticated, requireAnyPower('oversee', 'books')] as RequestHandler[],
     filing: [authenticated, requirePower('filing')] as RequestHandler[],
     /** Hand-written entries in the books: managers and the accountant. */
     entries: [authenticated, requirePower('entries')] as RequestHandler[],
@@ -561,7 +563,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     /** The top of one business: its powers grid. The 4VD developer too. */
     mainAdmin: [authenticated, requireRole('developer', 'main_admin')] as RequestHandler[],
     /** The business's own leaders: see who from 4VD opened it (support visits). */
-    leaders: [authenticated, requireRole('developer', 'main_admin', 'admin')] as RequestHandler[],
+    leaders: [authenticated, requireRole('developer', 'main_admin', 'owner', 'admin')] as RequestHandler[],
   };
 
   return {

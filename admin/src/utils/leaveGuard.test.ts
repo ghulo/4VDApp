@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { type Guard, holdsBack } from './leaveGuard';
+import { describe, expect, it, vi } from 'vitest';
+import { type Guard, holdsBack, promptsOnUnload } from './leaveGuard';
 
 const page = (active: boolean): Guard => ({ kind: 'page', active: () => active });
 const sheet = (active: boolean): Guard => ({ kind: 'sheet', active: () => active });
@@ -33,5 +33,17 @@ describe('holdsBack', () => {
     expect(holdsBack([guard], { currentPath: '/orders/new', nextPath: '/', action: 'PUSH' })).toBe(false);
     typed = true;
     expect(holdsBack([guard], { currentPath: '/orders/new', nextPath: '/', action: 'PUSH' })).toBe(true);
+  });
+});
+
+describe('promptsOnUnload', () => {
+  it('asks in a browser and in a Windows app that asks itself, never in an older app that would swallow it', () => {
+    vi.stubGlobal('window', {});
+    expect(promptsOnUnload()).toBe(true);
+    vi.stubGlobal('window', { fourvdDesktop: {} });
+    expect(promptsOnUnload()).toBe(false);
+    vi.stubGlobal('window', { fourvdDesktop: { confirmsLeave: true } });
+    expect(promptsOnUnload()).toBe(true);
+    vi.unstubAllGlobals();
   });
 });

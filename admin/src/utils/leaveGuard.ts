@@ -35,5 +35,8 @@ export function holdsBack(guards: Iterable<Guard>, move: Move): boolean {
   return false;
 }
 
-/** In the Windows app a "leave this page?" prompt on close or reload is swallowed silently (the app has no handler for it), so the window would just refuse to close. */
-export const promptsOnUnload = (): boolean => typeof window !== 'undefined' && !window.fourvdDesktop;
+/**
+ * Whether the browser may ask "leave this page?" on close or reload. In a Windows app before 0.5.0 the question is
+ * swallowed silently (it has no handler for it), so the window would just refuse to close; 0.5.0 asks it itself.
+ */
+export const promptsOnUnload = (): boolean => typeof window !== 'undefined' && (!window.fourvdDesktop || window.fourvdDesktop.confirmsLeave === true);

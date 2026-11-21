@@ -13,10 +13,16 @@
 //   always be found again); if the disk refuses that, nothing prints.
 // - A key that already printed is never printed again: its answer comes back.
 //   A key still printing waits for that job instead of sending a second one.
+// - The name of the file F-Link gets is noted before the file is put in its
+//   folder (if the disk refuses, nothing prints), so its answer can always be
+//   found there again after a crash.
 // - "printing" means this running app has the job. One left "printing" when the
 //   app starts was cut off by the app closing: F-Link's own folder says how it
 //   went if it can (printed with its number, or failed), else it is "unknown"
 //   (look at the printer).
+// - An "unknown" receipt is never sent again on a guess: F-Link's folder is
+//   asked first, and if it can't say, only an owner who looked at the printer
+//   may print it again (confirmed).
 // - Entries the Counter hasn't acknowledged stay until it does (up to a hard
 //   cap); acknowledged ones go after MAX_ENTRIES or KEEP_MS.
 // - A journal file that can't be read is never written over: a broken one is
@@ -33,6 +39,8 @@ const KEEP_UNACKED_MS = 120 * 24 * 3600_000;
 const RETRY_MS = 5_000;
 const KEY = /^[A-Za-z0-9:-]{1,80}$/;
 const OUTCOMES = new Set(['printed', 'failed', 'not_running', 'no_folder']);
+/** How a receipt may have come out without anyone knowing: it may be on paper already. */
+const AMBIGUOUS = new Set(['unknown', 'printing']);
 
 const validKey = (key) => typeof key === 'string' && KEY.test(key);
 
@@ -150,19 +158,43 @@ function openJournal(file, options = {}) {
     return view(entry);
   }
 
+  /** How a job no longer running went, from F-Link's folder (null: it can't say). */
+  function recovered(entry) {
+    try {
+      const found = entry.file && options.recover ? options.recover(entry) : null;
+      return found && OUTCOMES.has(found.status) ? found : null;
+    } catch {
+      return null;
+    }
+  }
+
   /**
    * Print one job for a sale, noted before it goes and with its answer. Without
-   * a valid key it just prints. `run(onFile)` prints and may tell the file name
-   * F-Link got (kept, so a restart can find its answer).
+   * a valid key it just prints. `run(onFile)` prints; it calls onFile with the
+   * file name F-Link will get before it puts the file there, and must not print
+   * if onFile answers false (the journal couldn't keep the name).
+   * `confirmed`: an owner looked at the printer and says the last one didn't come out.
    */
-  async function track(key, name, run) {
-    if (!validKey(key)) return run(() => undefined);
+  async function track(key, name, run, { confirmed = false } = {}) {
+    if (!validKey(key)) return run(() => true);
     load();
     const running = inflight.get(key);
     if (running) return running;
-    const known = entries.get(key);
+    let known = entries.get(key);
     // Printed already: a second fiscal receipt for one sale must never print. Its answer comes back instead.
     if (known?.status === 'printed') return answerOf(known);
+    // It may have printed (the app closed mid-print, F-Link didn't answer in time): F-Link's folder first.
+    if (known && AMBIGUOUS.has(known.status)) {
+      const found = recovered(known);
+      if (found) {
+        put(key, { status: found.status, receiptNo: found.receiptNo ?? null, message: found.message ?? null });
+        known = entries.get(key);
+        if (found.status === 'printed') return answerOf(known);
+      } else if (!confirmed) {
+        // Nobody can say: never a second receipt on a guess. Someone looks at the printer; an owner may print it again.
+        return { status: 'check_printer', message: null };
+      }
+    }
     const job = (async () => {
       // Yield first, so the job is listed as running before any of it happens.
       await null;
@@ -177,12 +209,20 @@ function openJournal(file, options = {}) {
         answer = await run((fileName) => {
           const entry = entries.get(key);
           if (entry) entries.set(key, { ...entry, file: String(fileName).slice(0, 80) });
-          persist();
+          // Only once the disk knows the file's name may it go to F-Link: after a crash its answer is found by that name.
+          return persist();
         });
       } catch (error) {
         // It may have thrown after F-Link took the job: never called failed (that could print it twice).
         put(key, { status: 'unknown', message: error?.message ?? null });
         throw error;
+      }
+      if (answer?.status === 'not_saved') {
+        // Its name couldn't be noted, so it never went: as it was before.
+        entries.delete(key);
+        if (known) entries.set(key, known);
+        persist();
+        return answer;
       }
       const status = OUTCOMES.has(answer?.status) ? answer.status : 'unknown';
       put(key, { status, receiptNo: answer?.receiptNo ?? null, message: answer?.message ?? null });
@@ -212,13 +252,8 @@ function openJournal(file, options = {}) {
     let changed = false;
     for (const entry of [...entries.values()]) {
       if (entry.status !== 'printing' || inflight.has(entry.key)) continue;
-      let found = null;
-      try {
-        found = entry.file && options.recover ? options.recover(entry) : null;
-      } catch {
-        found = null;
-      }
-      const status = found && OUTCOMES.has(found.status) ? found.status : 'unknown';
+      const found = recovered(entry);
+      const status = found ? found.status : 'unknown';
       entries.set(entry.key, { ...entry, status, receiptNo: found?.receiptNo ?? null, message: found?.message ?? entry.message ?? null });
       changed = true;
     }

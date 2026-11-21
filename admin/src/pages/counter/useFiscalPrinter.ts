@@ -122,16 +122,18 @@ export function useFiscalPrinter(enabled: boolean, t: Catalogue['counter']) {
 
   /** Hand one job to F-Link; jobs wait for each other, so two receipts never mix. */
   const send = useCallback(
-    (name: string, text: string, key?: string): Promise<PrintResult> => {
+    (name: string, text: string, key?: string, confirmed = false): Promise<PrintResult> => {
       const run = async (): Promise<PrintResult> => {
         if (!bridge?.fiscalSend) return { ok: false, message: t.printer.browser };
         setBusy(true);
         try {
-          const answer = await bridge.fiscalSend({ name, text, ...(key && { key }) });
+          const answer = await bridge.fiscalSend({ name, text, ...(key && { key }), ...(confirmed && { confirmed: true }) });
           if (answer.status === 'printed') return { ok: true, receiptNo: answer.receiptNo };
           if (answer.status === 'failed') return { ok: false, message: plainReason(answer.message, t) };
           if (answer.status === 'not_running') return { ok: false, message: `${t.printer.notRunning}. ${t.printer.notRunningHint}` };
           if (answer.status === 'not_saved') return { ok: false, message: t.printer.notNoted };
+          if (answer.status === 'check_printer') return { ok: false, message: t.printer.checkFirst };
+          if (answer.status === 'unknown') return { ok: false, message: t.printInterrupted };
           return { ok: false, message: t.printer.noFolder(status.data?.path ?? 'C:\\TEMP') };
         } catch (error) {
           return { ok: false, message: error instanceof Error ? error.message : t.printer.unknown };

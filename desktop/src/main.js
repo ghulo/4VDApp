@@ -260,7 +260,7 @@ ipcMain.handle('fiscal:send', async (event, job) => {
   }
   // A sale's receipt is noted here before it goes and again with F-Link's answer, even if the page that asked is gone by then.
   // A sale's receipt that printed already comes back as it was, never printed twice; one that can't be noted doesn't print.
-  return printJournal.track(job.key, job.name, (onFile) => fiscal.send({ name: job.name, text: job.text }, onFile));
+  return printJournal.track(job.key, job.name, (onFile) => fiscal.send({ name: job.name, text: job.text }, onFile), { confirmed: job.confirmed === true });
 });
 // What happened to a sale's last receipt (journal.js), or null.
 ipcMain.handle('fiscal:lookup', (event, key) => (fromDashboard(event) ? printJournal.lookup(key) : null));

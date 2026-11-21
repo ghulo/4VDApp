@@ -191,3 +191,50 @@ test('without a valid key it only prints; a print that throws is noted as unknow
   );
   assert.equal(journal.lookup(KEY).status, 'unknown');
 });
+
+test('a receipt goes to F-Link only once the journal has noted the name of its file', async () => {
+  const file = fresh();
+  const { fs: lockable, state } = lockableFs();
+  const journal = openJournal(file, { fs: lockable, retryMs: 10 });
+  let published = false;
+  const answer = await journal.track(KEY, 'job', async (onFile) => {
+    // The intent was written; now the disk refuses the file's name.
+    state.writes = false;
+    if (onFile('J-1') === false) return { status: 'not_saved' };
+    published = true;
+    return { status: 'printed', receiptNo: '1' };
+  });
+  assert.equal(answer.status, 'not_saved');
+  assert.equal(published, false);
+  // Nothing went, so nothing is left to look up (and the next try may print).
+  assert.equal(journal.lookup(KEY), null);
+});
+
+test('a receipt that may have printed is never printed again on a guess', async () => {
+  const file = fresh();
+  fs.writeFileSync(file, JSON.stringify([{ key: KEY, job: 'job', status: 'unknown', file: 'J-9', at: Date.now() }]));
+  let sent = 0;
+  const run = async () => {
+    sent += 1;
+    return { status: 'printed', receiptNo: '12' };
+  };
+  // F-Link's folder can't say: someone has to look at the printer.
+  const unsure = openJournal(file, { recover: () => null });
+  assert.deepEqual(await unsure.track(KEY, 'job', run), { status: 'check_printer', message: null });
+  assert.equal(sent, 0);
+  // An owner looked: none came out. It prints.
+  assert.equal((await unsure.track(KEY, 'job', run, { confirmed: true })).receiptNo, '12');
+  assert.equal(sent, 1);
+
+  // F-Link's folder says it printed: its number comes back, nothing prints, even when confirmed.
+  const other = fresh();
+  fs.writeFileSync(other, JSON.stringify([{ key: KEY, job: 'job', status: 'unknown', file: 'J-9', at: Date.now() }]));
+  const knows = openJournal(other, { recover: () => ({ status: 'printed', receiptNo: '55' }) });
+  assert.deepEqual(await knows.track(KEY, 'job', run, { confirmed: true }), { status: 'printed', receiptNo: '55' });
+  assert.equal(sent, 1);
+  // F-Link's folder says it never went: it may print.
+  const third = fresh();
+  fs.writeFileSync(third, JSON.stringify([{ key: KEY, job: 'job', status: 'unknown', file: 'J-9', at: Date.now() }]));
+  const never = openJournal(third, { recover: () => ({ status: 'not_running' }) });
+  assert.equal((await never.track(KEY, 'job', run)).receiptNo, '12');
+});

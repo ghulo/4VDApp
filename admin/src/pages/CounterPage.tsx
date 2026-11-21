@@ -1394,13 +1394,21 @@ export function CounterPage() {
       const outcome = await printer.lookup(item.printKey ?? printKeyFor(item));
       if (outcome?.kind === 'printing') return complain(t.counter.printerHasIt);
       if (outcome?.kind === 'done' && outcome.result.ok) return void (await settleReprint(item, outcome.result.receiptNo));
-      await printOnce(item);
+      // It may have come out (the till lost track mid-print, F-Link's folder can't say): never printed again on a guess.
+      // Someone looks at the printer; only an owner says none came out, and then it prints.
+      let confirmed = false;
+      if (outcome?.kind === 'unknown') {
+        if (!canOversee(user.role)) return complain(t.counter.printer.ownerLooks);
+        if (!window.confirm(t.counter.printer.reprintConfirm)) return;
+        confirmed = true;
+      }
+      await printOnce(item, confirmed);
     } finally {
       printing.current.delete(item.documentId);
     }
   }
 
-  async function printOnce(item: Unprinted) {
+  async function printOnce(item: Unprinted, confirmed = false) {
     let text = item.text;
     // Built again when it couldn't be the first time (a tax group set since, or an older 4VD kept no text).
     if (!text) {
@@ -1419,7 +1427,7 @@ export function CounterPage() {
       setPrintNote({ ok: false, text: t.counter.printer.notKept });
       return;
     }
-    const printed = await printer.send(`4VD-${item.number}`, text, printKey);
+    const printed = await printer.send(`4VD-${item.number}`, text, printKey, confirmed);
     await afterPrint({ ...item, text, printKey }, printed, true);
   }
 

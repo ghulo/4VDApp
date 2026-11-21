@@ -142,9 +142,12 @@ function isAllowedJob(text) {
  *   { status: 'failed', message }      F-Link refused it (out of paper, …)
  *   { status: 'not_running' }          nobody picked it up; the job was taken back
  *   { status: 'no_folder' }            no C:\TEMP on this PC
- * `onFile` hears the name the job's file got in the folder, before it goes (the journal keeps it to find the answer after a restart).
+ *   { status: 'not_saved' }            onFile said no: the name couldn't be noted, so nothing went
+ *   { status: 'unknown' }              nobody took it in time and it couldn't be taken back: it may still print
+ * `onFile` hears the name the job's file will get in the folder, before it is put there (the journal keeps it to find
+ * the answer after a restart); if it answers false, nothing is put there.
  */
-async function send({ name, text }, onFile = () => undefined) {
+async function send({ name, text }, onFile = () => true) {
   if (!exists(FOLDER)) return { status: 'no_folder' };
   let job = safeName(name);
   // A name F-Link already used would mix up the answers.
@@ -152,7 +155,7 @@ async function send({ name, text }, onFile = () => undefined) {
     job = `${safeName(name)}-${n}`;
   }
   const inp = path.join(FOLDER, `${job}.inp`);
-  onFile(job);
+  if (onFile(job) === false) return { status: 'not_saved' };
   // Written under another name first, so F-Link never reads half a file.
   const temp = path.join(FOLDER, `${job}.4vd`);
   fs.writeFileSync(temp, encode(text));
@@ -184,7 +187,8 @@ async function send({ name, text }, onFile = () => undefined) {
     fs.unlinkSync(inp);
     return { status: 'not_running' };
   } catch {
-    return { status: 'failed', message: null };
+    // Still in F-Link's folder: it may print yet. Never "failed" (that would let it be printed a second time).
+    return { status: 'unknown', message: null };
   }
 }
 

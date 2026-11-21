@@ -23,13 +23,18 @@ interface Window {
     /** Missing in Windows app versions older than the Counter. */
     fiscalStatus?(): Promise<{ folder: boolean; flink: boolean; path: string }>;
     /** With a sale's key (Windows app 0.4.6 and later), the app notes the job and F-Link's answer on its disk. */
-    fiscalSend?(job: { name: string; text: string; key?: string }): Promise<
+    /** `confirmed` (0.5.0 and later): an owner looked at the printer and says the last receipt for this key didn't come out. */
+    fiscalSend?(job: { name: string; text: string; key?: string; confirmed?: boolean }): Promise<
       | { status: 'printed'; receiptNo: string | null }
       | { status: 'failed'; message: string | null }
       | { status: 'not_running' }
       | { status: 'no_folder' }
       /** 0.5.0 and later: the app couldn't note the job on its disk, so nothing printed. */
       | { status: 'not_saved'; message: string | null }
+      /** 0.5.0 and later: the last receipt for this key may have come out; nothing prints until someone looks (confirmed). */
+      | { status: 'check_printer'; message: null }
+      /** 0.5.0 and later: F-Link didn't take it in time and it couldn't be taken back: it may still print. */
+      | { status: 'unknown'; message: string | null }
     >;
     /** The Counter noted that sale's receipt outcome on its side (0.5.0 and later): the journal may let it go in time. */
     fiscalAck?(key: string): Promise<boolean>;

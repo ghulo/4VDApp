@@ -179,6 +179,8 @@ export const en = {
     collapse: 'Collapse',
     more: 'More',
     menuTab: 'Menu',
+    /** Shorter names for the phone's bottom tabs, where five share 320px. */
+    phoneTabs: { overview: 'Overview', inbox: 'Inbox', sales: 'Sales', stock: 'Stock', books: 'Books' },
     quickBar: 'Main pages',
   },
   push: {

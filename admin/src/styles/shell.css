@@ -156,6 +156,17 @@
   box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink);
 }
 
+/* A finger needs more than the 30px picture: the key is 44px, the ring stays on the picture. */
+@media (pointer: coarse), (max-width: 900px) {
+  .topbar__user {
+    place-content: center;
+    place-items: center;
+    min-inline-size: calc(var(--space-7) - var(--space-1));
+    min-block-size: calc(var(--space-7) - var(--space-1));
+    border-radius: var(--radius-pill);
+  }
+}
+
 /* ---------- Sidebar ---------- */
 
 .sidebar {

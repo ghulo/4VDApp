@@ -7,6 +7,7 @@ import { CommandPalette } from '../command/CommandPalette';
 import { useShortcuts } from '../command/useShortcuts';
 import { useAttention } from '../utils/useAttention';
 import { ThemeSwitch } from '../theme/ThemeSwitch';
+import { useThemeItems } from '../theme/useThemeItems';
 import { Avatar } from './Avatar';
 import { ErrorBoundary } from './ErrorBoundary';
 import { Loading } from './Feedback';
@@ -68,6 +69,7 @@ function FullLayout() {
   useFocusOnRouteChange();
   const navigate = useNavigate();
   const t = useT();
+  const themeItems = useThemeItems();
   const businesses = useBusinessPicker();
   const [addingBusiness, setAddingBusiness] = useState(false);
   // 4VD's developer adds businesses for customers, under the picker.
@@ -226,7 +228,8 @@ function FullLayout() {
             items={[
               ...businessItems,
               { label: t.nav.items.profile, icon: UserCircle, divider: businessItems.length > 0, onSelect: () => navigate('/profile') },
-              { label: t.nav.logOut, icon: SignOut, onSelect: logout },
+              ...themeItems,
+              { label: t.nav.logOut, icon: SignOut, divider: themeItems.length > 0, onSelect: logout },
             ]}
           />
         </div>
@@ -314,7 +317,7 @@ function FullLayout() {
                   </>
                 )}
               </span>
-              <span>{t.nav.items[item.key]}</span>
+              <span>{(t.nav.phoneTabs as Partial<Record<string, string>>)[item.key] ?? t.nav.items[item.key]}</span>
             </Link>
           );
         })}

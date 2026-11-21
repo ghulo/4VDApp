@@ -976,7 +976,8 @@
   .stat-grid[data-count='6'] { --cols: 2; }
 }
 
-@container (max-width: 320px) {
+/* A phone under ~360px wide: one figure per row, so big amounts aren't squeezed. */
+@container (max-width: 327px) {
   .stat-grid[data-count] { --cols: 1; }
   .stat-grid[data-count='5'] > :last-child { grid-column: auto; }
 }
@@ -1497,6 +1498,31 @@ input.switch:focus-visible {
   box-shadow: none;
 }
 
+/* On a touch screen the 18px box and the 36×20 switch take taps from a 44px square around them
+   (a pseudo element is part of the input for taps; the look stays). */
+@media (pointer: coarse) {
+  input[type='checkbox']:not(.switch),
+  input.switch {
+    position: relative;
+  }
+
+  input[type='checkbox']:not(.switch)::after,
+  input.switch::before {
+    position: absolute;
+    inset: 50% auto auto 50%;
+    inline-size: calc(var(--space-7) - var(--space-1));
+    block-size: calc(var(--space-7) - var(--space-1));
+    translate: -50% -50%;
+    content: '';
+  }
+
+  .metric__more::after {
+    position: absolute;
+    inset: calc(var(--space-2) * -1);
+    content: '';
+  }
+}
+
 /* A short number input with its unit beside it: "€ [ 50 ]", "[ 14 ] days". */
 .unit-input {
   display: inline-flex;
@@ -1804,7 +1830,7 @@ input.switch:focus-visible {
   }
 }
 
-@container (max-width: 300px) {
+@container (max-width: 327px) {
   .metric-grid {
     grid-template-columns: minmax(0, 1fr);
   }

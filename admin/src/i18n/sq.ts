@@ -174,6 +174,7 @@ export const sq: Catalogue = {
     collapse: 'Palos',
     more: 'Më shumë',
     menuTab: 'Menyja',
+    phoneTabs: { overview: 'Kreu', inbox: 'Hyrëse', sales: 'Shitje', stock: 'Stoku', books: 'Librat' },
     quickBar: 'Faqet kryesore',
   },
   push: {

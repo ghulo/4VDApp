@@ -6,6 +6,7 @@ import { useBusinessPicker } from '../auth/useBusinessPicker';
 import { useT } from '../i18n/useT';
 import { staffTabFor, staffTabs } from '../navigation/staff';
 import { ThemeSwitch } from '../theme/ThemeSwitch';
+import { useThemeItems } from '../theme/useThemeItems';
 import { Avatar } from './Avatar';
 import { ErrorBoundary } from './ErrorBoundary';
 import { Loading } from './Feedback';
@@ -27,6 +28,7 @@ export function StaffLayout() {
   const navigate = useNavigate();
   useFocusOnRouteChange();
   const t = useT();
+  const themeItems = useThemeItems();
   const businesses = useBusinessPicker();
   const shown = staffTabs(user.role);
   const current = staffTabFor(location.pathname, shown);
@@ -59,12 +61,13 @@ export function StaffLayout() {
           {/* Log out sits behind the avatar, as in the full dashboard: a key of its own beside it was one stray tap from signing out. */}
           <MenuButton
             label={t.nav.yourProfile(user.name)}
-            face={<Avatar name={user.name} url={user.avatarUrl} size={28} />}
+            face={<Avatar name={user.name} url={user.avatarUrl} size={30} />}
             faceClassName={location.pathname.startsWith('/profile') ? 'topbar__user active' : 'topbar__user'}
             items={[
               ...businesses,
               { label: t.nav.items.profile, icon: UserCircle, divider: businesses.length > 0, onSelect: () => navigate('/profile') },
-              { label: t.nav.logOut, icon: SignOut, onSelect: logout },
+              ...themeItems,
+              { label: t.nav.logOut, icon: SignOut, divider: themeItems.length > 0, onSelect: logout },
             ]}
             footnote={brand && !brand.house ? t.nav.runsOn : undefined}
           />

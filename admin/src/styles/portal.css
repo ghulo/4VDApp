@@ -109,6 +109,11 @@
 }
 
 @media (max-width: 760px) {
+  /* A thumb-sized chip on a phone. */
+  .portal-chips .portal-chip {
+    min-height: var(--control-h-sm);
+  }
+
   .portal-app .topbar__end .portal-app__wide {
     display: none;
   }

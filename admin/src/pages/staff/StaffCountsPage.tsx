@@ -10,6 +10,7 @@ import type { StockCount, StockCountSummary } from '../../services/types';
 import { teamApi } from '../../services/teamApi';
 import { errorMessage } from '../../utils/errors';
 import { inGrams } from '../../utils/format';
+import { decimalFromText } from '../../utils/decimalText';
 
 const COUNTS_KEY = ['stock-counts'];
 
@@ -178,9 +179,9 @@ function Counter({ count, onSaved, onSubmitted }: { count: StockCount; onSaved: 
 
   const save = useMutation({
     mutationFn: async () => {
-      const updated = await teamApi.countLine(count.id, line.productId, Number(value));
+      const updated = await teamApi.countLine(count.id, line.productId, decimalFromText(value));
       // The shelf was just counted: its date replaces the ones noted before.
-      const units = Math.floor(Number(value));
+      const units = Math.floor(decimalFromText(value));
       if (line.hasBestBefore && bestBefore && units > 0) {
         await expiryApi.add({ productId: line.productId, quantity: units, expiresOn: bestBefore, note: null, replace: true });
       }
@@ -196,9 +197,9 @@ function Counter({ count, onSaved, onSubmitted }: { count: StockCount; onSaved: 
   const submit = useMutation({ mutationFn: () => teamApi.submitCount(count.id), onSuccess: onSubmitted });
 
   const uncounted = count.totals.products - count.totals.counted;
-  const amount = Number(value);
+  const amount = decimalFromText(value);
   // Kilo products are counted to the gram; the server refuses part pieces.
-  const canSave = value !== '' && inGrams(amount) && amount >= 0;
+  const canSave = Number.isFinite(amount) && inGrams(amount) && amount >= 0;
 
   function saveLine(event: FormEvent) {
     event.preventDefault();
@@ -249,7 +250,7 @@ function Counter({ count, onSaved, onSubmitted }: { count: StockCount; onSaved: 
         <Field label={t.staff.counts.onShelf}>
           <span className="staff-stepper">
             <Button icon={Minus} aria-label={t.staff.counts.less} disabled={!canSave || amount <= 0} onClick={() => setValue(String(Math.max(0, amount - 1)))} />
-            <input type="number" inputMode="decimal" min={0} step="any" value={value} onChange={(event) => setValue(event.target.value)} autoFocus />
+            <input type="text" inputMode="decimal" autoComplete="off" value={value} onChange={(event) => setValue(event.target.value)} autoFocus />
             <Button icon={Plus} aria-label={t.staff.counts.more} onClick={() => setValue(String((canSave ? amount : 0) + 1))} />
           </span>
         </Field>

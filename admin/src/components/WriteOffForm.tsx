@@ -11,6 +11,7 @@ import { Button } from './ui';
 import { useT } from '../i18n/useT';
 import { SavedToast } from './Feedback';
 import { ProjectSelect } from './ProjectSelect';
+import { decimalFromText } from '../utils/decimalText';
 
 /** Take damaged, lost or expired stock out as a recorded loss. */
 export function WriteOffForm({ productId, inStock, unit }: { productId: number; inStock: number; unit?: ProductUnit }) {
@@ -24,7 +25,7 @@ export function WriteOffForm({ productId, inStock, unit }: { productId: number; 
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
 
   const byKg = allowsParts(unit) || !Number.isInteger(inStock);
-  const units = Number(quantity);
+  const units = decimalFromText(quantity);
   const isValid = (byKg ? inGrams(units) && units > 0 : Number.isInteger(units) && units >= 1) && units <= inStock;
 
   const mutation = useMutation({
@@ -53,11 +54,9 @@ export function WriteOffForm({ productId, inStock, unit }: { productId: number; 
         <label className="field">
           <span className="field__label">{t.writeOff.howMany}</span>
           <input
-            type="number"
+            type="text"
             inputMode={byKg ? 'decimal' : 'numeric'}
-            min={byKg ? 0.001 : 1}
-            max={inStock}
-            step={byKg ? 0.001 : 1}
+            autoComplete="off"
             value={quantity}
             onChange={(event) => setQuantity(event.target.value)}
           />

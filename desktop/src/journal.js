@@ -23,8 +23,8 @@
 // - An "unknown" receipt is never sent again on a guess: F-Link's folder is
 //   asked first, and if it can't say, only an owner who looked at the printer
 //   may print it again (confirmed).
-// - Entries the Counter hasn't acknowledged stay until it does (up to a hard
-//   cap); acknowledged ones go after MAX_ENTRIES or KEEP_MS.
+// - Entries the Counter hasn't acknowledged stay until it does, however old;
+//   acknowledged ones go after MAX_ENTRIES or KEEP_MS.
 // - A journal file that can't be read is never written over: a broken one is
 //   moved aside first, a locked one waits until it can be read.
 const realFs = require('node:fs');
@@ -32,9 +32,6 @@ const realFs = require('node:fs');
 /** Acknowledged entries: enough for weeks of receipts; the oldest go first. */
 const MAX_ENTRIES = 500;
 const KEEP_MS = 30 * 24 * 3600_000;
-/** Entries the Counter never acknowledged (an older dashboard, a lost page): kept far longer, but not for ever. */
-const MAX_UNACKED = 3000;
-const KEEP_UNACKED_MS = 120 * 24 * 3600_000;
 /** How often a write the disk refused is tried again. */
 const RETRY_MS = 5_000;
 const KEY = /^[A-Za-z0-9:-]{1,80}$/;
@@ -110,7 +107,8 @@ function openJournal(file, options = {}) {
     const at = now();
     const all = [...entries.values()];
     const acked = all.filter((entry) => entry.acked && entry.status !== 'printing' && at - entry.at < KEEP_MS).slice(-MAX_ENTRIES);
-    const open = all.filter((entry) => !entry.acked || entry.status === 'printing').filter((entry) => at - entry.at < KEEP_UNACKED_MS).slice(-MAX_UNACKED);
+    // Not acknowledged yet: the Counter may still need its number, so it stays however old it is.
+    const open = all.filter((entry) => !entry.acked || entry.status === 'printing');
     const keep = new Set([...acked, ...open]);
     for (const entry of all) if (!keep.has(entry)) entries.delete(entry.key);
     return all.filter((entry) => keep.has(entry));
@@ -263,4 +261,4 @@ function openJournal(file, options = {}) {
   return { lookup, track, ack, settleStale, flush: () => (dirty ? persist() : true) };
 }
 
-module.exports = { openJournal, validKey, MAX_ENTRIES, MAX_UNACKED, KEEP_MS };
+module.exports = { openJournal, validKey, MAX_ENTRIES, KEEP_MS };

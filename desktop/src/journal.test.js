@@ -238,3 +238,12 @@ test('a receipt that may have printed is never printed again on a guess', async 
   const never = openJournal(third, { recover: () => ({ status: 'not_running' }) });
   assert.equal((await never.track(KEY, 'job', run)).receiptNo, '12');
 });
+
+test('an outcome the till never acknowledged stays, however old', async () => {
+  const file = fresh();
+  const old = Date.now() - 400 * 24 * 3600_000;
+  fs.writeFileSync(file, JSON.stringify([{ key: 'old', job: 'job', status: 'printed', receiptNo: '3', at: old }]));
+  const journal = openJournal(file);
+  await journal.track(KEY, 'job', printed('4'));
+  assert.equal(openJournal(file).lookup('old').receiptNo, '3');
+});

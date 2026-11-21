@@ -28,12 +28,29 @@ import type { ShopFeatures, UserRole } from '../services/types';
 type NavKey = keyof Catalogue['nav']['items'];
 type TabKey = keyof Catalogue['nav']['tabs'];
 
+/** The search a tab link carries: the current one, only the named keys of it, or none. */
+export function tabSearch(tab: Pick<SectionTab, 'keepSearch'>, search: string): string {
+  if (!tab.keepSearch) return '';
+  if (tab.keepSearch === true) return search;
+  const current = new URLSearchParams(search);
+  const kept = new URLSearchParams();
+  for (const key of tab.keepSearch) {
+    const value = current.get(key);
+    if (value !== null) kept.set(key, value);
+  }
+  const text = kept.toString();
+  return text ? `?${text}` : '';
+}
+
 /** A page that lives under a menu item as one of its tabs. */
 export interface SectionTab {
   to: string;
   key: TabKey;
-  /** Keep the address's filters (like the chosen period) when switching to this tab. */
-  keepSearch?: boolean;
+  /**
+   * Keep the address's filters (like the chosen period) when switching to this tab:
+   * all of them, or only the named ones (the VAT tabs share just `month`).
+   */
+  keepSearch?: boolean | readonly string[];
   /** The accountant sees it (they see only the money side). */
   accountant?: boolean;
   /** Opened now and then (setup, year end): it waits under the row's More, unless it is the page you are on. */
@@ -108,14 +125,14 @@ export const SECTIONS = {
     { to: '/books/journal', key: 'journal', keepSearch: true, accountant: true },
     { to: '/books/accounts', key: 'accounts', accountant: true, rare: true },
     { to: '/books/opening', key: 'opening', accountant: true, rare: true },
-    { to: '/books/vat', key: 'vat', accountant: true },
-    { to: '/books/sales-book', key: 'salesBook', accountant: true },
-    { to: '/books/purchase-book', key: 'purchaseBook', accountant: true },
+    { to: '/books/vat', key: 'vat', keepSearch: ['month'], accountant: true },
+    { to: '/books/sales-book', key: 'salesBook', keepSearch: ['month'], accountant: true },
+    { to: '/books/purchase-book', key: 'purchaseBook', keepSearch: ['month'], accountant: true },
     { to: '/books/statements', key: 'statements', accountant: true },
     { to: '/books/assets', key: 'assets', accountant: true },
     { to: '/books/year', key: 'year', accountant: true, rare: true },
     { to: '/books/declaration', key: 'declaration', accountant: true, rare: true },
-    { to: '/books/trefin', key: 'trefin', accountant: true, rare: true },
+    { to: '/books/trefin', key: 'trefin', keepSearch: ['month'], accountant: true, rare: true },
   ],
   payroll: [
     { to: '/payroll', key: 'payrollPeople', power: 'payroll', accountant: true },

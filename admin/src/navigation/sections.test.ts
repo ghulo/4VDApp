@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mainItemsFor, phoneTabsFor, SECTIONS } from './sections';
+import { mainItemsFor, phoneTabsFor, SECTIONS, tabSearch } from './sections';
 
 const paths = (items: Array<{ to: string }> | null) => items?.map((item) => item.to) ?? null;
 
@@ -30,5 +30,17 @@ describe('SECTIONS', () => {
   it('should keep the books row to setup and year end under More', () => {
     const rare = SECTIONS.books.filter((tab) => 'rare' in tab && tab.rare).map((tab) => tab.key);
     expect(rare).toEqual(['accounts', 'opening', 'year', 'declaration', 'trefin']);
+  });
+});
+
+describe('tabSearch', () => {
+  it('should carry the VAT month from the return to both books', () => {
+    const tabs = SECTIONS.books.filter((tab) => ['vat', 'salesBook', 'purchaseBook'].includes(tab.key));
+    expect(tabs.map((tab) => tabSearch(tab, '?month=2026-09&from=2026-01-01'))).toEqual(['?month=2026-09', '?month=2026-09', '?month=2026-09']);
+  });
+  it('should keep everything for keepSearch true and nothing without it', () => {
+    expect(tabSearch({ keepSearch: true }, '?from=a&to=b')).toBe('?from=a&to=b');
+    expect(tabSearch({}, '?month=2026-09')).toBe('');
+    expect(tabSearch({ keepSearch: ['month'] }, '?from=a')).toBe('');
   });
 });

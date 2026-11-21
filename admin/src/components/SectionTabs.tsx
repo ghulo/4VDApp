@@ -4,7 +4,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { Loading } from './Feedback';
 import { useT } from '../i18n/useT';
 import type { Catalogue } from '../i18n/en';
-import { type SectionTab, shownTo } from '../navigation/sections';
+import { type SectionTab, shownTo, tabSearch } from '../navigation/sections';
 import { useCurrentUser } from '../auth/useAuth';
 import { useLocations } from '../utils/useLocations';
 import { useFeatures } from '../utils/useFeatures';
@@ -29,7 +29,7 @@ export function SectionTabs({ tabs, labelKey }: { tabs: SectionTab[]; labelKey: 
   const shown = tabs.filter((tab) => shownTo(role, tab) && (!tab.locations || several || tab.to === pathname) && (!tab.feature || features[tab.feature] || tab.to === pathname));
   const inRow = shown.filter((tab) => !tab.rare || tab.to === pathname);
   const later = shown.filter((tab) => tab.rare && tab.to !== pathname);
-  const to = (tab: SectionTab) => ({ pathname: tab.to, search: tab.keepSearch ? search : '' });
+  const to = (tab: SectionTab) => ({ pathname: tab.to, search: tabSearch(tab, search) });
   const nav = (
     <nav className="section-tabs" aria-label={label}>
       <div className="section-tabs__row">

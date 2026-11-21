@@ -55,7 +55,7 @@ import { basketStockProblem, DOUBLE_ENTER_MS, exactMatch, lookupFailure, nameMat
 import { codeFromScan, documentNumberFromScan } from '../utils/scanLinks';
 import { priceLine, summarise } from './counter/basketMath';
 import { useTillCopy } from '../offline/useTillCopy';
-import { forgetSavedMe, saveMe } from '../offline/savedCopy';
+import { definiteRefusal, holdSavedMe, releaseSavedMe, saveMe } from '../offline/savedCopy';
 import { currentPermissions } from '../auth/permissions';
 import { afterSaleRefresh, heldOff, patchShelf, shelfAfterSale, shelfGate, type TillShelf, tillShelfKey } from './counter/shelfAfterSale';
 import { ScanBox } from './counter/ScanBox';
@@ -194,7 +194,7 @@ export function CounterPage() {
   const t = useT();
   const queryClient = useQueryClient();
   const user = useCurrentUser();
-  const { logout, adoptSession } = useAuth();
+  const { logout, adoptSession, recheck } = useAuth();
   const scanRef = useRef<HTMLInputElement>(null);
   const connected = useOnline();
   // The business comes a moment after a Switch person (the Counter stays in its business): keep the last one known meanwhile.
@@ -2299,13 +2299,17 @@ export function CounterPage() {
           await waiting.flush();
           await sendEvents();
           // The PC changes hands now: the sign-in saved for a start without internet can't name the last person any more
-          // (4VD ends their session). If the takeover is refused, they stay and are saved again.
-          forgetSavedMe();
+          // (4VD ends their session). If the takeover is refused for certain, they stay and are saved again; with no answer
+          // it may have happened, so nobody is saved until 4VD says who is signed in.
+          holdSavedMe();
           let result;
           try {
             result = await counterApi.switchTo({ userId, pin });
           } catch (error) {
-            if (user.businessId !== undefined) saveMe(user, currentPermissions());
+            if (definiteRefusal(error)) {
+              releaseSavedMe();
+              if (user.businessId !== undefined) saveMe(user, currentPermissions());
+            } else recheck();
             throw error;
           }
           switchDone.current = true;

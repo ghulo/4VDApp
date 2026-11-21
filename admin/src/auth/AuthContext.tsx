@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { authApi, meApi, permissionsApi } from '../services/api';
 import { currentPermissions, DEFAULT_PERMISSIONS, setPermissions } from './permissions';
-import { forgetSaved, newIdentity, noAnswer, restoreTillCopy, savedMe, saveMe } from '../offline/savedCopy';
+import { forgetSaved, newIdentity, noAnswer, releaseSavedMe, restoreTillCopy, sameSignIn, savedMe, saveMe } from '../offline/savedCopy';
 
 import { moveOldSignIn, sessionHint, setSessionExpiredHandler } from '../services/apiClient';
 import { disablePush, reregisterPush } from '../push/browserPush';
@@ -43,7 +43,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   // Started from the sign-in saved on this PC because 4VD couldn't be reached: asked again until it answers.
   const [fromSaved, setFromSaved] = useState(false);
+  // A switch got no answer: who is signed in here is unsure, so 4VD is asked again until it says.
+  const [unsure, setUnsure] = useState(false);
   const checking = useRef(false);
+  /** Who the screens show now: a check that names someone else (another person, another business) starts them from nothing. */
+  const shownRef = useRef(state);
+  useEffect(() => {
+    shownRef.current = state;
+  }, [state]);
   /** Moves on at every sign-out: a check of the sign-in still on its way from before then is ignored. */
   const generation = useRef(0);
 
@@ -55,6 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     generation.current += 1;
     newIdentity();
     setFromSaved(false);
+    setUnsure(false);
     setState({ status: 'signedOut' });
     queryClient.clear();
   }, [queryClient]);
@@ -70,8 +78,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .then(async (user) => {
           await loadPermissions();
           if (asked !== generation.current) return;
+          const before = shownRef.current;
+          if (before.status === 'signedIn' && !sameSignIn(before.user, user)) {
+            // 4VD names someone else than the screens show (a switch whose answer was lost, then a start from the saved
+            // sign-in): nothing fetched or saved for the last one may be kept or written as theirs.
+            newIdentity();
+            queryClient.clear();
+          }
           setLanguage(user.language);
           setFromSaved(false);
+          setUnsure(false);
+          releaseSavedMe();
           setState({ status: 'signedIn', user });
         })
         .catch(async (error: unknown) => {
@@ -114,9 +131,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     restore(true);
   }, [restore, endSession]);
 
-  // Started without internet: 4VD is asked again when the connection comes back, and every half minute.
+  /** Ask 4VD again who is signed in here (a switch got no answer): whoever it names is shown and saved. */
+  const recheck = useCallback(() => {
+    setUnsure(true);
+    restore(false);
+  }, [restore]);
+
+  // Started without internet (or a switch got no answer): 4VD is asked again when the connection comes back, and every half minute.
   useEffect(() => {
-    if (!fromSaved) return;
+    if (!fromSaved && !unsure) return;
     const again = () => restore(false);
     window.addEventListener('online', again);
     const timer = window.setInterval(again, RECHECK_MS);
@@ -124,7 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('online', again);
       window.clearInterval(timer);
     };
-  }, [fromSaved, restore]);
+  }, [fromSaved, unsure, restore]);
 
   // Who is signed in here, kept for a start without internet (only what 4VD itself said, never the saved copy again).
   const confirmedUser = state.status === 'signedIn' && !fromSaved ? state.user : null;
@@ -196,6 +219,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // A new person here: nothing fetched before belongs to them.
     newIdentity();
     queryClient.clear();
+    releaseSavedMe();
     setState({ status: 'signedIn', user: settleLanguage(user) });
     loadPlace();
     return null;
@@ -218,6 +242,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // and the new person is saved for a start without internet at once. Anyone else starts from nothing.
     newIdentity();
     if (!place) queryClient.clear();
+    releaseSavedMe();
     setState({ status: 'signedIn', user: settleLanguage(place ? { ...result.user, ...place } : result.user) });
     loadPlace();
     return 'signedIn';
@@ -241,7 +266,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // The developer previewing another role: every screen draws as that role (the API answers as it too).
     const viewingAs = state.status === 'signedIn' && (state.user.role === 'developer' || state.user.role === 'main_admin') ? readViewAs() : null;
     const shown: AuthState = viewingAs && state.status === 'signedIn' ? { status: 'signedIn', user: { ...state.user, role: viewingAs } } : state;
-    return { state: shown, viewingAs, login, logout, adoptSession, updateUser };
-  }, [state, login, logout, adoptSession, updateUser]);
+    return { state: shown, viewingAs, login, logout, adoptSession, updateUser, recheck };
+  }, [state, login, logout, adoptSession, updateUser, recheck]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

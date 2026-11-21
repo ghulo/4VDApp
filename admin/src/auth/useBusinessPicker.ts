@@ -7,10 +7,10 @@ import { basketsWaiting } from '../pages/counter/useBaskets';
 import { unprintedWaiting } from '../pages/counter/useFiscalPrinter';
 import { authApi } from '../services/api';
 import { errorMessage } from '../utils/errors';
-import { useCurrentUser } from './useAuth';
+import { useAuth, useCurrentUser } from './useAuth';
 import { announceSwitch } from './businessSwitch';
 import { forgetViewAs } from './viewAs';
-import { forgetSavedMe, saveMe } from '../offline/savedCopy';
+import { definiteRefusal, holdSavedMe, releaseSavedMe, saveMe } from '../offline/savedCopy';
 import { currentPermissions } from './permissions';
 
 /**
@@ -38,6 +38,7 @@ export function useBusinessPicker(): MenuItem[] {
 /** Opens the app again from Home in another business (the picker, and Add business's "Open it now"). */
 export function useSwitchBusiness(): (businessId: number) => Promise<void> {
   const user = useCurrentUser();
+  const { recheck } = useAuth();
   const t = useT();
   const toast = useToast();
   return async (businessId: number) => {
@@ -47,15 +48,21 @@ export function useSwitchBusiness(): (businessId: number) => Promise<void> {
       return;
     }
     // The saved sign-in names the business being left: an offline start right after the switch must not reopen it.
-    forgetSavedMe();
+    holdSavedMe();
     try {
       await authApi.switchBusiness(businessId);
       forgetViewAs();
       announceSwitch(businessId);
       window.location.assign('/');
     } catch (error) {
-      // Still in the same business: it is saved again.
-      if (user.businessId !== undefined) saveMe(user, currentPermissions());
+      if (definiteRefusal(error)) {
+        // 4VD said no: still in the same business, saved again.
+        releaseSavedMe();
+        if (user.businessId !== undefined) saveMe(user, currentPermissions());
+      } else {
+        // No answer: the switch may have happened. Nothing is saved until 4VD says which business this is.
+        recheck();
+      }
       toast({ title: t.nav.switchFailed, detail: errorMessage(error), tone: 'danger' });
     }
   };

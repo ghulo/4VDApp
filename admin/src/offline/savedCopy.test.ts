@@ -1,7 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { User } from '../services/types';
-import { copyOf, COPY_MAX_AGE_MS, currentIdentity, fillFrom, forgetSaved, newIdentity, noAnswer, restoreTillCopy, savedMe, saveMe, saveTillCopy, tillCopyKeys } from './savedCopy';
+import { copyOf, COPY_MAX_AGE_MS, currentIdentity, definiteRefusal, holdSavedMe, releaseSavedMe, fillFrom, forgetSaved, newIdentity, noAnswer, restoreTillCopy, sameSignIn, savedMe, saveMe, saveTillCopy, tillCopyKeys } from './savedCopy';
 import { tillShelfKey } from '../pages/counter/shelfAfterSale';
 import { ApiError } from '../services/apiClient';
 
@@ -32,6 +32,37 @@ describe('the saved sign-in', () => {
     expect(noAnswer(new ApiError('slow down', 429, null))).toBe(true);
     expect(noAnswer(new ApiError('signed out', 401, null))).toBe(false);
     expect(noAnswer(new ApiError('not allowed', 403, null))).toBe(false);
+  });
+
+  it('a switch on its way saves nobody until 4VD names who is signed in', () => {
+    saveMe(user, null, 1_000);
+    holdSavedMe();
+    expect(savedMe(2_000)).toBeNull();
+    // A profile save meanwhile (the screens still show the person being left) saves nothing.
+    saveMe(user, null, 1_500);
+    expect(savedMe(2_000)).toBeNull();
+    releaseSavedMe();
+    saveMe({ ...user, businessId: 4 }, null, 1_600);
+    expect(savedMe(2_000)?.user.businessId).toBe(4);
+  });
+
+  it('only a clear no to a switch counts as refused; a lost answer may hide a switch that happened', () => {
+    expect(definiteRefusal(new ApiError('wrong PIN', 422, 'WRONG_PIN'))).toBe(true);
+    expect(definiteRefusal(new ApiError('locked', 429, 'PIN_LOCKED'))).toBe(true);
+    expect(definiteRefusal(new ApiError('not allowed', 403, null))).toBe(true);
+    expect(definiteRefusal(new ApiError('signed out', 401, null))).toBe(false);
+    expect(definiteRefusal(new ApiError('timeout', 408, null))).toBe(false);
+    expect(definiteRefusal(new ApiError('no answer', 0, 'NETWORK'))).toBe(false);
+    expect(definiteRefusal(new ApiError('busy', 503, null))).toBe(false);
+    // The switch went through but its answer's body was cut off.
+    expect(definiteRefusal(new ApiError('The server answered with status 200', 200, null))).toBe(false);
+    expect(definiteRefusal(new TypeError('Failed to fetch'))).toBe(false);
+  });
+
+  it('a check that names another person or another business is not the same sign-in', () => {
+    expect(sameSignIn(user, { ...user })).toBe(true);
+    expect(sameSignIn(user, { ...user, businessId: 4 })).toBe(false);
+    expect(sameSignIn(user, { ...user, id: 8 })).toBe(false);
   });
 
   it('reads nothing from a broken note', () => {

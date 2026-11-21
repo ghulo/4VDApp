@@ -39,6 +39,8 @@ export interface SavedMe {
 
 /** Signed in (or checked) just now: keep who it is, for a start without internet. */
 export function saveMe(user: User, permissions: Permissions | null, now = Date.now()): void {
+  // A switch whose outcome isn't known yet: nobody is saved until 4VD names who is signed in here.
+  if (held) return;
   try {
     localStorage.setItem(ME_KEY, JSON.stringify({ user, permissions, savedAt: now } satisfies SavedMe));
   } catch {
@@ -68,6 +70,37 @@ export const currentIdentity = (): number => identity;
 export function newIdentity(): number {
   identity += 1;
   return identity;
+}
+
+/**
+ * 4VD refused a switch for certain (a 4xx answer: wrong or locked PIN, not allowed): nothing changed on its side.
+ * Not a lost or cut-off answer (no internet, a timeout, a busy server, a body that never arrived: the switch may have
+ * happened), and not "signed out" (401: the session is over, nobody is saved again).
+ */
+export function definiteRefusal(error: unknown): boolean {
+  return error instanceof ApiError && error.status >= 400 && error.status < 500 && error.status !== 401 && error.status !== 408;
+}
+
+let held = false;
+
+/**
+ * A switch (business, or cashier at the Counter) is on its way: the saved sign-in is forgotten and nothing is saved
+ * again until 4VD names who is signed in (a confirmed answer: releaseSavedMe), so an offline start never reopens the
+ * person or business being left. An offline start meanwhile shows the sign-in page.
+ */
+export function holdSavedMe(): void {
+  held = true;
+  forgetSavedMe();
+}
+
+/** 4VD named who is signed in here (or refused the switch for certain): the saved sign-in may be written again. */
+export function releaseSavedMe(): void {
+  held = false;
+}
+
+/** Whether 4VD's answer names the same person in the same business as the one the screens show. */
+export function sameSignIn(shown: Pick<User, 'id' | 'businessId'>, answer: Pick<User, 'id' | 'businessId'>): boolean {
+  return shown.id === answer.id && shown.businessId === answer.businessId;
 }
 
 /** The saved sign-in no longer names who is signed in (a switch of business or cashier is under way): an offline start shows the sign-in page until 4VD names the new one. */

@@ -18,6 +18,8 @@ export interface AuthContextValue {
   adoptSession: (result: LoginResult, place?: Pick<User, 'businessId' | 'businesses'>) => Promise<'signedIn' | 'notAdmin'>;
   /** Replace the signed-in person's details after they edit their profile. */
   updateUser: (user: User) => void;
+  /** Ask 4VD again who is signed in here (a switch got no answer); whoever it names is shown and saved for an offline start. */
+  recheck: () => void;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

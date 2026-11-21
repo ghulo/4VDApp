@@ -4928,6 +4928,10 @@ export const sq: Catalogue = {
     nothingPicked: 'Zgjidh çfarë kthehet',
     otherInvoice: 'Faturë tjetër',
     logOut: 'Dil',
+    logOutAsk: 'Të dalësh nga arka?',
+    logOutHint: 'Shportat dhe shitjet që presin të dërgohen mbeten në këtë pajisje.',
+    logOutStay: 'Qëndro',
+    camera: 'Skano',
     columns: { number: 'Nr.', code: 'Kodi', product: 'Produkti', quantity: 'Sasia', price: 'Çmimi', rabat: 'Rabati', vat: 'TVSH', total: 'Totali', left: 'Mbeten' },
     reason: {
       offer: 'Çmim oferte',

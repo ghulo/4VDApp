@@ -41,7 +41,7 @@ import { useSearchParams } from 'react-router';
 import { afterDiscount, parsePercent, roundMoney, unitPriceFor } from '../components/BasketForm';
 import { CameraScanSheet, type ScanStatus } from '../components/CameraScanner';
 import { LogoMark } from '../components/LogoMark';
-import { Badge, Button, ButtonLink, MenuButton, type MenuItem } from '../components/ui';
+import { Badge, Button, ButtonLink, MenuButton, type MenuItem, Sheet } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { type BasketSale, businessApi, cashApi, counterApi, customersApi, documentsApi, expiryApi, offersApi, productsApi, salesApi, serialsApi, settingsApi } from '../services/api';
 import { useFeatures } from '../utils/useFeatures';
@@ -315,6 +315,12 @@ export function CounterPage() {
   };
   // Pay shows only for the basket it was opened for.
   const payOpen = panel === 'pay' && payFor?.basketId === current.id;
+  const [askLogOut, setAskLogOut] = useState(false);
+  // On a phone the checkout sits under the lines: when Pay opens, it scrolls into view.
+  const sideRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (payOpen && window.matchMedia?.('(max-width: 999px)').matches) sideRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }, [payOpen]);
   // A kept payment goes once its basket changes or closes: changing the basket back never brings an old payment back.
   useEffect(() => {
     for (const [id, kept] of keptPays.current) {
@@ -1578,6 +1584,8 @@ export function CounterPage() {
       : []),
     ...(keysEnabled && settings.data?.drawerConnected ? [{ label: t.counter.openDrawer, icon: CashRegister, onSelect: () => startPanel('drawer') }] : []),
   ];
+  // Log out sits in the Till menu, last and asked first: on a phone it was a tap away from Home.
+  if (counterOnly(user.role)) tillItems.push({ label: t.counter.logOut, icon: SignOut, divider: tillItems.length > 0, onSelect: () => setAskLogOut(true) });
 
   return (
     <div className="counter">
@@ -1669,13 +1677,10 @@ export function CounterPage() {
           </Button>
           {counterOnly(user.role) ? (
             <>
-              {/* On a phone these two shrink to their icons, so the printer's state keeps its room. */}
+              {/* On a phone it shrinks to its icon, so the printer's state keeps its room. */}
               <ButtonLink size="sm" variant="ghost" icon={ArrowLeft} to="/" aria-label={t.staff.nav.home} title={t.staff.nav.home}>
                 <span className="counter__bar-label">{t.staff.nav.home}</span>
               </ButtonLink>
-              <Button size="sm" variant="ghost" icon={SignOut} onClick={() => void logout()} aria-label={t.counter.logOut} title={t.counter.logOut}>
-                <span className="counter__bar-label">{t.counter.logOut}</span>
-              </Button>
             </>
           ) : (
             <ButtonLink size="sm" variant="ghost" icon={ArrowLeft} to="/sales">
@@ -1816,7 +1821,7 @@ export function CounterPage() {
           </div>
         </section>
 
-        <aside className="counter-side" aria-label={t.counter.keys}>
+        <aside ref={sideRef} className="counter-side" aria-label={t.counter.keys}>
           {payOpen ? (
             <PayPanel
               total={total}
@@ -2016,6 +2021,37 @@ export function CounterPage() {
           )}
         </aside>
       </main>
+
+      {/* A phone: the camera and the total with Pay stay at the bottom, in reach of the thumb, however long the basket. */}
+      {!payOpen && (
+        <div className="counter-paybar">
+          <Button
+            icon={Camera}
+            className="counter-paybar__scan"
+            onClick={() => {
+              setCameraRead(null);
+              setCameraOpen(true);
+            }}
+          >
+            {t.counter.camera}
+          </Button>
+          <Button variant="primary" className="counter-paybar__pay" disabled={!hasLines} onClick={() => startPanel('pay')}>
+            <span>{t.counter.pay}</span>
+            <span className="counter-paybar__total">{formatMoney(total)}</span>
+          </Button>
+        </div>
+      )}
+
+      <Sheet open={askLogOut} onClose={() => setAskLogOut(false)} title={t.counter.logOutAsk} description={t.counter.logOutHint} placement="center">
+        <div className="form-actions">
+          <Button variant="ghost" onClick={() => setAskLogOut(false)}>
+            {t.counter.logOutStay}
+          </Button>
+          <Button variant="danger" icon={SignOut} onClick={() => void logout()}>
+            {t.counter.logOut}
+          </Button>
+        </div>
+      </Sheet>
 
 
       {serialLine && (

@@ -276,6 +276,13 @@
         "content-clipping"
       ],
       "reason": "A closed fold on Settings → Import: the browser hides its rows until it is opened, so they read as clipped."
+    },
+    {
+      "selector": ".counter-scan__field input",
+      "rules": [
+        "target-size"
+      ],
+      "reason": "Flagged only while the Till menu is open and lies over the scan box; the menu closes on any tap outside it, and the box is full size otherwise."
     }
   ]
 }

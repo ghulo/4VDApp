@@ -4954,6 +4954,10 @@ export const en = {
     nothingPicked: 'Pick what comes back',
     otherInvoice: 'Another invoice',
     logOut: 'Log out',
+    logOutAsk: 'Log out of the till?',
+    logOutHint: 'Baskets and sales waiting to be sent stay on this device.',
+    logOutStay: 'Stay',
+    camera: 'Scan',
     columns: { number: 'No.', code: 'Code', product: 'Product', quantity: 'Qty', price: 'Price', rabat: 'Rabat', vat: 'VAT', total: 'Total', left: 'Left' },
     reason: {
       offer: 'Offer price',

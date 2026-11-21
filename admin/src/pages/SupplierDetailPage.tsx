@@ -17,7 +17,7 @@ import { billsApi, moneyApi, ordersApi, reportsApi, suppliersApi } from '../serv
 import type { PurchaseOrder, RecordSource, Supplier, SupplierBill } from '../services/types';
 import { BILL_STATUS_TONE, todayIso } from '../utils/bills';
 import { errorMessage } from '../utils/errors';
-import { formatDate, formatHeadlineMoney, formatMoney } from '../utils/format';
+import { formatDate, formatMoney } from '../utils/format';
 import { ORDER_STATUS_TONE, orderSummary } from '../utils/orders';
 import { HistoryCard } from '../components/HistoryCard';
 import { FilesCard } from '../components/FilesCard';
@@ -90,8 +90,8 @@ export function SupplierDetailPage() {
       </Sheet>
 
       <StatGrid>
-        <StatTile label={t.bills.owed} value={formatHeadlineMoney(owed)} hint={t.bills.billsCount(unpaid.length)} to={`/bills?supplier=${id}`} />
-        <StatTile label={t.bills.overdue} value={formatHeadlineMoney(overdue)} tone={overdue > 0 ? 'danger' : 'default'} to={`/bills?supplier=${id}&status=overdue`} />
+        <StatTile label={t.bills.owed} value={formatMoney(owed)} hint={t.bills.billsCount(unpaid.length)} to={`/bills?supplier=${id}`} />
+        <StatTile label={t.bills.overdue} value={formatMoney(overdue)} tone={overdue > 0 ? 'danger' : 'default'} to={`/bills?supplier=${id}&status=overdue`} />
         <StatTile label={t.orders.onTheWay} value={onTheWay.length} hint={onTheWay.length > 0 ? t.suppliers.ordersWaiting : undefined} to={`/orders?supplier=${id}&show=open`} />
         <StatTile
           label={t.suppliers.runningLow}

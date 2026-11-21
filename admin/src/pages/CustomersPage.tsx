@@ -138,7 +138,7 @@ export function CustomersPage() {
         <StatGrid>
           <StatTile
             label={t.tabs.totalOwed}
-            value={formatHeadlineMoney(owing.reduce((sum, customer) => sum + customer.balance, 0))}
+            value={formatMoney(owing.reduce((sum, customer) => sum + customer.balance, 0))}
             hint={owing.length > 0 ? t.customers.owingCount(owing.length) : undefined}
             to={filterLink('owes')}
           />
@@ -151,7 +151,7 @@ export function CustomersPage() {
           <StatTile label={t.customers.boughtThisMonth} value={boughtThisMonth} hint={t.customers.boughtThisMonthHint} />
           <StatTile
             label={t.customers.creditHeld}
-            value={formatHeadlineMoney(-withCredit.reduce((sum, customer) => sum + customer.balance, 0))}
+            value={formatMoney(-withCredit.reduce((sum, customer) => sum + customer.balance, 0))}
             hint={withCredit.length > 0 ? t.customers.creditCount(withCredit.length) : undefined}
           />
         </StatGrid>

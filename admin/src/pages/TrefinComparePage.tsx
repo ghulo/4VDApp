@@ -9,7 +9,7 @@ import { useT } from '../i18n/useT';
 import { vatApi } from '../services/api';
 import type { TrefinCompare, TrefinCompareRow, TrefinCompareSide } from '../services/types';
 import { errorMessage } from '../utils/errors';
-import { formatDate, formatDateTime, formatHeadlineMoney, formatMoney } from '../utils/format';
+import { formatDate, formatDateTime, formatMoney } from '../utils/format';
 import { CHARGED_ROWS, CLAIM_ROWS, formatMonth, itemLink } from '../utils/vat';
 import { rowWords, useMonthParam } from '../utils/vatMonth';
 import { MonthPicker } from './VatPages';
@@ -133,8 +133,8 @@ export function TrefinComparePage() {
         <div className="compare" aria-busy={compare.isFetching}>
           <p className="compare-loaded">{c.loadedFrom(data.loaded.source ?? 'TREFIN', formatDateTime(data.loaded.at))}</p>
           <StatGrid compact>
-            <StatTile label={c.tiles.fourVd} value={formatHeadlineMoney(data.totals.fourVd.toPay)} />
-            <StatTile label={c.tiles.trefin} value={formatHeadlineMoney(data.totals.trefin.toPay)} />
+            <StatTile label={c.tiles.fourVd} value={formatMoney(data.totals.fourVd.toPay)} />
+            <StatTile label={c.tiles.trefin} value={formatMoney(data.totals.trefin.toPay)} />
             <StatTile label={c.tiles.gap} value={signed(gap)} hint={c.tiles.gapHint} tone={gap === 0 ? 'default' : 'warn'} />
             <StatTile label={c.tiles.explained} value={c.tiles.explainedValue(data.counts.explained, data.counts.differs)} hint={c.tiles.explainedHint(data.counts.same + data.counts.rounding)} tone={open > 0 ? 'warn' : 'default'} />
           </StatGrid>

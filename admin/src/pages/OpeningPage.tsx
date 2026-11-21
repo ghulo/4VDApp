@@ -12,7 +12,7 @@ import { useT } from '../i18n/useT';
 import { booksApi, moneyApi } from '../services/api';
 import { ACCOUNT_CLASSES, type OpeningBalances, type OpeningLine, type OpeningLineKind, TYPED_OPENING_SOURCES } from '../services/types';
 import { errorMessage } from '../utils/errors';
-import { formatDate, formatDateTime, formatHeadlineMoney, formatMoney } from '../utils/format';
+import { formatDate, formatDateTime, formatMoney } from '../utils/format';
 
 type Catalogue = ReturnType<typeof useT>;
 type TypedSource = (typeof TYPED_OPENING_SOURCES)[number];
@@ -131,9 +131,9 @@ export function OpeningPage() {
           {!posted && <TrefinNotice t={t} trefin={data.trefin} />}
 
           <StatGrid compact>
-            <StatTile label={o.tiles.has} value={formatHeadlineMoney(data.debits)} />
-            <StatTile label={o.tiles.owes} value={formatHeadlineMoney(data.credits)} />
-            <StatTile label={o.tiles.capital} value={formatHeadlineMoney(data.capital.amount)} hint={o.tiles.capitalHint} />
+            <StatTile label={o.tiles.has} value={formatMoney(data.debits)} />
+            <StatTile label={o.tiles.owes} value={formatMoney(data.credits)} />
+            <StatTile label={o.tiles.capital} value={formatMoney(data.capital.amount)} hint={o.tiles.capitalHint} />
             <StatTile
               label={o.tiles.confirmed}
               value={o.tiles.confirmedValue(data.confirmed, data.lines.length)}

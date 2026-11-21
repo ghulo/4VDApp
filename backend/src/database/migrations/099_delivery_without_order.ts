@@ -16,6 +16,14 @@ export async function up(db: Kysely<unknown>): Promise<void> {
   await sql`ALTER TABLE bill_scans ADD COLUMN arrived_order_id INT REFERENCES purchase_orders(id)`.execute(db);
 }
 
+/**
+ * Safe as written only before anyone has used the feature. Once deliveries
+ * came in this way, rolling back loses their replay keys and unlinks their
+ * waiting bill photos, and the older code would then receive such a photo's
+ * goods a second time on confirm. So before running it on live data: confirm
+ * or discard every waiting scan with arrived_order_id set, and expect a
+ * resend of an old arrival key to put its goods in again.
+ */
 export async function down(db: Kysely<unknown>): Promise<void> {
   await sql`ALTER TABLE bill_scans DROP COLUMN IF EXISTS arrived_order_id`.execute(db);
   await sql`DROP INDEX IF EXISTS purchase_orders_arrival_key`.execute(db);

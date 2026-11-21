@@ -307,4 +307,77 @@ describe('review fixes: replays, races, zero lines, the accountant', () => {
     expect((await send(count === 4 ? 3 : 4)).status).toBe(409);
     expect(await stockOf(chairId)).toBe(10 + count);
   });
+
+  it('should put a line ticked off as 0 into stock from the bill, and take it back out on reopen', async () => {
+    const developerToken = await loginAs(context, 'developer');
+    const ordered = (await api().post('/api/orders').set(auth()).send({ supplierId, lines: [{ productId: chairId, quantity: 4, unitCost: 60 }, { productId: tableId, quantity: 1, unitCost: 200 }] })).body.data;
+    await api()
+      .post(`/api/orders/${ordered.id}/receive`)
+      .set(auth(staffToken))
+      .send({ lines: [{ lineId: ordered.lines[0].id, receivedQuantity: 0 }, { lineId: ordered.lines[1].id, receivedQuantity: 1 }] })
+      .expect(200);
+    const { id } = await photo(ordered.id);
+
+    await api()
+      .post(`/api/bill-scans/${id}/confirm`)
+      .set(auth())
+      .send(confirmBody(null, [{ pieces: 4, unitCost: 55 }, { productId: tableId, pieces: 1, unitCost: 190 }], 410))
+      .expect(200);
+    expect(await stockOf(chairId)).toBe(14);
+    expect(await stockOf(tableId)).toBe(1);
+    expect((await order(ordered.id)).lines.map((line: { receivedQuantity: number; unitCost: number }) => [line.receivedQuantity, line.unitCost])).toEqual([
+      [4, 55],
+      [1, 190],
+    ]);
+
+    await api().post(`/api/bill-scans/${id}/reopen`).set(auth(developerToken)).expect(200);
+    expect(await stockOf(chairId)).toBe(10);
+    expect((await order(ordered.id)).lines.map((line: { receivedQuantity: number; unitCost: number }) => [line.receivedQuantity, line.unitCost])).toEqual([
+      [0, 60],
+      [1, 200],
+    ]);
+  });
+
+  it("should let the accountant check and save a delivery's bill, but not put goods in or add products", async () => {
+    const accountantToken = await loginAs(context, 'accountant');
+    reader.reading = reading([
+      { name: 'Oak Chair', quantity: 3, unitPrice: 50 },
+      { name: 'Oak Table', quantity: 1, unitPrice: 180 },
+    ]);
+    const { id: orderId } = (await arrive()).body.data;
+    const { id } = await photo(orderId);
+    const todo = (await api().get('/api/attention').set(auth(accountantToken))).body.data.todo;
+    expect(todo.map((item: { key: string }) => item.key)).toContain(`bill_scan:${id}`);
+    expect((await api().get(`/api/bill-scans/${id}`).set(auth(accountantToken))).status).toBe(200);
+
+    // The table wasn't counted: putting it in is the owner's.
+    const withTable = await api().post(`/api/bill-scans/${id}/confirm`).set(auth(accountantToken)).send(confirmBody(null, [{}, { productId: tableId, pieces: 1, unitCost: 180 }], 330));
+    expect(withTable.status).toBe(403);
+    const newProduct = await api()
+      .post(`/api/bill-scans/${id}/confirm`)
+      .set(auth(accountantToken))
+      .send(confirmBody(null, [{ productId: null, newProduct: { name: 'Pine Stool', barcode: null, price: 30, vatRate: 18 } }]));
+    expect(newProduct.status).toBe(403);
+    expect(await stockOf(tableId)).toBe(0);
+
+    await api().post(`/api/bill-scans/${id}/confirm`).set(auth(accountantToken)).send(confirmBody(null, [{}], 150)).expect(200);
+    expect((await order(orderId)).bill).toMatchObject({ amount: 150 });
+    expect(await stockOf(chairId)).toBe(13);
+
+    // An ordinary scan (goods not in yet) stays the owner's.
+    reader.reading = reading();
+    const ordinary = (await api().post('/api/bill-scans').set(auth(staffToken)).send({ pages: [{ mime: 'image/png', data: PNG }] })).body.data;
+    expect((await api().post(`/api/bill-scans/${ordinary.id}/confirm`).set(auth(accountantToken)).send(confirmBody(null, [{}]))).status).toBe(403);
+    expect((await api().post(`/api/bill-scans/${ordinary.id}/discard`).set(auth(accountantToken))).status).toBe(403);
+  });
+
+  it('should flag a bill that names another supplier and keep it off the phone check', async () => {
+    await api().post('/api/suppliers').set(auth()).send({ name: 'Other Co', nui: '811234568' }).expect(201);
+    reader.reading = { ...reading(), supplier: { name: 'Other Co', nui: '811234568' } };
+    const { id: orderId } = (await arrive()).body.data;
+    const { id } = await photo(orderId);
+
+    expect((await api().get(`/api/bill-scans/${id}`).set(auth())).body.data.arrival.billSupplier).toBe('Other Co');
+    expect((await api().get(`/api/bill-scans/${id}/quick`).set(auth())).body.data.blockers).toContain('supplier');
+  });
 });

@@ -546,7 +546,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     team: [authenticated, requireAnyPower('sell', 'books')] as RequestHandler[],
     /** The money side: the books, VAT, bills, invoices, expenses and reports; the accountant too. */
     books: [authenticated, requirePower('books')] as RequestHandler[],
-    /** Supplier bills: the people who run the shop, and the accountant (bills only: never stock, products or their costs). */
+    /** Supplier bills and scanned bills: the people who run the shop, and the accountant (bills only: never stock, products or their costs; the services refuse those). */
     billWriters: [authenticated, requireAnyPower('oversee', 'books')] as RequestHandler[],
     filing: [authenticated, requirePower('filing')] as RequestHandler[],
     /** Hand-written entries in the books: managers and the accountant. */

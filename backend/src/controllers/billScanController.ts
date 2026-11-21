@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import { hasPower } from '../utils/roles.js';
 import type { BillScanService } from '../services/BillScanService.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 import { confirmCustomsSchema, confirmScanSchema, scanQuerySchema, scanUploadSchema } from '../validators/orderValidators.js';
@@ -23,7 +24,9 @@ export function createBillScanController(scanService: BillScanService) {
 
     async confirm(req: Request, res: Response): Promise<void> {
       const { id } = parseInput(idParamsSchema, req.params);
-      sendSuccess(res, await scanService.confirm(id, parseInput(confirmScanSchema, req.body), req.user!.id), { message: 'Bill confirmed' });
+      // Only those who run the shop change stock and products from a bill.
+      const onlyTheBill = !hasPower(req.user!.role, 'oversee');
+      sendSuccess(res, await scanService.confirm(id, parseInput(confirmScanSchema, req.body), req.user!.id, new Date(), onlyTheBill), { message: 'Bill confirmed' });
     },
 
     async confirmCustoms(req: Request, res: Response): Promise<void> {

@@ -260,6 +260,10 @@ const ACCESS: Record<keyof typeof WHO, string[]> = {
     // Adding a supplier bill: the accountant too (bills only; the service refuses product lines for them).
     'POST /api/bills/preview',
     'POST /api/bills/',
+    // Scanned bills: the accountant checks and saves the bill of a delivery already in stock (the service refuses the rest).
+    'GET /api/bill-scans/',
+    'GET /api/bill-scans/:id',
+    'POST /api/bill-scans/:id/confirm',
     'GET /api/sales/',
     'GET /api/sales/checkouts',
     'GET /api/documents/',
@@ -461,11 +465,8 @@ const ACCESS: Record<keyof typeof WHO, string[]> = {
     'DELETE /api/money/rules/:id',
     'GET /api/counter/people',
     'GET /api/counter/events',
-    'GET /api/bill-scans/',
-    'GET /api/bill-scans/:id',
     'GET /api/bill-scans/:id/quick',
     'POST /api/bill-scans/:id/quick-confirm',
-    'POST /api/bill-scans/:id/confirm',
     'POST /api/bill-scans/:id/customs',
     'POST /api/bill-scans/:id/discard',
     'GET /api/bill-emails/',

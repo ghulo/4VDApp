@@ -1,6 +1,6 @@
 import { currentBusinessId } from '../database/businessContext.js';
 import { DEFAULT_REORDER_LEVEL, SYSTEM_STOCK_REASONS } from '../constants/stock.js';
-import { AiUnavailableError, ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
+import { ForbiddenError, AiUnavailableError, ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { BillScanRecord, BillScanRepository } from '../repositories/BillScanRepository.js';
 import type { ProductRepository } from '../repositories/ProductRepository.js';
 import type { PurchaseOrderRepository } from '../repositories/PurchaseOrderRepository.js';
@@ -86,6 +86,8 @@ export interface ArrivalDto {
   by: string | null;
   at: string;
   lines: Array<{ productId: number; productName: string; quantity: number }>;
+  /** The bill clearly names another supplier than the one staff picked (its tax number, or a close name). */
+  billSupplier: string | null;
 }
 
 /** What confirming a scanned customs paper sends: its figures as checked, and its bill (null: it waits for it). */
@@ -163,8 +165,12 @@ export interface ScanConfirmation {
   /** The order filled: made for this bill, or an open one with its lines as they were and the lines added. */
   order: { id: number; created: boolean; lines: Array<{ id: number; unitCost: number | null }>; addedLineIds: number[] };
   received: Array<{ productId: number; pieces: number }>;
-  /** Set when the bill was for a delivery staff already put into stock: its lines' costs before the confirm. */
-  arrival?: { lines: Array<{ id: number; unitCost: number | null }> };
+  /**
+   * Set when the bill was for a delivery staff already put into stock: its
+   * lines as they were before the confirm (cost, and what was received when
+   * the confirm changed that: a line ticked off as 0 that the bill brought).
+   */
+  arrival?: { lines: Array<{ id: number; unitCost: number | null; receivedQuantity?: number }> };
 }
 
 /**
@@ -312,6 +318,7 @@ export class BillScanService {
     const arrived = scan.arrived_order_id === null ? undefined : await this.orderRepository.findOrder(scan.arrived_order_id);
     // A delivery staff put in came from the supplier they picked.
     const supplier = arrived && !supplierId ? { id: arrived.supplier_id, name: arrived.supplier_name, matchedBy: 'chosen' as const } : await this.findSupplier(reading, supplierId);
+    const onBill = arrived ? await this.findSupplier(reading) : null;
 
     const [products, codes, orders, bills, mimes, arrivedLines] = await Promise.all([
       this.productRepository.findAllForMatching(),
@@ -374,6 +381,7 @@ export class BillScanService {
             by: arrived.created_by_name,
             at: arrived.created_at.toISOString(),
             lines: arrivedLines.map((line) => ({ productId: line.product_id, productName: line.product_name, quantity: Number(line.received_quantity ?? line.quantity) })),
+            billSupplier: onBill && onBill.id !== arrived.supplier_id ? onBill.name : null,
           }
         : null,
     };
@@ -393,7 +401,8 @@ export class BillScanService {
     // A customs paper is checked on the dashboard, where its bill is picked.
     if (reading.kind === 'customs') blockers.push('customs');
     if (scan.status !== 'waiting') blockers.push('decided');
-    if (!scan.supplier) blockers.push('supplier');
+    // No supplier, or a delivery whose bill names someone else: checked on the dashboard.
+    if (!scan.supplier || scan.arrival?.billSupplier) blockers.push('supplier');
     if (scan.duplicateBillId !== null) blockers.push('duplicate');
     if (!scan.totals.adds) blockers.push('totals');
     if (scan.lines.length === 0) blockers.push('no_lines');
@@ -485,7 +494,8 @@ export class BillScanService {
     return best && score >= 0.5 ? { id: best.id, name: best.name, matchedBy: 'name' } : null;
   }
 
-  async confirm(id: number, input: ConfirmScanInput, actorId: number, now = new Date()): Promise<{ billId: number; orderId: number }> {
+  /** `onlyTheBill`: the accountant, who saves the bill and its costs but never changes stock or products. */
+  async confirm(id: number, input: ConfirmScanInput, actorId: number, now = new Date(), onlyTheBill = false): Promise<{ billId: number; orderId: number }> {
     const result = await this.transactions.run(async (repos) => {
       await repos.billScans.lock(id);
       const scan = await repos.billScans.findById(id);
@@ -496,6 +506,10 @@ export class BillScanService {
       const supplier = await repos.orders.findSupplier(input.supplierId);
       if (!supplier) throw new NotFoundError(`Supplier ${input.supplierId} does not exist`);
       const arrival = scan.arrived_order_id === null ? null : await this.arrivalFor(repos, scan.arrived_order_id, input);
+      if (onlyTheBill) {
+        if (!arrival) throw new ForbiddenError('Only the owner can confirm this bill: it puts its goods into stock');
+        if (input.lines.some((line) => line.productId === null || line.updateBarcode)) throw new ForbiddenError('Only the owner can add products or change barcodes from a bill');
+      }
       // A delivery already in stock may have a bill with no lines read: its figures alone are the bill.
       if (!arrival && input.lines.length === 0) throw new ValidationError('Nothing to receive: every line was skipped');
 
@@ -542,7 +556,7 @@ export class BillScanService {
       }
 
       if (arrival) {
-        Object.assign(confirmation, await this.fillArrival(repos, arrival, received, input, actorId));
+        Object.assign(confirmation, await this.fillArrival(repos, arrival, received, input, actorId, onlyTheBill));
       } else {
         confirmation.order = await this.orderFor(repos, input, received, actorId);
         confirmation.received = [...received].map(([productId, came]) => ({ productId, pieces: came.pieces }));
@@ -637,6 +651,7 @@ export class BillScanService {
 
   /** The delivery staff put into stock for this bill, checked against what the confirm says. */
   private async arrivalFor(repos: TransactionalRepositories, orderId: number, input: ConfirmScanInput): Promise<OrderRecord> {
+    await repos.orders.lock(orderId);
     const order = await repos.orders.findOrder(orderId);
     if (!order || order.status !== 'received') throw new ConflictError('The delivery this bill came with is no longer in stock');
     if (order.supplier_id !== input.supplierId) throw new ValidationError(`This delivery came from ${order.supplier_name}: confirm its bill with that supplier`);
@@ -648,7 +663,8 @@ export class BillScanService {
   /**
    * The bill of a delivery staff already put into stock: what they counted
    * stays as counted (the stock is right), each counted product takes the
-   * bill's cost, and products on the bill they didn't count come in now.
+   * bill's cost, and what they didn't count comes in now as the bill says:
+   * products not on the delivery, and lines ticked off as 0.
    */
   private async fillArrival(
     repos: TransactionalRepositories,
@@ -656,18 +672,30 @@ export class BillScanService {
     received: Map<number, { pieces: number; cost: number | null; expiresOn?: string | null }>,
     input: ConfirmScanInput,
     actorId: number,
+    onlyTheBill = false,
   ): Promise<Pick<ScanConfirmation, 'order' | 'received' | 'arrival'>> {
     const lines = await repos.orders.findLines([order.id]);
-    const counted = new Map(lines.map((line) => [line.product_id, line]));
+    const before: NonNullable<ScanConfirmation['arrival']>['lines'] = lines.map((line) => ({ id: line.id, unitCost: line.unit_cost === null ? null : Number(line.unit_cost) }));
+    const onOrder = new Map(lines.map((line) => [line.product_id, line]));
+    const counted = new Map(lines.filter((line) => Number(line.received_quantity ?? 0) > 0).map((line) => [line.product_id, line]));
     for (const [productId, came] of received) {
       const line = counted.get(productId);
-      if (line && came.cost !== null) await repos.orders.setReceived(line.id, Number(line.received_quantity ?? line.quantity), came.cost);
+      if (line && came.cost !== null) await repos.orders.setReceived(line.id, Number(line.received_quantity), came.cost);
     }
-    const extras = [...received].filter(([productId]) => !counted.has(productId));
+    // Ticked off as 0 but on the bill: that line takes the bill's quantity (put back to 0 on reopen).
+    const zeroed = [...received].filter(([productId]) => onOrder.has(productId) && !counted.has(productId));
+    for (const [productId] of zeroed) before.find((line) => line.id === onOrder.get(productId)!.id)!.receivedQuantity = 0;
+    const extras = [...received].filter(([productId]) => !onOrder.has(productId));
+    if (onlyTheBill && zeroed.length + extras.length > 0) {
+      throw new ForbiddenError('This bill has products staff didn’t count: only the owner can put them into stock. Skip those lines, or ask the owner.');
+    }
     const addedLineIds = await repos.orders.addLines(order.id, extras.map(([productId, came]) => ({ productId, quantity: came.pieces, unitCost: came.cost })));
-    const locationId = extras.length > 0 ? await pickLocation(repos, input.locationId, 'in') : null;
-    for (const [index, [productId, came]] of extras.entries()) {
-      const lineId = addedLineIds[index]!;
+    const coming = [
+      ...zeroed.map(([productId, came]) => ({ productId, came, lineId: onOrder.get(productId)!.id })),
+      ...extras.map(([productId, came], index) => ({ productId, came, lineId: addedLineIds[index]! })),
+    ];
+    const locationId = coming.length > 0 ? await pickLocation(repos, input.locationId, 'in') : null;
+    for (const { productId, came, lineId } of coming) {
       await repos.orders.setReceived(lineId, came.pieces, came.cost);
       const product = (await repos.products.findById(productId, true))!;
       await applyStockChange(repos, {
@@ -686,8 +714,8 @@ export class BillScanService {
     }
     return {
       order: { id: order.id, created: false, lines: [], addedLineIds },
-      received: extras.map(([productId, came]) => ({ productId, pieces: came.pieces })),
-      arrival: { lines: lines.map((line) => ({ id: line.id, unitCost: line.unit_cost === null ? null : Number(line.unit_cost) })) },
+      received: coming.map(({ productId, came }) => ({ productId, pieces: came.pieces })),
+      arrival: { lines: before },
     };
   }
 
@@ -778,7 +806,10 @@ export class BillScanService {
 
         if (done.arrival) {
           // The delivery staff put in stays in stock: only the costs the bill set go back.
-          for (const line of done.arrival.lines) await repos.orders.setLineCost(line.id, line.unitCost);
+          for (const line of done.arrival.lines) {
+            if (line.receivedQuantity === undefined) await repos.orders.setLineCost(line.id, line.unitCost);
+            else await repos.orders.setReceived(line.id, line.receivedQuantity, line.unitCost);
+          }
           await repos.orders.removeLines(done.order.addedLineIds);
         } else {
           await repos.orders.reopen(done.order.id, done.order.lines);

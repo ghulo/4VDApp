@@ -266,6 +266,27 @@ test('a receipt that may have printed is never printed again on a guess', async 
   assert.equal((await never.track(KEY, 'job', run)).receiptNo, '12');
 });
 
+test('a receipt that may have printed is never let go, even when the till acknowledges it', async () => {
+  let clock = 10_000;
+  const file = fresh();
+  fs.writeFileSync(file, JSON.stringify([{ key: 'maybe', job: 'job', status: 'unknown', file: 'J-1', at: 1, acked: true }]));
+  const journal = openJournal(file, { now: () => clock });
+  // Acknowledging it changes nothing: it is still there to say "look at the printer".
+  await journal.track('other', 'job', async () => ({ status: 'unknown', message: null }));
+  journal.ack('other');
+  for (let n = 0; n < MAX_ENTRIES + 5; n += 1) {
+    clock += 1;
+    await journal.track(`k${n}`, 'job', printed(String(n)));
+    journal.ack(`k${n}`);
+  }
+  clock += 400 * 24 * 3600_000;
+  await journal.track('last', 'job', printed('x'));
+  const reopened = openJournal(file);
+  assert.equal(reopened.lookup('maybe').status, 'unknown');
+  assert.equal(reopened.lookup('other').status, 'unknown');
+  assert.equal(reopened.lookup('k0'), null);
+});
+
 test('an outcome the till never acknowledged stays, however old', async () => {
   const file = fresh();
   const old = Date.now() - 400 * 24 * 3600_000;

@@ -22,9 +22,12 @@
 //   (look at the printer).
 // - An "unknown" receipt is never sent again on a guess: F-Link's folder is
 //   asked first, and if it can't say, only an owner who looked at the printer
-//   may print it again (confirmed).
+//   may print it again (confirmed). If its file is still in F-Link's folder
+//   and can't be taken back, nothing goes at all (still_queued): it may print yet.
 // - Entries the Counter hasn't acknowledged stay until it does, however old;
-//   acknowledged ones go after MAX_ENTRIES or KEEP_MS.
+//   acknowledged ones go after MAX_ENTRIES or KEEP_MS. One that may have
+//   printed ("unknown") is never acknowledged and never goes: only a print of
+//   it again (after an owner's look) settles it.
 // - A journal file that can't be read is never written over: a broken one is
 //   moved aside first, a locked one waits until it can be read.
 const realFs = require('node:fs');
@@ -106,9 +109,10 @@ function openJournal(file, options = {}) {
   function pruned() {
     const at = now();
     const all = [...entries.values()];
-    const acked = all.filter((entry) => entry.acked && entry.status !== 'printing' && at - entry.at < KEEP_MS).slice(-MAX_ENTRIES);
-    // Not acknowledged yet: the Counter may still need its number, so it stays however old it is.
-    const open = all.filter((entry) => !entry.acked || entry.status === 'printing');
+    const acked = all.filter((entry) => entry.acked && !AMBIGUOUS.has(entry.status) && at - entry.at < KEEP_MS).slice(-MAX_ENTRIES);
+    // Not acknowledged yet: the Counter may still need its number, so it stays however old it is. One that may have
+    // printed stays too, acknowledged or not: once it is gone, Print again couldn't tell it may be on paper already.
+    const open = all.filter((entry) => !entry.acked || AMBIGUOUS.has(entry.status));
     const keep = new Set([...acked, ...open]);
     for (const entry of all) if (!keep.has(entry)) entries.delete(entry.key);
     return all.filter((entry) => keep.has(entry));
@@ -240,12 +244,12 @@ function openJournal(file, options = {}) {
     }
   }
 
-  /** The Counter noted this outcome on its side: the entry may go in time. */
+  /** The Counter noted this outcome on its side: the entry may go in time (never one that may have printed: it stays until a print settles it). */
   function ack(key) {
     if (!validKey(key)) return false;
     load();
     const entry = entries.get(key);
-    if (!entry || entry.status === 'printing' || entry.acked) return Boolean(entry);
+    if (!entry || AMBIGUOUS.has(entry.status) || entry.acked) return Boolean(entry);
     entries.set(key, { ...entry, acked: true });
     return persist();
   }

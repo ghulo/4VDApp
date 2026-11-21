@@ -71,7 +71,7 @@ import { RefundSheet } from './counter/RefundSheet';
 import { readScaleLabel } from './counter/scaleLabel';
 import { playScanSound } from './counter/scanSound';
 import { type Basket, type PendingSale, useBaskets } from './counter/useBaskets';
-import { type PrintResult, type ReceiptInput, type Unprinted, useFiscalPrinter } from './counter/useFiscalPrinter';
+import { needsLook, type PrintResult, type ReceiptInput, type Unprinted, useFiscalPrinter } from './counter/useFiscalPrinter';
 import { fiscalFailure, isNetworkFailure, localStore, newSaleKey, type QueuedSale, withTimeout } from './counter/offlineQueue';
 import {
   blockedIn,
@@ -862,7 +862,20 @@ export function CounterPage() {
         for (const sale of followUpsFor(localSettledStore, who)) {
           const reason = sale.followUp?.unprinted;
           if (reason === undefined) continue;
-          const kept = keepUnprintedNow({ documentId: sale.documentId, number: sale.number, total: sale.total, at: sale.at, text: sale.text ?? '', reason, job: sale.job, businessId: sale.businessId });
+          // With its sale's key (the Windows app's journal knows its prints by it, after this note is long gone) and,
+          // when whether it came out is unknown, marked so: Print again then never prints it without someone looking.
+          const kept = keepUnprintedNow({
+            documentId: sale.documentId,
+            number: sale.number,
+            total: sale.total,
+            at: sale.at,
+            text: sale.text ?? '',
+            reason,
+            job: sale.job,
+            businessId: sale.businessId,
+            printKey: sale.key,
+            ...(sale.print === 'check' && { mayHavePrinted: true }),
+          });
           // Only once Not printed is on this PC's disk does the note let go of the receipt (and the till note go, once).
           if (!kept) continue;
           void record([{ kind: 'print_failed', documentId: sale.documentId, reason: reason.slice(0, 200) }]);
@@ -979,9 +992,9 @@ export function CounterPage() {
       const outcome = await lookupPrint(sale.key);
       if (outcome === null || outcome.kind === 'none') continue;
       if (outcome.kind === 'printing') appHas.add(sale.key);
-      else if (outcome.kind === 'unknown') {
-        if (markCheck(localSettledStore, sale.key, t.counter.printInterrupted)) ackPrint(sale.key);
-      } else if (notePrinted(localSettledStore, sale.key, outcome.result.ok ? { ok: true, fiscalNo: outcome.result.receiptNo } : { ok: false, reason: outcome.result.message })) ackPrint(sale.key);
+      // Never acknowledged: the journal keeps it, so Print again still finds that it may be on paper already.
+      else if (outcome.kind === 'unknown') markCheck(localSettledStore, sale.key, t.counter.printInterrupted);
+      else if (notePrinted(localSettledStore, sale.key, outcome.result.ok ? { ok: true, fiscalNo: outcome.result.receiptNo } : { ok: false, reason: outcome.result.message })) ackPrint(sale.key);
     }
     // A reprint whose answer the page never got: printed after all, its number is kept and it leaves Not printed.
     for (const item of unprintedNow.current) {
@@ -1256,7 +1269,8 @@ export function CounterPage() {
       if (waiting.printed(key, { text, printed: printed.ok, fiscalNo: printed.ok ? printed.receiptNo : null, reason: printed.ok ? '' : printed.message, job })) printer.ack(key);
       return offlinePrinted(key, printed);
     }
-    const item: Unprinted = { documentId: result.invoice.id, number: result.invoice.number, total: result.total, at, text, reason: '', job, businessId: attempt.businessId };
+    // With its sale's key: the Windows app's journal knows this print by it, after the till's note is long gone.
+    const item: Unprinted = { documentId: result.invoice.id, number: result.invoice.number, total: result.total, at, text, reason: '', job, businessId: attempt.businessId, printKey: key };
     // Print again (Paid screen, Not printed) waits while this very receipt is with the printer.
     printing.current.add(item.documentId);
     printingKeys.current.add(key);
@@ -1396,8 +1410,9 @@ export function CounterPage() {
       if (outcome?.kind === 'done' && outcome.result.ok) return void (await settleReprint(item, outcome.result.receiptNo));
       // It may have come out (the till lost track mid-print, F-Link's folder can't say): never printed again on a guess.
       // Someone looks at the printer; only an owner says none came out, and then it prints.
+      // The journal can't say (none there, or no Windows app to ask) for one marked "may have come out": the same look first.
       let confirmed = false;
-      if (outcome?.kind === 'unknown') {
+      if (needsLook(outcome, item)) {
         if (!canOversee(user.role)) return complain(t.counter.printer.ownerLooks);
         if (!window.confirm(t.counter.printer.reprintConfirm)) return;
         confirmed = true;

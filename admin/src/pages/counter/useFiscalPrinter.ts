@@ -36,6 +36,14 @@ export function journalOutcome(entry: JournalEntry, t: Catalogue['counter']): Pr
   return { kind: 'unknown' };
 }
 
+/**
+ * Whether Print again must wait for someone to look at the printer (only an owner may then print it): the journal says the
+ * last receipt may have come out, or it can't say (none there, or no Windows app to ask) for one marked so.
+ */
+export function needsLook(outcome: PrintOutcome | null, item: Pick<Unprinted, 'mayHavePrinted'>): boolean {
+  return outcome?.kind === 'unknown' || (item.mayHavePrinted === true && (outcome === null || outcome.kind === 'none'));
+}
+
 /** A sale that is recorded but whose receipt didn't print, kept until it does. */
 export interface Unprinted {
   documentId: number;
@@ -50,6 +58,8 @@ export interface Unprinted {
   businessId?: number;
   /** The key its last print went to the Windows app with: the app's journal says how that print came out. */
   printKey?: string;
+  /** Whether it came out is unknown (the till lost track while it printed): never printed again without someone looking. */
+  mayHavePrinted?: boolean;
 }
 
 const STORE = '4vd.counter.unprinted';

@@ -3,7 +3,7 @@ import { en } from '../../i18n/en';
 import { ApiError } from '../../services/apiClient';
 import { fiscalFailure, type QueuedSale, type QueueStore, settleInterrupted } from './offlineQueue';
 import { blockedIn, followUpDone, markCheck, noteBlocked, type SettledSale, type SettledStore, settledSale } from './settledSales';
-import { journalOutcome, type PrintOutcome } from './useFiscalPrinter';
+import { journalOutcome, needsLook, type PrintOutcome } from './useFiscalPrinter';
 
 const job = { lines: [], payment: { by: 'card' as const } };
 const waiting = (key: string, receipt: QueuedSale['receipt']): QueuedSale => ({
@@ -139,5 +139,20 @@ describe('a fiscal number 4VD says not yet to', () => {
     markCheck(store, 'b', 'Check the printer');
     expect(settledSale(store, 'a')).toMatchObject({ print: 'check', followUp: { unprinted: 'Check the printer' } });
     expect(settledSale(store, 'b')?.print).toBe('printed');
+  });
+});
+
+describe('Print again on a receipt that may have come out', () => {
+  it('waits for someone to look when the journal says unknown, or can’t say for one marked so', () => {
+    const unknown: PrintOutcome = { kind: 'unknown' };
+    const none: PrintOutcome = { kind: 'none' };
+    const failed: PrintOutcome = { kind: 'done', result: { ok: false, message: 'Out of paper' } };
+    expect(needsLook(unknown, {})).toBe(true);
+    // The journal lost it (or there is no Windows app to ask): the mark still asks for the look.
+    expect(needsLook(none, { mayHavePrinted: true })).toBe(true);
+    expect(needsLook(null, { mayHavePrinted: true })).toBe(true);
+    // A clear answer about its last print wins (an owner already looked before that one went).
+    expect(needsLook(failed, { mayHavePrinted: true })).toBe(false);
+    expect(needsLook(none, {})).toBe(false);
   });
 });

@@ -2,7 +2,7 @@
 // A file, not an inline script, so the Content-Security-Policy in _headers can refuse inline scripts.
 (function () {
   var choice = 'system';
-  try { choice = localStorage.getItem('4vd.theme') || 'system'; } catch (e) {}
+  try { choice = localStorage.getItem('4vd.theme') || 'system'; } catch {}
   // Inside the Windows app the window frame follows the same choice (src/styles/desktop.css).
   if (window.fourvdDesktop) {
     document.documentElement.dataset.shell = 'desktop';
@@ -18,7 +18,7 @@
   try {
     var savedMotion = localStorage.getItem('4vd.motion');
     if (savedMotion === 'auto' || savedMotion === 'full' || savedMotion === 'reduced' || savedMotion === 'off') motion = savedMotion;
-  } catch (e) {}
+  } catch {}
   if (motion === 'auto') motion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'reduced' : 'full';
   document.documentElement.dataset.motion = motion;
   // A business in its own colours: put them back before the first paint (src/theme/applyBrand.ts keeps them).
@@ -30,5 +30,5 @@
       style.textContent = brand;
       document.head.appendChild(style);
     }
-  } catch (e) {}
+  } catch {}
 })();

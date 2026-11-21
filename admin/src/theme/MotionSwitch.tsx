@@ -1,5 +1,6 @@
 import { type MotionPreference, useMotionPreference } from './motion';
 import { useT } from '../i18n/useT';
+import { radioKeys } from '../components/ui/radioKeys';
 
 const OPTIONS: MotionPreference[] = ['auto', 'full', 'reduced', 'off'];
 
@@ -15,8 +16,10 @@ export function MotionSwitch() {
           type="button"
           role="radio"
           aria-checked={preference === option}
+          tabIndex={preference === option ? 0 : -1}
           className="segmented__option"
           onClick={() => setPreference(option)}
+          onKeyDown={radioKeys}
         >
           {t.motion[option]}
         </button>

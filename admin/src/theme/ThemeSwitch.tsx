@@ -4,6 +4,7 @@ import { meApi } from '../services/api';
 import { type ThemePreference, useThemePreference } from './theme';
 import { useT } from '../i18n/useT';
 import { Tooltip } from '../components/ui/Tooltip';
+import { radioKeys } from '../components/ui/radioKeys';
 
 const OPTIONS: Array<{ value: ThemePreference; key: 'light' | 'dark' | 'auto'; icon: Icon }> = [
   { value: 'light', key: 'light', icon: Sun },
@@ -45,9 +46,11 @@ export function ThemeSwitch({ className = '', persist = false, compact = false }
             type="button"
             role="radio"
             aria-checked={preference === option.value}
+            tabIndex={preference === option.value ? 0 : -1}
             aria-label={compact ? label : undefined}
             className="segmented__option"
             onClick={() => choose(option.value)}
+            onKeyDown={radioKeys}
           >
             <OptionIcon size={14} weight={preference === option.value ? 'fill' : 'regular'} aria-hidden="true" />
             {!compact && label}

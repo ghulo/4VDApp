@@ -397,6 +397,11 @@
   grid-template-columns: minmax(0, 1fr) auto auto;
 }
 
+.bills-due__row .restock-list__name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .bills-due__when--late {
   color: var(--danger);
   font-weight: 600;

@@ -4,8 +4,12 @@ import './index.css'
 import App from './App.tsx'
 import { startSelectionPills } from './components/ui/selectionPills'
 import { startErrorTracking } from './errorTracking'
+import { readLanguage, safeStorage } from './i18n/language'
+import { loadCatalogue } from './i18n/useT'
 import { startKeyboardInset } from './utils/keyboardInset'
 
+// Start fetching the shown language's words now; the page waits for them (i18n/I18nProvider.tsx).
+void loadCatalogue(readLanguage(safeStorage(), navigator.languages ?? [navigator.language])).catch(() => undefined)
 startSelectionPills()
 startErrorTracking()
 startKeyboardInset()

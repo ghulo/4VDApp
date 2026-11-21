@@ -1,4 +1,5 @@
-import { type Catalogue, en } from '../i18n/en';
+import type { Catalogue } from '../i18n/en';
+import { activeCatalogue } from '../i18n/useT';
 import { formatDateWith } from './format';
 
 export type PeriodKey =
@@ -95,7 +96,7 @@ export function resolvePeriod(
   key: PeriodKey,
   custom?: { from: string; to: string },
   now: Date = new Date(),
-  t: Catalogue = en,
+  t: Catalogue = activeCatalogue(),
 ): ResolvedPeriod {
   const monthLabel = { format: (date: Date) => formatDateWith(date, { month: 'long', year: 'numeric' }) };
   const dayLabel = { format: (date: Date) => formatDateWith(date, { day: 'numeric', month: 'short', year: 'numeric' }) };

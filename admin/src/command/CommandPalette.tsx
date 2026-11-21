@@ -2,14 +2,14 @@ import { useQuery } from '@tanstack/react-query';
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { documentsApi, productsApi, usersApi } from '../services/api';
-import { useT } from '../i18n/useT';
+import { useCatalogue, useT } from '../i18n/useT';
 import { rankMatches, type Searchable } from './matching';
 import { useCurrentUser } from '../auth/useAuth';
 import type { UserRole } from '../services/types';
 import { canEditProducts, canManage, canOversee, canReadBooks } from '../auth/roles';
 import { formatMoney } from '../utils/format';
 import { documentNumberFromScan } from '../utils/scanLinks';
-import { type Catalogue, en } from '../i18n/en';
+import type { Catalogue } from '../i18n/en';
 
 type Group = keyof Catalogue['palette']['groups'];
 type ActionKey = keyof Catalogue['palette']['actions'];
@@ -74,13 +74,13 @@ const pageLabel = (t: Catalogue, key: PageKey) => (key === 'profile' ? t.palette
  * Commands in the reader's language. The English words are kept as extra
  * keywords, so "stock" still finds Stoku when the dashboard is in Albanian.
  */
-function staticCommands(t: Catalogue): { actions: Array<Command>; pages: Command[] } {
+function staticCommands(t: Catalogue, en: Catalogue | null): { actions: Array<Command>; pages: Command[] } {
   return {
     actions: ACTIONS.map(({ key, to, allowed }) => ({
       id: `action-${key}`,
       group: 'actions',
       label: t.palette.actions[key].label,
-      keywords: `${t.palette.actions[key].keywords} ${en.palette.actions[key].label} ${en.palette.actions[key].keywords}`,
+      keywords: en ? `${t.palette.actions[key].keywords} ${en.palette.actions[key].label} ${en.palette.actions[key].keywords}` : t.palette.actions[key].keywords,
       to,
       allowed,
     })),
@@ -89,7 +89,7 @@ function staticCommands(t: Catalogue): { actions: Array<Command>; pages: Command
       id: `page-${to}`,
       group: 'pages',
       label: pageLabel(t, key),
-      keywords: `${t.palette.pageKeywords[key]} ${pageLabel(en, key)} ${en.palette.pageKeywords[key]}`,
+      keywords: en ? `${t.palette.pageKeywords[key]} ${pageLabel(en, key)} ${en.palette.pageKeywords[key]}` : t.palette.pageKeywords[key],
       to,
     })),
   };
@@ -102,7 +102,8 @@ const MAX_PER_GROUP = 6;
 export function CommandPalette({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
   const t = useT();
-  const commands = useMemo(() => staticCommands(t), [t]);
+  const english = useCatalogue('en');
+  const commands = useMemo(() => staticCommands(t, english), [t, english]);
   const { role } = useCurrentUser();
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);

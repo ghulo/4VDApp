@@ -9,7 +9,7 @@ import { DeviceList } from '../components/DeviceList';
 import { ErrorNotice, Loading, SavedToast } from '../components/Feedback';
 import { HistoryCard } from '../components/HistoryCard';
 import { activityApi, businessApi, cashApi, invitesApi, passkeyApi, reportsApi, twoStepApi, usersApi, writeOffsApi } from '../services/api';
-import { CATALOGUES, useT } from '../i18n/useT';
+import { useCatalogue, useT } from '../i18n/useT';
 import type { TeamMember, UserRole } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { ATTENTION_KEY } from '../utils/useAttention';
@@ -306,7 +306,8 @@ function InviteShare({ email, link, language }: { email: string; link: string; l
   const t = useT();
   const toast = useToast();
   const business = useQuery({ queryKey: ['business'], queryFn: businessApi.get });
-  const chat = `https://wa.me/?text=${encodeURIComponent(CATALOGUES[language].people.whatsappText(business.data?.name ?? '4VD', link))}`;
+  const inviteWords = useCatalogue(language);
+  const chat = `https://wa.me/?text=${encodeURIComponent(inviteWords?.people.whatsappText(business.data?.name ?? '4VD', link) ?? link)}`;
   async function copy() {
     try {
       await navigator.clipboard.writeText(link);

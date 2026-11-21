@@ -1,4 +1,5 @@
-import { type Catalogue, en } from '../i18n/en';
+import type { Catalogue } from '../i18n/en';
+import { activeCatalogue } from '../i18n/useT';
 
 export interface SetupData {
   business: { address: string | null; phone: string | null; logoUrl: string | null } | null;
@@ -22,7 +23,7 @@ export interface SetupStep {
 }
 
 /** What a new shop needs before 4VD is really useful, each ticked off from what already exists. */
-export function setupSteps(data: SetupData, t: Catalogue = en): SetupStep[] {
+export function setupSteps(data: SetupData, t: Catalogue = activeCatalogue()): SetupStep[] {
   return [
     {
       id: 'details',

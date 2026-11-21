@@ -70,5 +70,6 @@ export default defineConfig({
   test: {
     // Tests read the real stylesheet (e.g. the colour contrast check), so don't stub CSS.
     css: true,
+    setupFiles: ['./src/test/setup.ts'],
   },
 })

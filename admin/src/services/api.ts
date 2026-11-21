@@ -221,8 +221,8 @@ export const authApi = {
   twoStep: async (challenge: string, code: string) =>
     (await apiRequest<LoginResult>('/auth/two-step', { method: 'POST', body: { challenge, code } })).data,
 
-  async me(): Promise<User> {
-    return (await apiRequest<User>('/auth/me', { asMyself: true })).data;
+  async me(signal?: AbortSignal): Promise<User> {
+    return (await apiRequest<User>('/auth/me', { asMyself: true, signal })).data;
   },
 
   /** The business picker: this session carries on in another business (new cookies). */

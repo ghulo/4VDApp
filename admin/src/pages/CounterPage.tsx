@@ -54,6 +54,7 @@ import { drain, keep, localEventStore, type Owner, refusedEntries, unrefuse } fr
 import { basketStockProblem, DOUBLE_ENTER_MS, exactMatch, lookupFailure, nameMatches, payFailure, stockDecision } from './counter/tillRules';
 import { codeFromScan, documentNumberFromScan } from '../utils/scanLinks';
 import { priceLine, summarise } from './counter/basketMath';
+import { useTillCopy } from '../offline/useTillCopy';
 import { afterSaleRefresh, heldOff, patchShelf, shelfAfterSale, shelfGate, type TillShelf, tillShelfKey } from './counter/shelfAfterSale';
 import { ScanBox } from './counter/ScanBox';
 import { BasketAge, TillClock } from './counter/TillClock';
@@ -273,6 +274,8 @@ export function CounterPage() {
     printer.lookup,
   );
   // Sales on their way from a basket (Pay pressed, no answer yet) are named too: a shelf that counts one already says so.
+  // What this till needs to sell, kept on this PC; a start without internet sells from it.
+  useTillCopy({ businessId, userId: user.id }, products.isError, products.data !== undefined);
   heldKeys.current = () => [...waiting.heldKeys(), ...baskets.flatMap((basket) => (basket.pending?.businessId === businessId ? [basket.pending.key] : []))];
   // The shelf as this till sees it: 4VD's, less what the sales held on this PC took that it doesn't count yet.
   const shelf = useMemo(() => shelfAfterSale(products.data?.products, heldOff(waiting.held, products.data)), [products.data, waiting.held]);
@@ -1027,6 +1030,8 @@ export function CounterPage() {
     // Its key lives in the business it was made in: it is stopped only from there.
     if (pending.businessId !== businessId) return complain(t.counter.pendingOther);
     if (settledHere(basket.id, pending)) return;
+    // Recorded after all, it settles here and may print: not before the till knows whether it prints.
+    if (!settings.data) return complain(t.counter.settingsLoading);
     setPayingNow(true);
     let answer: Awaited<ReturnType<typeof salesApi.stopBasket>>;
     try {
@@ -1069,6 +1074,8 @@ export function CounterPage() {
       setPayingNow(false);
       return;
     }
+    // Without the till's settings it can't tell whether the receipt prints: a sale made now could go with no receipt and nothing in Not printed.
+    if (!settings.data) throw new Error(t.counter.settingsLoading);
     // The business isn't known yet (just after Switch person): a sale made now would belong to no business, so it waits a moment.
     if (!again && businessId === 0) throw new Error(t.counter.tillLoading);
     if (!again) {

@@ -4761,6 +4761,7 @@ export const en = {
     forgotten: 'The sale was stopped: 4VD never recorded it and never will. The basket can change and be paid again.',
     stopNeedsAnswer: 'Stopping a sale needs an answer from 4VD. Try again once the internet is back.',
     tillLoading: 'The till is still loading who is signed in. Try again in a moment.',
+    settingsLoading: 'The till’s settings haven’t loaded yet, so it can’t tell whether to print the receipt. Wait a moment, or connect this PC to the internet once.',
     alreadySettled: (number: string) => `This sale is in 4VD already (${number}) and was settled on this till: nothing more to do.`,
     printInterrupted: 'Check the printer: the till closed (or lost track) while this receipt was printing. Print it again only if no receipt came out.',
     notSavedKeepBasket: 'The sale is recorded, but this PC couldn’t save it, so the receipt wasn’t printed and the basket stays. Free some space on the PC, then press Pay: the same sale finishes and prints, never recorded twice.',

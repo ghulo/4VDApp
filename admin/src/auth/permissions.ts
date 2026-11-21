@@ -47,6 +47,9 @@ export function setPermissions(permissions: Permissions): void {
   current = permissions;
 }
 
+/** What each role may do, as last set. */
+export const currentPermissions = (): Permissions => current;
+
 /** A power the server doesn't list yet (an older API during a deploy) follows its default. */
 export const hasPower = (role: UserRole, power: Power): boolean => (current.powers[power] ?? DEFAULT_GRANTS[power]).includes(role);
 

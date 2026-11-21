@@ -4734,6 +4734,7 @@ export const sq: Catalogue = {
     forgotten: 'Shitja u ndal: 4VD s’e regjistroi kurrë dhe s’do ta regjistrojë. Shporta mund të ndryshojë dhe të paguhet prapë.',
     stopNeedsAnswer: 'Për ta ndalur shitjen duhet një përgjigje nga 4VD. Provo prapë kur të kthehet interneti.',
     tillLoading: 'Arka po ngarkon ende kush është i kyçur. Provo prapë pas pak.',
+    settingsLoading: 'Cilësimet e arkës ende nuk janë ngarkuar, prandaj nuk dihet nëse duhet shtypur kuponi. Prit pak, ose lidhe këtë kompjuter me internetin një herë.',
     alreadySettled: (number: string) => `Kjo shitje është tashmë në 4VD (${number}) dhe u mbyll në këtë arkë: s’ka më asgjë për të bërë.`,
     printInterrupted: 'Shiko printerin: arka u mbyll (ose e humbi gjurmën) ndërsa ky kupon po shtypej. Shtype prapë vetëm nëse s’doli asnjë kupon.',
     notSavedKeepBasket: 'Shitja u regjistrua, por ky kompjuter s’e ruajti dot, prandaj kuponi s’u shtyp dhe shporta mbetet. Liro pak hapësirë në kompjuter, pastaj shtyp Paguaj: e njëjta shitje përfundon dhe shtypet, kurrë e regjistruar dy herë.',

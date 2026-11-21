@@ -12,12 +12,15 @@ import type { DocumentRef, Product } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatMoney, formatPercent } from '../utils/format';
 import { codeFromScan, documentNumberFromScan } from '../utils/scanLinks';
+import { useProductSearch } from '../utils/useProductSearch';
 import { EmptyState, ErrorNotice, Loading } from './Feedback';
 import { PrintDocumentButton } from './PrintDocumentButton';
 import { Button, ButtonLink, Combobox, Field } from './ui';
 import { useWarnBeforeLeaving } from '../utils/useWarnBeforeLeaving';
 
 const SUGGESTIONS = 6;
+/** Products looked at when Enter is pressed: enough to find the one whose barcode it is. */
+const ENTER_MATCHES = 10;
 
 /** The customer's price level: the shelf price, or the wholesale price (never above the shelf price). Same rule as the server's `levelPrice`. */
 export function levelPriceFor(product: Product, wholesale: boolean): number {
@@ -55,9 +58,10 @@ export function BasketForm() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const scanRef = useRef<HTMLInputElement>(null);
-  const products = useQuery({
-    queryKey: ['products', { page: 1, limit: 100, inStock: true }],
-    queryFn: () => productsApi.list({ page: 1, limit: 100, inStock: true }),
+  // Whether anything at all is in stock (the form has nothing to sell otherwise).
+  const anyInStock = useQuery({
+    queryKey: ['products', { page: 1, limit: 1, inStock: true }],
+    queryFn: () => productsApi.list({ page: 1, limit: 1, inStock: true }),
   });
   const customers = useQuery({ queryKey: ['customers'], queryFn: customersApi.list });
   const settings = useQuery({ queryKey: ['settings'], queryFn: settingsApi.get });
@@ -86,11 +90,9 @@ export function BasketForm() {
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
   const [invoice, setInvoice] = useState<DocumentRef | null>(null);
 
-  const sellable = products.data?.items.filter((product) => product.isActive) ?? [];
-  const query = scan.trim().toLowerCase();
-  const suggestions = query
-    ? sellable.filter((product) => product.name.toLowerCase().includes(query) || product.sku?.toLowerCase().includes(query)).slice(0, SUGGESTIONS)
-    : [];
+  // What the typed words name, searched among every product in stock as you type.
+  const found = useProductSearch(scan, { inStock: true, limit: SUGGESTIONS });
+  const suggestions = scan.trim() ? found.items.filter((product) => product.isActive) : [];
 
   function add(product: Product, pieces = 1) {
     setSavedMessage(null);
@@ -123,14 +125,25 @@ export function BasketForm() {
         return setScanError(errorMessage(error));
       }
     }
-    const byBarcode = sellable.find((product) => product.barcode === code || product.otherBarcodes.includes(code));
-    if (byBarcode) return add(byBarcode, piecesFor(byBarcode, code));
-    if (suggestions.length === 1) return add(suggestions[0]!);
+    // Asked afresh on Enter (a scanner sends it before any search as you type could answer):
+    // a product whose barcode this is, else the one product in stock the words name.
+    let matches: Product[];
+    try {
+      matches = (await productsApi.list({ page: 1, limit: ENTER_MATCHES, search: code, inStock: true })).items.filter((product) => product.isActive);
+    } catch (error) {
+      return setScanError(errorMessage(error));
+    }
+    const scanned = matches.find((product) => product.barcode === code || product.otherBarcodes.includes(code) || product.packs?.some((pack) => pack.barcode === code));
+    if (scanned) return add(scanned, piecesFor(scanned, code));
+    if (matches.length === 1) return add(matches[0]!);
+    // Several match: the list under the box shows them to pick from.
+    if (matches.length > 1) return;
+    // None in stock: a product's barcode still adds it, as at the till.
     try {
       const found = await productsApi.byBarcode(code);
       add(found, piecesFor(found, code));
     } catch {
-      if (suggestions.length === 0) setScanError(t.basket.notFound(code));
+      setScanError(t.basket.notFound(code));
     }
   }
 
@@ -215,9 +228,9 @@ export function BasketForm() {
     record.mutate();
   }
 
-  if (products.isPending) return <Loading />;
-  if (products.isError) return <ErrorNotice error={products.error} onRetry={() => products.refetch()} />;
-  if (sellable.length === 0) return <EmptyState title={t.sales.nothingInStock} />;
+  if (anyInStock.isPending) return <Loading />;
+  if (anyInStock.isError) return <ErrorNotice error={anyInStock.error} onRetry={() => anyInStock.refetch()} />;
+  if (anyInStock.data.meta.total === 0) return <EmptyState title={t.sales.nothingInStock} />;
 
   return (
     <form onSubmit={handleSubmit} className="basket">
@@ -254,6 +267,7 @@ export function BasketForm() {
           ))}
         </ul>
       )}
+      {suggestions.length > 0 && found.total > found.items.length && <p className="field-hint">{t.kit.keepTyping}</p>}
 
       {lines.length === 0 ? (
         <p className="field-hint">{t.basket.empty}</p>

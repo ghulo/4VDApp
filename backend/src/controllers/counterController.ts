@@ -4,7 +4,7 @@ import type { CounterService } from '../services/CounterService.js';
 import type { ProductService } from '../services/ProductService.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 import { canOversee } from '../utils/roles.js';
-import { counterEventsQuerySchema, counterReceiptsQuerySchema, counterEventsSchema, counterReportSchema, counterSettingsSchema } from '../validators/counterValidators.js';
+import { counterEventsQuerySchema, counterReceiptsQuerySchema, counterEventsSchema, counterReportSchema, counterSettingsSchema, counterShelfSchema } from '../validators/counterValidators.js';
 import { parseInput } from '../validators/validate.js';
 
 export function createCounterController(counterService: CounterService, productService: ProductService, cashCountService: CashCountService) {
@@ -24,6 +24,17 @@ export function createCounterController(counterService: CounterService, productS
 
     async shelf(_req: Request, res: Response): Promise<void> {
       sendSuccess(res, await productService.shelf());
+    },
+
+    /**
+     * The shelf and which of the till's held sales it already counts. The keys are read first: a sale recorded in
+     * between is then in the stock but not named, so the till keeps it off once more (one unit too few until the next
+     * fetch) rather than showing a sold unit again.
+     */
+    async shelfCounting(req: Request, res: Response): Promise<void> {
+      const { held } = parseInput(counterShelfSchema, req.body);
+      const counted = await counterService.recordedSaleKeys(held);
+      sendSuccess(res, { products: await productService.shelf(), counted });
     },
 
     async today(req: Request, res: Response): Promise<void> {

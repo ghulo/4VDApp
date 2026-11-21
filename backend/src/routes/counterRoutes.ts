@@ -14,6 +14,8 @@ export function createCounterRoutes({ counterService, counterPinService, product
   router.post('/events', ...guards.staff, controller.record);
   // The whole shelf in one answer, so the till starts at once.
   router.get('/shelf', ...guards.staff, controller.shelf);
+  // The till's own: the shelf, and which of the sales it keeps off it 4VD already counts.
+  router.post('/shelf', ...guards.staff, controller.shelfCounting);
   router.get('/today', ...guards.staff, controller.today);
   // Anyone at the counter finds a receipt to give something back, whoever sold it.
   router.get('/receipts', ...guards.staff, controller.receipts);

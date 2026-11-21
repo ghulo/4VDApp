@@ -68,6 +68,9 @@ export const counterEventsSchema = z.object({
 
 export const counterReportSchema = periodSchema;
 
+/** The till's shelf, with the keys of the sales it still keeps off it (waiting on the PC, or sent but not yet in a shelf it has). */
+export const counterShelfSchema = z.object({ held: z.array(z.string().uuid()).max(5000).default([]) });
+
 export const counterEventsQuerySchema = z.intersection(periodSchema, z.object({ userId: idSchema.optional(), source: recordSourceSchema.optional() }));
 
 /** An invoice number as printed under its barcode ("INV-26-000123"). */

@@ -1601,9 +1601,11 @@
     padding: var(--space-2) var(--space-4);
   }
 
+  /* Clear of an iPhone's rounded corners and home bar. */
   .counter__main {
     gap: var(--space-4);
-    padding: var(--space-4);
+    padding: var(--space-4) max(var(--space-4), env(safe-area-inset-right)) calc(var(--space-4) + env(safe-area-inset-bottom))
+      max(var(--space-4), env(safe-area-inset-left));
   }
 
   .counter__bar-label {
@@ -2073,7 +2075,7 @@
 .sheet--wide:has(.counter-finder-form),
 .sheet--wide:has(.counter-invoice) {
   width: min(960px, calc(100vw - 2 * var(--space-4)));
-  height: min(760px, calc(100dvh - 2 * var(--space-4)));
+  height: min(760px, calc(100dvh - 2 * var(--space-4) - var(--keyboard-h, 0px)));
 }
 
 /* The F3 Products card: a big search on top, the list in the middle (the only

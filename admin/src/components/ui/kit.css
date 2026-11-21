@@ -313,7 +313,7 @@ kbd {
 @media (max-width: 900px) {
   .toasts {
     inset-inline: var(--space-4);
-    inset-block-end: calc(var(--space-4) + env(safe-area-inset-bottom));
+    inset-block-end: calc(var(--space-4) + max(env(safe-area-inset-bottom), var(--bottom-bar-h, 0px) + var(--keyboard-h, 0px)));
   }
 
   .toasts__list {
@@ -322,11 +322,6 @@ kbd {
 
   .toast {
     inline-size: auto;
-  }
-
-  /* Above the staff layout's tab bar. */
-  body:has(.staff-app__bottom-tabs) .toasts {
-    inset-block-end: calc(72px + env(safe-area-inset-bottom));
   }
 }
 

@@ -8,7 +8,9 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=7" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="apple-mobile-web-app-title" content="4VD" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- cover: the page runs under an iPhone's notch and home bar, and the bars pad themselves with env(safe-area-inset-*).
+         resizes-content: Android shortens the page for the on-screen keyboard (iPhone: utils/keyboardInset.ts). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
     <meta name="theme-color" content="#edf1f3" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0f1010" media="(prefers-color-scheme: dark)" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />

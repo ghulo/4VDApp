@@ -289,6 +289,15 @@
     --bottom-bar-h: calc(68px + env(safe-area-inset-bottom));
   }
 
+  /* While the on-screen keyboard is up the tab bar steps aside, like a phone app's. */
+  :root[data-keyboard]:has(.tab-bar) {
+    --bottom-bar-h: 0px;
+  }
+
+  :root[data-keyboard] .tab-bar {
+    display: none;
+  }
+
   .tab-bar {
     position: fixed;
     right: 0;
@@ -297,7 +306,7 @@
     z-index: var(--z-sticky);
     display: flex;
     justify-content: space-around;
-    padding: var(--space-1) var(--space-2) calc(var(--space-1) + env(safe-area-inset-bottom));
+    padding: var(--space-1) max(var(--space-2), env(safe-area-inset-right)) calc(var(--space-1) + env(safe-area-inset-bottom)) max(var(--space-2), env(safe-area-inset-left));
     border-top: 1px solid var(--line);
     background: var(--glass-bg-strong);
     backdrop-filter: var(--glass-filter);
@@ -1228,10 +1237,6 @@
     flex: 1;
   }
 
-  /* Above the staff layout's bottom tabs. */
-  :root:has(.staff-app__bottom-tabs) .view-as {
-    bottom: calc(76px + env(safe-area-inset-bottom));
-  }
 }
 
 /* ---------- Rows that scroll sideways ---------- */

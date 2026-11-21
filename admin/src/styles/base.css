@@ -3,6 +3,8 @@
 :root {
   /* Anchor jumps and focus moves land below the sticky top bar, not under it. */
   scroll-padding-top: calc(var(--topbar-h) + var(--space-4));
+  /* ...and above a phone's tab bar and on-screen keyboard (utils/keyboardInset.ts). */
+  scroll-padding-bottom: calc(var(--bottom-bar-h, 0px) + var(--keyboard-h, 0px) + var(--space-4));
   font-family: var(--font-body);
   font-size: 16px;
   line-height: 1.5;
@@ -20,6 +22,9 @@
 
 body {
   margin: 0;
+  /* viewport-fit=cover (index.html) lets the page run under a turned iPhone's notch:
+     everything in the page stays clear of it (fixed bars pad themselves). */
+  padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
   min-height: 100vh;
   min-height: 100dvh;
   /* The canvas: the 4VD tick, woven very faintly across the page. */

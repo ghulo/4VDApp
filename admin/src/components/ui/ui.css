@@ -1960,13 +1960,15 @@ input.switch:focus-visible {
 /* A form on a raised card in the middle of the screen, over the dimmed page
    (Float depth, the same backdrop as Ctrl K). It grows out of the key that
    opened it (motion.css). On a phone it is a card from the bottom edge. */
+/* --keyboard-h (utils/keyboardInset.ts): an iPhone keyboard covers the page's
+   foot, so every card centres in, and fits, the part above it. */
 .sheet {
   position: fixed;
-  inset: 0;
+  inset: 0 0 var(--keyboard-h, 0px);
   width: min(600px, calc(100vw - 2 * var(--space-4)));
   max-width: 100vw;
   height: fit-content;
-  max-height: calc(100dvh - 2 * var(--space-6));
+  max-height: calc(100dvh - 2 * var(--space-6) - var(--keyboard-h, 0px));
   margin: auto;
   padding: 0;
   border: 0;
@@ -2160,13 +2162,13 @@ input.switch:focus-visible {
    handle to pull it back down. */
 @media (max-width: 600px) {
   .sheet--card {
-    inset: auto 0 0;
+    inset: auto 0 var(--keyboard-h, 0px);
     width: 100vw;
-    max-height: calc(100dvh - var(--space-6));
+    max-height: calc(100dvh - var(--space-6) - var(--keyboard-h, 0px));
   }
 
   .sheet--card .sheet__panel {
-    padding-bottom: env(safe-area-inset-bottom);
+    padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     border-radius: var(--radius-panel) var(--radius-panel) 0 0;
   }
 
@@ -2217,10 +2219,10 @@ input.switch:focus-visible {
 /* A short yes-or-no question (take a line out, cancel a basket): a card in
    the middle of the screen, as tall as its content. */
 .sheet--center {
-  inset: 0;
+  inset: 0 0 var(--keyboard-h, 0px);
   width: min(440px, calc(100vw - 2 * var(--space-4)));
   height: fit-content;
-  max-height: calc(100dvh - 2 * var(--space-4));
+  max-height: calc(100dvh - 2 * var(--space-4) - var(--keyboard-h, 0px));
   margin: auto;
 }
 
@@ -2245,7 +2247,7 @@ input.switch:focus-visible {
    wider, and one steady height so the card doesn't jump as the list changes. */
 .sheet--wide {
   width: min(640px, calc(100vw - 2 * var(--space-4)));
-  height: min(640px, calc(100dvh - 2 * var(--space-4)));
+  height: min(640px, calc(100dvh - 2 * var(--space-4) - var(--keyboard-h, 0px)));
 }
 
 .sheet--wide .sheet__panel {

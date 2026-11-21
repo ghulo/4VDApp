@@ -22,6 +22,9 @@ export const VIEW_AS_HEADER = 'x-view-as';
 /** The roles that have a dashboard to look at; family has none. */
 export const VIEWABLE_ROLES: UserRole[] = ['admin', 'owner', 'accountant', 'employee'];
 const READS = new Set(['GET', 'HEAD', 'OPTIONS']);
+/** POSTs that only read (their question is too long for an address): allowed while viewing as another role, never noted as a support change. */
+const READ_ONLY_POSTS = new Set(['/api/counter/shelf']);
+const onlyReads = (req: Request): boolean => READS.has(req.method) || (req.method === 'POST' && READ_ONLY_POSTS.has(`${req.baseUrl}${req.path}`));
 
 /**
  * The Counter names whose write this is ("<business id>:<user id>"): a sale
@@ -97,7 +100,7 @@ export function requireAuth(userRepository: UserRepository, supportRepository?: 
     if (expectedOwnerMismatch(req, place.businessId, user.id)) throw new OwnerChangedError();
     enterBusiness(place.businessId);
     const viewed = viewedRole(req, place.role);
-    if (viewed && !READS.has(req.method)) throw new ViewingAsError(viewed);
+    if (viewed && !onlyReads(req)) throw new ViewingAsError(viewed);
     const role = viewed ?? place.role;
     req.user = { ...toPublicUser(user), role };
     req.identity = { userId: user.id, email: user.email, role, sessionId: req.identity.sessionId, businessId: place.businessId };
@@ -130,7 +133,7 @@ async function keepSupportVisit(support: SupportRepository, req: Request, res: R
   const visitId = await support.visit(developer, req.identity?.sessionId ?? 'no-session');
   const path = `${req.baseUrl}${req.path}`;
   // Reading, or his own session (switching to another business, signing out): nothing changed here.
-  if (READS.has(req.method) || path.startsWith('/api/auth/')) return;
+  if (onlyReads(req) || path.startsWith('/api/auth/')) return;
   // Kept before the change runs, so it is there even if the change fails; the answer's status follows.
   const parts = path.replace(/^\/api\//, '').split('/');
   const actionId = await support.action(visitId, { method: req.method, path, entity: parts[0] || null, entityId: parts.find((part) => /^\d+$/.test(part)) ?? null });

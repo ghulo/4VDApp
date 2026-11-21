@@ -1,6 +1,7 @@
 import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
 import type { CounterEventKind } from '../database/types.js';
+import { currentBusinessId } from '../database/businessContext.js';
 
 export interface NewCounterEvent {
   kind: CounterEventKind;
@@ -60,6 +61,22 @@ const inDays = (column: ReturnType<typeof sql.ref>, from: string, to: string, ti
 
 export class CounterRepository {
   constructor(private readonly db: DatabaseClient) {}
+
+  /**
+   * Which of these till sale keys this business has recorded (its stock counts them).
+   * The business is named here too, not only left to row security (a superuser connection skips that).
+   */
+  async recordedSaleKeys(keys: readonly string[]): Promise<string[]> {
+    const businessId = currentBusinessId();
+    if (keys.length === 0 || businessId === null) return [];
+    const rows = await this.db
+      .selectFrom('documents')
+      .select('client_key')
+      .where('business_id', '=', businessId)
+      .where('client_key', 'in', [...new Set(keys.map((key) => key.toLowerCase()))])
+      .execute();
+    return rows.flatMap((row) => (row.client_key ? [row.client_key] : []));
+  }
 
   /** Saves the events; returns the shop PC ids that were new (a copy already kept is skipped). */
   async create(events: NewCounterEvent[]): Promise<Set<string>> {

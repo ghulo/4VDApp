@@ -209,6 +209,7 @@ const ACCESS: Record<keyof typeof WHO, string[]> = {
     'GET /api/counter/settings',
     'POST /api/counter/events',
     'GET /api/counter/shelf',
+    'POST /api/counter/shelf',
     'GET /api/counter/today',
     'GET /api/counter/receipts',
     'GET /api/counter/pin-people',

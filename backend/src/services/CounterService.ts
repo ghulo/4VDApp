@@ -114,6 +114,11 @@ export class CounterService {
     private readonly timeZone: string,
   ) {}
 
+  /** Which of these till sale keys are recorded in this business. */
+  async recordedSaleKeys(keys: readonly string[]): Promise<string[]> {
+    return this.counterRepository.recordedSaleKeys(keys);
+  }
+
   async settings(): Promise<CounterSettings> {
     const stored = (await this.settingsRepository.all()).get(SETTINGS_KEY) as Partial<CounterSettings> | undefined;
     return {

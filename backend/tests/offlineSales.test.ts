@@ -97,3 +97,26 @@ describe('Counter sales made offline', () => {
     expect(after.body.data.todo.some((one: { kind: string }) => one.kind === 'offline_shortfall')).toBe(false);
   });
 });
+
+describe("The till's shelf with the sales it holds", () => {
+  it('should name the held sales 4VD has recorded, with the stock that counts them', async () => {
+    const employee = await signIn('employee');
+    const admin = await signIn('admin');
+    const product = await createTestProduct(context, admin.token, { name: 'Vase', price: 20, stock: 10 });
+    const recorded = randomUUID();
+    const notYet = randomUUID();
+    const sold = await request(context.app).post('/api/sales/basket').set(auth(employee.token)).send({ items: [{ productId: product, quantity: 3 }], clientKey: recorded });
+    expect(sold.status).toBe(201);
+
+    // The till may send a key in capitals: still the same sale.
+    const shelf = await request(context.app).post('/api/counter/shelf').set(auth(employee.token)).send({ held: [recorded.toUpperCase(), notYet] });
+    expect(shelf.status).toBe(200);
+    expect(shelf.body.data.counted).toEqual([recorded]);
+    expect(shelf.body.data.products.find((one: { id: number }) => one.id === product).stock.quantity).toBe(7);
+
+    // Nothing held: the shelf alone. Bad keys are refused.
+    expect((await request(context.app).post('/api/counter/shelf').set(auth(employee.token)).send({})).body.data.counted).toEqual([]);
+    expect((await request(context.app).post('/api/counter/shelf').set(auth(employee.token)).send({ held: ['not-a-key'] })).status).toBe(400);
+    expect((await request(context.app).post('/api/counter/shelf').send({ held: [] })).status).toBe(401);
+  });
+});

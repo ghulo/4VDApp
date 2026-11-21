@@ -36,6 +36,9 @@ export function useFocusOnRouteChange() {
         frame = requestAnimationFrame(focusHeading);
         return;
       }
+      // A page that put the cursor in its first field itself (autoFocus) keeps it.
+      const active = document.activeElement;
+      if (active && main.contains(active) && active.matches('input, select, textarea')) return;
       const target = heading ?? main;
       if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
       target.focus({ preventScroll: true });

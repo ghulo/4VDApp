@@ -40,6 +40,8 @@ interface ProductDraft {
   /** Two-letter code, or '' for unknown. */
   originCountry: string;
   sku: string;
+  /** New products only: the code on the pack. It is saved right after the product. */
+  barcode: string;
   imageUrl: string;
   isActive: boolean;
   stock: string;
@@ -76,6 +78,7 @@ function toDraft(product?: Product): ProductDraft {
     vatExempt: product?.vatExempt ?? false,
     originCountry: product?.originCountry ?? '',
     sku: product?.sku ?? '',
+    barcode: '',
     imageUrl: product?.imageUrl ?? '',
     isActive: product?.isActive ?? true,
     stock: '0',
@@ -158,7 +161,6 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
     (location.state as { photoError?: string } | null)?.photoError ?? null,
   );
   const photoInput = useRef<HTMLInputElement>(null);
-  const photoButton = useRef<HTMLButtonElement>(null);
   const shownPhoto = photo?.preview ?? product?.imageUrl ?? null;
 
   useEffect(() => () => {
@@ -186,20 +188,37 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
   const save = useMutation({
     mutationFn: async (input: ProductInput) => {
       const saved = isNew ? await productsApi.create(input) : await productsApi.update(product.id, input);
-      if (!photo) return { saved, photoFailed: null };
-      try {
-        return { saved: await productsApi.uploadImage(saved.id, photo.blob), photoFailed: null };
-      } catch (error) {
-        return { saved, photoFailed: errorMessage(error) };
+      // The product is saved first; a barcode or photo that is refused must not lose it.
+      let current = saved;
+      let barcodeFailed: string | null = null;
+      let photoFailed: string | null = null;
+      const code = draft.barcode.trim();
+      if (isNew && code) {
+        try {
+          current = await productsApi.setBarcode(saved.id, code);
+        } catch (error) {
+          barcodeFailed = errorMessage(error);
+        }
       }
+      if (photo) {
+        try {
+          current = await productsApi.uploadImage(saved.id, photo.blob);
+        } catch (error) {
+          photoFailed = errorMessage(error);
+        }
+      }
+      return { saved: current, barcodeFailed, photoFailed };
     },
-    onSuccess: ({ saved, photoFailed }) => {
+    onSuccess: ({ saved, barcodeFailed, photoFailed }) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
-      if (photoFailed) {
+      if (barcodeFailed || photoFailed) {
         // The product exists now, so open it rather than leave a form that would add it twice.
-        navigate(`/products/${saved.id}/details`, { replace: true, state: { photoError: t.productForm.photoNotSaved(photoFailed) } });
+        const message = [barcodeFailed && t.productForm.barcodeNotSaved(barcodeFailed), photoFailed && t.productForm.photoNotSaved(photoFailed)]
+          .filter(Boolean)
+          .join(' ');
+        navigate(`/products/${saved.id}/details`, { replace: true, state: { photoError: message } });
         return;
       }
       navigate(isNew ? `/products/${saved.id}` : '/products', { replace: isNew });
@@ -223,11 +242,6 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!shownPhoto) {
-      setPhotoError(t.productForm.photoNeeded);
-      photoButton.current?.focus();
-      return;
-    }
     save.mutate(toInput(draft, isNew));
   }
 
@@ -265,6 +279,20 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
             <ManagersOnly note={t.productForm.managersOnly} can={canEditProducts}>
               <form className="product-form" onSubmit={handleSubmit}>
                 <Card title={t.productForm.details}>
+                  {isNew && (
+                    <label className="field">
+                      <span className="field__label">{t.productForm.barcode}</span>
+                      <input
+                        autoFocus
+                        autoComplete="off"
+                        maxLength={64}
+                        pattern="[0-9A-Za-z.-]{4,64}"
+                        value={draft.barcode}
+                        onChange={(event) => update('barcode', event.target.value)}
+                      />
+                      <span className="field__hint">{t.productForm.barcodeHint}</span>
+                    </label>
+                  )}
                   <div className="photo-field">
                     <ProductPhoto src={shownPhoto} size="lg" />
                     <div className="photo-field__text">
@@ -283,7 +311,6 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                       {/* image/* lets a phone offer its camera as well as its gallery. */}
                       <input ref={photoInput} type="file" accept="image/*" hidden onChange={pickPhoto} />
                       <Button
-                        ref={photoButton}
                         icon={Camera}
                         aria-describedby="photo-label photo-note"
                         disabled={preparingPhoto || save.isPending}

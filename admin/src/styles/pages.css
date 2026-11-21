@@ -672,273 +672,148 @@ form.product-form > .form-actions {
   overflow-wrap: anywhere;
 }
 
-/* ---------- Login and email-link pages ---------- */
+/* ---------- Login and email-link pages (AuthShell) ----------
+   One centred card on the page (DESIGN.md "Sign-in"): 4VD's mark top left,
+   language and theme top right outside the card, one quiet line under it. */
 
-.login {
+.auth {
   display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  grid-template-rows: auto 1fr;
   min-height: 100vh;
   min-height: 100dvh;
   background: var(--bg);
 }
 
-/* The story side: the 4VD mark on sunk paper, a clean hairline on the edge. */
-.login__story {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: var(--space-6);
-  padding: var(--space-7);
-  border-right: 1px solid var(--line);
-  background-color: var(--surface-sunk);
-}
-
-.login__mark {
+.auth__top {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-3);
-  font-size: var(--text-figure);
+  padding: var(--space-4) var(--space-5);
+}
+
+.auth__wordmark {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-lg);
   font-weight: 600;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
 }
 
-/* Reads top to bottom: the wordmark, the mark with what 4VD is, then a
-   morning at the shop as a tidy feed. */
-.login__story {
-  overflow: hidden;
-}
-
-.login__hero {
-  display: grid;
+.auth__prefs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
   gap: var(--space-2);
 }
 
-/* The till: a receipt printing out of an anthracite printer, its torn top
-   fading into the panel. Paper sits low, so the newest line is by the slot. */
-.till {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  justify-content: flex-end;
-  min-height: 0;
-  width: min(320px, 100%);
-  margin-inline: auto;
-}
-
-.till__paper-room {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  justify-content: flex-end;
-  min-height: 0;
-  margin-bottom: -10px;
-  padding: var(--space-4) var(--space-4) 0;
-  overflow: hidden;
-  filter: var(--paper-drop);
-  mask-image: linear-gradient(to bottom, transparent, #000 30%);
-}
-
-/* A zigzag top where the last receipt was torn off. */
-.till__paper {
-  --tooth: 7px;
-  padding: calc(var(--tooth) + var(--space-3)) var(--space-4) calc(10px + var(--space-2));
-  background: var(--surface);
-  color: var(--ink);
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  font-variant-numeric: tabular-nums;
-  line-height: 1.45;
-  mask:
-    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / calc(var(--tooth) * 2) var(--tooth) repeat-x,
-    linear-gradient(#000 0 0) bottom / 100% calc(100% - var(--tooth)) no-repeat;
-}
-
-.till__row {
+.auth__main {
   display: grid;
-  grid-template-rows: 1fr;
-}
-
-.till__ink {
-  min-height: 0;
-  overflow: hidden;
-}
-
-.till__row--shop .till__ink,
-.till__row--number .till__ink,
-.till__row--thanks .till__ink {
-  display: grid;
+  align-content: center;
   justify-items: center;
-  color: var(--ink-muted);
-  text-align: center;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-4) var(--space-8);
 }
 
-.till__row--shop strong {
-  color: var(--ink);
+/* Paper resting on the page, like every 4VD card. */
+.auth__card {
+  width: min(400px, 100%);
+  padding: var(--space-6);
+  border: 1px solid transparent;
+  border-radius: var(--radius-panel);
+  background: var(--light-raise), var(--surface);
+  box-shadow: var(--shadow-raise);
+}
+
+.auth__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.auth__brand-name {
+  margin: 0;
   font-size: var(--text-lg);
-  letter-spacing: 0.2em;
+  font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
-.till__row--rule .till__ink {
-  margin: var(--space-2) 0;
-  border-top: 1px dashed var(--line-strong);
-}
-
-.till__row--item .till__ink,
-.till__row--total .till__ink,
-.till__row--cash .till__ink,
-.till__row--change .till__ink {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  column-gap: var(--space-3);
-  padding: 2px var(--space-1);
-  margin-inline: calc(var(--space-1) * -1);
-  border-radius: var(--radius-stamp);
-}
-
-.till__name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.till__each {
-  grid-column: 1 / -1;
-  color: var(--ink-muted);
-  font-size: var(--text-xs);
-}
-
-.till__row--total .till__ink {
-  font-size: var(--text-base);
-  font-weight: 700;
-}
-
-.till__row--cash .till__ink,
-.till__row--change .till__ink {
-  color: var(--ink-muted);
-}
-
-.till__row--thanks .till__ink {
-  margin-top: var(--space-2);
-}
-
-/* The printer: a raised anthracite key with the paper slot and a ready light. */
-.till__printer {
-  position: relative;
-  z-index: 1;
-  height: 30px;
-  border-radius: var(--radius-small) var(--radius-small) var(--radius-panel) var(--radius-panel);
-  background: var(--till-body);
-  box-shadow: var(--key-shine), var(--shadow-float);
-}
-
-.till__slot {
-  position: absolute;
-  top: 7px;
-  right: var(--space-5);
-  left: var(--space-5);
-  height: 3px;
-  border-radius: var(--radius-pill);
-  background: var(--till-slot);
-}
-
-.till__light {
-  position: absolute;
-  right: var(--space-3);
-  bottom: 8px;
-  width: 6px;
-  height: 6px;
-  border-radius: var(--radius-pill);
-  background: var(--ok);
-  opacity: 0.55;
-}
-
-/* Each line feeds out of the slot (the paper rises) and its ink comes in as a few raster passes. */
-
-:root[data-motion='full'] .till__row {
-  animation: till-feed 0.3s var(--ease) both;
-}
-
-:root[data-motion='full'] .till__ink {
-  animation: till-ink 0.24s steps(4) both;
-}
-
-:root[data-motion='full'] .till__row--beeped .till__ink {
-  animation:
-    till-ink 0.24s steps(4) both,
-    till-beep 1.8s var(--ease) both;
-}
-
-:root[data-motion='full'] .till__printer--busy .till__light {
-  animation: till-blink 0.5s steps(2) infinite;
-}
-
-:root[data-motion='full'] .till__paper--torn {
-  animation: till-tear 0.85s var(--ease) both;
-}
-
-@keyframes till-feed {
-  from {
-    grid-template-rows: 0fr;
-  }
-}
-
-@keyframes till-ink {
-  from {
-    clip-path: inset(0 0 100% 0);
-  }
-}
-
-@keyframes till-beep {
-  from {
-    background: var(--tint);
-  }
-}
-
-@keyframes till-blink {
-  50% {
-    opacity: 1;
-  }
-}
-
-@keyframes till-tear {
-  to {
-    opacity: 0;
-    translate: 0 -48px;
-    rotate: -3deg;
-  }
-}
-
-/* Short screens: the till goes before the words do. */
-@media (max-height: 600px) {
-  .till {
-    display: none;
-  }
-}
-
-.login__headline {
-  max-width: 18ch;
+.auth__title {
+  margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(var(--text-figure), 3.2vw, var(--text-figure-lg));
+  font-size: var(--text-headline);
   font-weight: 500;
-  line-height: 1.1;
   letter-spacing: -0.01em;
   text-wrap: balance;
 }
 
-.login__small-print {
-  margin-top: var(--space-3);
+.auth__subtitle {
+  margin: var(--space-1) 0 0;
   color: var(--ink-muted);
 }
 
-.login__side {
-  display: grid;
-  place-items: center;
-  padding: var(--space-6) var(--space-4);
+.auth__title + :not(.auth__subtitle),
+.auth__subtitle + * {
+  margin-top: var(--space-5);
 }
 
-.login__card {
-  width: min(380px, 100%);
+.auth__foot {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+.auth__status {
+  margin: 0;
+}
+
+.auth__links {
+  margin-top: var(--space-4);
+}
+
+/* Passkey and Google: two equal keys side by side under one "or" rule. */
+.auth__other {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+.auth__or {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.auth__or::before,
+.auth__or::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--line);
+}
+
+.auth__alt {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: var(--space-2);
+}
+
+@media (max-width: 600px) {
+  .auth__top {
+    padding-inline: var(--space-4);
+  }
+
+  .auth__card {
+    padding: var(--space-5);
+  }
 }
 
 /* The two-step code: wide, evenly spaced digits, easy to check against the phone. */
@@ -1019,92 +894,6 @@ form.product-form > .form-actions {
   border-radius: var(--radius-small);
   background: var(--surface-sunk);
   box-shadow: var(--shadow-inset);
-}
-
-.login__title {
-  font-family: var(--font-display);
-  font-size: var(--text-headline);
-  font-weight: 500;
-  letter-spacing: -0.01em;
-}
-
-.login__subtitle {
-  margin: var(--space-1) 0 var(--space-5);
-  color: var(--ink-muted);
-}
-
-.login__prefs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-top: var(--space-6);
-}
-
-.login__links {
-  margin-top: var(--space-4);
-}
-
-@media (max-width: 900px) {
-  .login {
-    grid-template-columns: 1fr;
-  }
-
-  .login__story {
-    padding: var(--space-4);
-    border-right: 0;
-    border-bottom: 1px solid var(--line);
-  }
-
-  /* On a phone: the mark above the form; nothing else. */
-  .login__hero,
-  .till {
-    display: none;
-  }
-}
-
-/* A business's own sign-in link: its mark and name, centred on the sunk
-   story side, with 4VD only in small print. On a phone they sit in a row above the form. */
-.login__story--branded {
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-}
-
-.login__brand-name {
-  max-width: 16ch;
-  font-family: var(--font-display);
-  font-size: clamp(var(--text-figure), 3.2vw, var(--text-figure-lg));
-  font-weight: 500;
-  line-height: 1.1;
-  text-wrap: balance;
-  overflow-wrap: anywhere;
-}
-
-.login__story--branded .login__small-print {
-  margin-top: 0;
-  font-size: var(--text-sm);
-}
-
-@media (max-width: 900px) {
-  .login__story--branded {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: var(--space-3);
-  }
-
-  .login__story--branded .brand-mark {
-    --mark-size: 48px !important;
-  }
-
-  .login__story--branded .login__brand-name {
-    font-size: var(--text-lg);
-    font-weight: 600;
-  }
-
-  .login__story--branded .login__small-print {
-    flex-basis: 100%;
-    font-size: var(--text-xs);
-  }
 }
 
 /* ---------- Sales summary & chart ---------- */
@@ -2037,6 +1826,11 @@ form.product-form > .form-actions {
 
 .google-sign-in {
   margin-top: var(--space-5);
+}
+
+/* Beside the passkey key on login: no rule of its own, no gap above. */
+.google-sign-in--bare {
+  margin-top: 0;
 }
 
 .google-sign-in__divider {
@@ -6143,37 +5937,6 @@ fieldset.report-sections {
   color: var(--ink-muted);
 }
 
-/* ---------- Sign-in: the noise field ---------- */
-
-/* Warped Perlin noise as a topographic map in fine amber dots, filling the form side
-   and fading away in the middle, so it frames the form and never sits under it. */
-.login__side {
-  position: relative;
-  overflow: hidden;
-}
-
-.login__card {
-  position: relative;
-  z-index: 1;
-}
-
-/* The noise map with the shop moving through it (ShopDrift): carts, cars and their soap, receipts, barcodes. */
-.shop-drift {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  color: var(--accent);
-  pointer-events: none;
-  mask-image: radial-gradient(closest-side, transparent 34%, #000 78%);
-}
-
-@media (max-width: 900px) {
-  .shop-drift {
-    display: none;
-  }
-}
-
 /* The customer form's "Pay later" switch and limit, set by the owner's side only. */
 .pay-later-fields {
   display: grid;
@@ -6938,19 +6701,6 @@ fieldset.payroll-pick {
   display: flex;
   justify-content: flex-end;
   gap: var(--space-2);
-}
-
-/* The login page's passkey key: under the form after the same "or" rule as Google, which then shows no second rule. */
-.passkey-sign-in {
-  margin-top: var(--space-5);
-}
-
-.passkey-sign-in + .google-sign-in {
-  margin-top: var(--space-3);
-}
-
-.passkey-sign-in + .google-sign-in .google-sign-in__divider {
-  display: none;
 }
 
 /* After the password: the passkey instead of the code, a secondary key under the form. */

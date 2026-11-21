@@ -92,7 +92,7 @@ function Shell({ progress, title, subtitle, children }: { progress: ReactNode; t
   const step = params.get('step');
   useEffect(() => {
     if (!step) return;
-    const heading = document.querySelector<HTMLElement>('.login__title');
+    const heading = document.querySelector<HTMLElement>('.auth__title');
     heading?.setAttribute('tabindex', '-1');
     heading?.focus({ preventScroll: true });
   }, [step]);

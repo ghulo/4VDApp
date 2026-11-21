@@ -38,7 +38,16 @@ function loadGoogleScript(): Promise<void> {
  * "Continue with Google". Renders nothing until Google sign-in is set up on
  * the server (GOOGLE_CLIENT_ID), so the page works the same without it.
  */
-export function GoogleButton({ onCredential, label = 'continue_with' }: { onCredential: (credential: string) => void; label?: 'signin_with' | 'continue_with' }) {
+export function GoogleButton({
+  onCredential,
+  label = 'continue_with',
+  bare = false,
+}: {
+  onCredential: (credential: string) => void;
+  label?: 'signin_with' | 'continue_with';
+  /** Only the key, with its short name and no "or" rule: login puts it beside the passkey key under one rule. */
+  bare?: boolean;
+}) {
   const status = useQuery({ queryKey: ['auth', 'google'], queryFn: accountApi.googleStatus, staleTime: Infinity });
   const container = useRef<HTMLDivElement>(null);
   const callback = useRef(onCredential);
@@ -89,12 +98,12 @@ export function GoogleButton({ onCredential, label = 'continue_with' }: { onCred
 
   if (!clientId) return null;
   return (
-    <div className="google-sign-in">
-      <p className="google-sign-in__divider">{t.common.or}</p>
+    <div className={bare ? 'google-sign-in google-sign-in--bare' : 'google-sign-in'}>
+      {!bare && <p className="google-sign-in__divider">{t.common.or}</p>}
       <div className="google-sign-in__key" aria-busy={!ready && !failed} data-disabled={failed || undefined}>
         <span className="button button--secondary button--wide google-sign-in__face" aria-hidden="true">
           <GoogleMark />
-          {label === 'signin_with' ? t.google.signIn : t.google.continueWith}
+          {bare ? t.auth.googleShort : label === 'signin_with' ? t.google.signIn : t.google.continueWith}
         </span>
         <div ref={container} className="google-sign-in__button" />
       </div>

@@ -7,7 +7,6 @@ const SOURCES = import.meta.glob<string>('/src/**/*.{ts,tsx}', { query: '?raw', 
 const TRANSLATED = [
   'src/i18n/LanguageSwitch.tsx',
   'src/components/AuthShell.tsx',
-  'src/components/LoginReceipt.tsx',
   'src/components/ui/PasswordField.tsx',
   'src/components/Avatar.tsx',
   'src/components/Feedback.tsx',

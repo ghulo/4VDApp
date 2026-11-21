@@ -19,7 +19,7 @@ const MIN_PASSWORD_LENGTH = 8;
 function BackToLogin() {
   const t = useT();
   return (
-    <p className="login__links">
+    <p className="auth__links">
       <Link to="/login" className="text-link">
         {t.auth.backToLogin}
       </Link>

@@ -702,8 +702,8 @@ gradients in screens: use these tokens.
 ### 8.1 Glass (clean and purposeful)
 Glass is for **chrome that floats over moving content**, so you can see the page
 pass underneath. Allowed only on: the dashboard top bar, the Ctrl K palette, the
-phone menu drawer, the staff tab bar, sticky phone action bars, and the
-sign-in moment cards. Never on cards, tables, forms or anything that holds
+phone menu drawer, the staff tab bar and sticky phone action bars. Never on
+the Counter or in the Windows app (section 12). Never on cards, tables, forms or anything that holds
 reading text at rest.
 
 One recipe, everywhere:
@@ -896,12 +896,30 @@ Sidebar rows 34px (44px in the drawer): line icon + 500 label in Muted Ink;
 hover Oat; current = Amber Tint fill, Amber Text label, 3px Amber marker on the edge.
 Count badge: Ink pill with Paper text, To do count only (3.3).
 
+### 10.13 Sign-in (AuthShell)
+Login and every page reached from an email link (forgot password, new
+password, confirm email, invites, the Windows app's welcome) share one
+layout, like Stripe's or Linear's: **one centred card, 400px**, raised like
+every 4VD card, on the plain page. 4VD's mark and name top left; language and
+theme top right, outside the card. Under the card one quiet line, "Back office
+and till for shops in Kosovo". No second panel, no moving scene, no story.
+- Login: title "Log in to 4VD"; email (remembered on this device, passkeys
+  offered in its autofill), password with "Forgot your password?" beside its
+  label, the amber **Log in** key; then one "or" rule and **Passkey** and
+  **Google** as two equal secondary keys side by side (one fills the row when
+  the other isn't offered).
+- A business's own link: its mark and name above the title inside the card,
+  "Runs on 4VD" under it; no 4VD mark top left.
+- Windows app PC set up for the Counter: a stamp under the card says whether
+  the fiscal printer is ready (F-Link's folder and program), so the cashier
+  knows the till can print before signing in.
+
 ## 11. The printed finish (vintage, used sparingly)
 
-- **The big mark** (`admin/src/components/ui/ShopSunrise.tsx`): the logo (the hand-drawn family home on its soft amber tile) drawn large and flat, as it is (2026-11-11). Sign-in, the
-  Overview hero, big empty pages, nowhere else. It is
+- **The big mark** (`admin/src/components/ui/ShopSunrise.tsx`): the logo (the hand-drawn family home on its soft amber tile) drawn large and flat, as it is (2026-11-11). The
+  Overview hero and big empty pages, nowhere else. It is
   **never larger than the information beside it**: up to 360px in the Overview
-  hero (standing on the page rule), 240px in empty states, 560px on sign-in. Hidden from screen readers;
+  hero (standing on the page rule), 240px in empty states. Hidden from screen readers;
   the tile settles in once, off under reduced motion.
 - **No paper grain**: the noise overlay was removed (2026-10-12); the canvas
   is clean with only the faint tick weave.

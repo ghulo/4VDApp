@@ -13,7 +13,8 @@ import { CopyButton, QrCode } from '../components/TwoStepCard';
 import { ApiError } from '../services/apiClient';
 import { errorMessage } from '../utils/errors';
 import { useFinishSignIn } from '../auth/finishSignIn';
-import { Button, PasswordField } from '../components/ui';
+import { Badge, Button, PasswordField } from '../components/ui';
+import { desktopBridge, useDesktopSetup } from '../desktop/desktopSetup';
 import { activeCatalogue, useT } from '../i18n/useT';
 import { useLinkBrand } from '../theme/useLinkBrand';
 
@@ -83,6 +84,8 @@ export function LoginPage() {
   const resend = useMutation({ mutationFn: () => accountApi.resendVerification(email.trim()) });
   // Passkeys: offered in the email field's autofill where the browser can, and always as a key.
   const passkeysHere = usePasskeysHere();
+  // Same answer GoogleButton reads (shared cache): whether to draw the "or" rule for it.
+  const googleOn = useQuery({ queryKey: ['auth', 'google'], queryFn: accountApi.googleStatus, staleTime: Infinity }).data?.enabled === true;
   const finishRef = useRef(finish);
   useEffect(() => {
     finishRef.current = finish;
@@ -199,7 +202,7 @@ export function LoginPage() {
   }
 
   return (
-    <AuthShell brand={linkBrand} title={t.auth.logIn} subtitle={t.auth.loginSubtitle}>
+    <AuthShell brand={linkBrand} title={linkBrand && !linkBrand.house ? t.auth.logIn : t.auth.logInTo('4VD')} foot={<PrinterStatus />}>
       <form onSubmit={handleSubmit} noValidate aria-busy={busy || undefined}>
         <label className="field">
           <span className="field__label">{t.auth.email}</span>
@@ -274,12 +277,26 @@ export function LoginPage() {
           {busy ? t.auth.loggingIn : t.auth.logIn}
         </Button>
       </form>
-      {passkeysHere && (
-        <div className="passkey-sign-in">
-          <p className="google-sign-in__divider">{t.common.or}</p>
-          <Button variant="secondary" wide icon={Fingerprint} loading={passkey.isPending} disabled={busy && !passkey.isPending} onClick={() => passkey.mutate()}>
-            {t.passkeys.signIn}
-          </Button>
+      {/* The other ways in, as two equal keys under one "or" rule. */}
+      {(passkeysHere || googleOn) && (
+        <div className="auth__other">
+          <p className="auth__or">{t.common.or}</p>
+          <div className="auth__alt">
+            {passkeysHere && (
+              <Button
+                variant="secondary"
+                wide
+                icon={Fingerprint}
+                aria-label={t.passkeys.signIn}
+                loading={passkey.isPending}
+                disabled={busy && !passkey.isPending}
+                onClick={() => passkey.mutate()}
+              >
+                {t.auth.passkeyShort}
+              </Button>
+            )}
+            <GoogleButton bare label="signin_with" onCredential={(credential) => google.mutate(credential)} />
+          </div>
           {passkey.isError && !passkeyCancelled(passkey.error) && (
             <p className="form-error" role="alert">
               {passkeyMessage(passkey.error)}
@@ -287,8 +304,27 @@ export function LoginPage() {
           )}
         </div>
       )}
-      <GoogleButton label="signin_with" onCredential={(credential) => google.mutate(credential)} />
     </AuthShell>
+  );
+}
+
+/**
+ * On a Windows app PC set up for the Counter, a line under the card saying
+ * whether the fiscal printer is ready (F-Link's folder and program, from the
+ * app itself), so the cashier knows the till can print before signing in.
+ */
+function PrinterStatus() {
+  const t = useT().auth.printer;
+  const bridge = desktopBridge();
+  const setup = useDesktopSetup();
+  const till = setup.data?.role === 'counter';
+  const status = useQuery({ queryKey: ['fiscal-status'], queryFn: () => bridge!.fiscalStatus!(), enabled: till && Boolean(bridge?.fiscalStatus), retry: false });
+  if (!till || !status.data) return null;
+  const ready = status.data.folder && status.data.flink;
+  return (
+    <p className="auth__status" role="status">
+      <Badge tone={ready ? 'ok' : 'warn'}>{ready ? t.ready : status.data.folder ? t.notRunning : t.noFolder}</Badge>
+    </p>
   );
 }
 

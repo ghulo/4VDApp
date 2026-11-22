@@ -1,6 +1,6 @@
 import { AiUnavailableError, ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { AddressFields, AddressRecord, PartnerMatch, PartnerRepository, PartnerSide } from '../repositories/PartnerRepository.js';
-import type { TransactionManager } from '../repositories/TransactionManager.js';
+import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
 import { formatEuro, roundMoney } from '../utils/money.js';
 import { zonedDay } from '../utils/zonedDates.js';
 import type { PartnerReader, PartnerReading } from './ai/partnerReader.js';
@@ -87,22 +87,36 @@ export class PartnerService {
     return (await this.partners.addresses(owner)).map(toAddress);
   }
 
-  async addAddress(owner: { customerId?: number; supplierId?: number }, fields: AddressFields): Promise<AddressDto> {
-    if (owner.customerId !== undefined && !(await this.partners.customer(owner.customerId))) throw new NotFoundError(`Customer ${owner.customerId} does not exist`);
-    if (owner.supplierId !== undefined && !(await this.partners.supplier(owner.supplierId))) throw new NotFoundError(`Supplier ${owner.supplierId} does not exist`);
-    const id = await this.partners.addAddress({ customerId: owner.customerId ?? null, supplierId: owner.supplierId ?? null }, fields);
+  async addAddress(owner: { customerId?: number; supplierId?: number }, fields: AddressFields, userId: number): Promise<AddressDto> {
+    const id = await this.transactions.run(async (repos) => {
+      const customerId = owner.customerId ?? null;
+      const supplierId = owner.supplierId ?? null;
+      if (customerId !== null && !(await repos.partners.customer(customerId))) throw new NotFoundError(`Customer ${customerId} does not exist`);
+      if (supplierId !== null && !(await repos.partners.supplier(supplierId))) throw new NotFoundError(`Supplier ${supplierId} does not exist`);
+      const added = await repos.partners.addAddress({ customerId, supplierId }, fields);
+      await logAddress(repos, userId, { customer_id: customerId, supplier_id: supplierId, label: fields.label }, 'added');
+      return added;
+    });
     return toAddress((await this.partners.findAddress(id))!);
   }
 
-  async updateAddress(id: number, fields: AddressFields): Promise<AddressDto> {
-    if (!(await this.partners.findAddress(id))) throw new NotFoundError(`Address ${id} does not exist`);
-    await this.partners.updateAddress(id, fields);
+  async updateAddress(id: number, fields: AddressFields, userId: number): Promise<AddressDto> {
+    await this.transactions.run(async (repos) => {
+      const address = await repos.partners.findAddress(id);
+      if (!address) throw new NotFoundError(`Address ${id} does not exist`);
+      await repos.partners.updateAddress(id, fields);
+      await logAddress(repos, userId, { ...address, label: fields.label }, 'changed');
+    });
     return toAddress((await this.partners.findAddress(id))!);
   }
 
-  async removeAddress(id: number): Promise<void> {
-    if (!(await this.partners.findAddress(id))) throw new NotFoundError(`Address ${id} does not exist`);
-    await this.partners.removeAddress(id);
+  async removeAddress(id: number, userId: number): Promise<void> {
+    await this.transactions.run(async (repos) => {
+      const address = await repos.partners.findAddress(id);
+      if (!address) throw new NotFoundError(`Address ${id} does not exist`);
+      await repos.partners.removeAddress(id);
+      await logAddress(repos, userId, address, 'removed');
+    });
   }
 
   // ---- One firm on both lists ----
@@ -267,5 +281,23 @@ export class PartnerService {
       });
     });
     return this.bonus(customerId, now);
+  }
+}
+
+/** A customer's or supplier's address added, changed or removed, in History under them. Throws when the customer or supplier is gone. */
+async function logAddress(
+  repos: TransactionalRepositories,
+  userId: number,
+  address: { customer_id: number | null; supplier_id: number | null; label: string },
+  change: 'added' | 'changed' | 'removed',
+): Promise<void> {
+  if (address.customer_id !== null) {
+    const customer = await repos.partners.customer(address.customer_id);
+    if (!customer) throw new NotFoundError(`Customer ${address.customer_id} does not exist`);
+    await repos.activityLog.create({ userId, action: 'customer.address_changed', entityType: 'customer', entityId: customer.id, say: { key: 'addressChanged', params: { name: customer.name, change, label: address.label } } });
+  } else if (address.supplier_id !== null) {
+    const supplier = await repos.partners.supplier(address.supplier_id);
+    if (!supplier) throw new NotFoundError(`Supplier ${address.supplier_id} does not exist`);
+    await repos.activityLog.create({ userId, action: 'supplier.address_changed', entityType: 'supplier', entityId: supplier.id, say: { key: 'addressChanged', params: { name: supplier.name, change, label: address.label } } });
   }
 }

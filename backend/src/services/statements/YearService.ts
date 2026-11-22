@@ -245,11 +245,14 @@ export class YearService {
     }
     if ((input.previousTax ?? 0) < 0) throw new ValidationError("Last year's tax can't be below zero; type 0 for a year with a loss.");
     const value = JSON.stringify({ previousTax: input.previousTax === null ? null : roundMoney(input.previousTax), profitBefore: input.profitBefore === null ? null : roundMoney(input.profitBefore) });
-    await this.db
-      .insertInto('settings')
-      .values({ key: `${TAX_INPUTS_KEY}${year}`, value, updated_by: actor.id, updated_at: new Date() })
-      .onConflict((conflict) => conflict.columns(['business_id', 'key']).doUpdateSet({ value, updated_by: actor.id, updated_at: new Date() }))
-      .execute();
+    await this.db.transaction().execute(async (trx) => {
+      await trx
+        .insertInto('settings')
+        .values({ key: `${TAX_INPUTS_KEY}${year}`, value, updated_by: actor.id, updated_at: new Date() })
+        .onConflict((conflict) => conflict.columns(['business_id', 'key']).doUpdateSet({ value, updated_by: actor.id, updated_at: new Date() }))
+        .execute();
+      await new ActivityLogRepository(trx).create({ userId: actor.id, action: 'books.tax_inputs_changed', entityType: null, entityId: null, say: { key: 'taxInputsChanged', params: { year } }, details: JSON.parse(value) });
+    });
     return this.year(year, actor.role, now);
   }
 

@@ -194,6 +194,13 @@ const en = {
     }`,
   vatReopened: (p: { month: string; reason: string }) =>
     `Reopened the VAT month ${EN_MONTHS[Number(p.month.slice(5, 7)) - 1]} ${p.month.slice(0, 4)}: ${p.reason}`,
+  vatTyped: (p: { month: string; refund: number | null; carriedIn: number | null }, w: Words) =>
+    `Typed the VAT figures for ${EN_MONTHS[Number(p.month.slice(5, 7)) - 1]} ${p.month.slice(0, 4)}: ${[
+      p.refund !== null ? `refund asked ${w.money(p.refund)}` : null,
+      p.carriedIn !== null ? `credit carried in ${w.money(p.carriedIn)}` : null,
+    ].filter(Boolean).join(', ') || 'cleared'}`,
+  taxInputsChanged: (p: { year: number }) => `Changed what the ${p.year} profit tax is based on`,
+  declarationInputsChanged: (p: { year: number }) => `Changed the figures typed into the ${p.year} profit tax declaration`,
   yearClosed: (p: { year: number; profit: number; tax: number }, w: Words) =>
     `Closed ${p.year} in the books: ${p.profit >= 0 ? 'profit' : 'loss'} of ${w.money(Math.abs(p.profit))} after ${w.money(p.tax)} profit tax moved into retained earnings`,
   yearReopened: (p: { year: number; reason: string }) => `Reopened ${p.year} in the books: ${p.reason}`,
@@ -223,6 +230,10 @@ const en = {
     `Removed ${p.amount} from ${p.product} (${p.reason})`,
 
   invited: (p: { email: string; role: Role }) => `Invited ${p.email} as ${EN_ROLE[p.role]}`,
+  inviteCancelled: (p: { email: string }) => `Cancelled the invite for ${p.email}`,
+  addressChanged: (p: { name: string; change: 'added' | 'changed' | 'removed'; label: string }) =>
+    `${{ added: 'Added', changed: 'Changed', removed: 'Removed' }[p.change]} the address "${p.label}" ${p.change === 'added' ? 'for' : 'of'} ${p.name}`,
+  billEmailRemoved: (p: { file: string; sender: string }) => `Took the emailed bill ${p.file} from ${p.sender} off the list`,
   joined: (p: { name: string; role: Role }) => `${p.name} joined as ${EN_ROLE[p.role]}`,
 
   bulkPricesUpdated: (p: { product: string }) => `Updated bulk prices for ${p.product}`,
@@ -777,6 +788,13 @@ const sq: Templates = {
       p.outcome === 'pay' ? `${w.money(p.amount)} për t'u paguar` : p.outcome === 'carry' ? `${w.money(p.amount)} bartet në muajin tjetër` : "asgjë për t'u paguar"
     }`,
   vatReopened: (p) => `Rihapi muajin e TVSH-së ${SQ_MONTHS[Number(p.month.slice(5, 7)) - 1]} ${p.month.slice(0, 4)}: ${p.reason}`,
+  vatTyped: (p, w) =>
+    `Shkroi shifrat e TVSH-së për ${SQ_MONTHS[Number(p.month.slice(5, 7)) - 1]} ${p.month.slice(0, 4)}: ${[
+      p.refund !== null ? `rimbursim i kërkuar ${w.money(p.refund)}` : null,
+      p.carriedIn !== null ? `kredi e bartur ${w.money(p.carriedIn)}` : null,
+    ].filter(Boolean).join(', ') || 'të fshira'}`,
+  taxInputsChanged: (p) => `Ndryshoi bazën e tatimit në fitim për ${p.year}`,
+  declarationInputsChanged: (p) => `Ndryshoi shifrat e shkruara në deklaratën e tatimit në fitim për ${p.year}`,
   yearClosed: (p, w) =>
     `Mbylli vitin ${p.year} në libra: ${p.profit >= 0 ? 'fitimi' : 'humbja'} prej ${w.money(Math.abs(p.profit))} pas tatimit në fitim prej ${w.money(p.tax)} kaloi te fitimet e mbajtura`,
   yearReopened: (p) => `Rihapi vitin ${p.year} në libra: ${p.reason}`,
@@ -801,6 +819,9 @@ const sq: Templates = {
   stockRemoved: (p) => `Hoqi ${p.amount} nga ${p.product} (${SQ_STOCK_REASON[p.reason] ?? p.reason})`,
 
   invited: (p) => `Ftoi ${p.email} si ${SQ_ROLE[p.role]}`,
+  inviteCancelled: (p) => `Anuloi ftesën për ${p.email}`,
+  addressChanged: (p) => `${{ added: 'Shtoi', changed: 'Ndryshoi', removed: 'Hoqi' }[p.change]} adresën "${p.label}" të ${p.name}`,
+  billEmailRemoved: (p) => `Hoqi nga lista faturën e ardhur me email ${p.file} nga ${p.sender}`,
   joined: (p) => `${p.name} u bashkua si ${SQ_ROLE[p.role]}`,
 
   bulkPricesUpdated: (p) => `Përditësoi çmimet me shumicë për ${p.product}`,

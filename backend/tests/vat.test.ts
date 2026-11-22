@@ -202,6 +202,8 @@ describe('filing a month', () => {
     const saved = await api().put(`/api/vat/${EARLIER}`).set(auth(accountantToken)).send({ refund: 10, carriedIn: 5 });
     expect(saved.status).toBe(200);
     expect(saved.body.data.boxes[68]).toBe(5);
+    // In History, so the typed figures can be traced.
+    expect((await context.db.selectFrom('activity_log').select('summary').where('action', '=', 'vat.figures_typed').execute()).map((row) => row.summary).at(-1)).toMatch(/refund asked .*10.00, credit carried in .*5.00/);
     expect(saved.body.data.boxes[70]).toBe(10);
     expect(saved.body.data.boxes[71]).toBe(13);
     expect((await api().put(`/api/vat/${LAST}`).set(auth(accountantToken)).send({ carriedIn: 5 })).status).toBe(400);

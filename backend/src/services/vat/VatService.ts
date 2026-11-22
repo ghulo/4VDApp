@@ -628,7 +628,17 @@ export class VatService {
         throw new ValidationError(credit > 0 ? `A refund can be at most the credit, €${credit.toFixed(2)}.` : 'There is no credit this month to ask back.');
       }
     }
-    await this.periods.saveTyped(month, values, actorId);
+    await this.db.transaction().execute(async (trx) => {
+      await new VatMonthRepository(trx).saveTyped(month, values, actorId);
+      await new ActivityLogRepository(trx).create({
+        userId: actorId,
+        action: 'vat.figures_typed',
+        entityType: 'vat_month',
+        entityId: Number(month.slice(0, 4)) * 100 + Number(month.slice(5, 7)),
+        say: { key: 'vatTyped', params: { month: short(month), refund: values.refund ?? null, carriedIn: values.carriedIn ?? null } },
+        details: { refund: values.refund ?? null, carriedIn: values.carriedIn ?? null },
+      });
+    });
     return this.month(monthKey);
   }
 

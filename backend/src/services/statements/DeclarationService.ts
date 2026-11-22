@@ -380,11 +380,14 @@ export class DeclarationService {
       other: input.other.map((item) => ({ label: item.label.trim(), amount: roundMoney(item.amount) })),
       earlierLosses: input.earlierLosses.map((loss) => ({ year: loss.year, amount: roundMoney(loss.amount) })).sort((a, b) => a.year - b.year),
     } satisfies DeclarationInputs);
-    await this.db
-      .insertInto('tax_declarations')
-      .values({ year, inputs: value, updated_by: actor.id, updated_at: new Date() })
-      .onConflict((conflict) => conflict.columns(['business_id', 'year']).doUpdateSet({ inputs: value, updated_by: actor.id, updated_at: new Date() }))
-      .execute();
+    await this.db.transaction().execute(async (trx) => {
+      await trx
+        .insertInto('tax_declarations')
+        .values({ year, inputs: value, updated_by: actor.id, updated_at: new Date() })
+        .onConflict((conflict) => conflict.columns(['business_id', 'year']).doUpdateSet({ inputs: value, updated_by: actor.id, updated_at: new Date() }))
+        .execute();
+      await new ActivityLogRepository(trx).create({ userId: actor.id, action: 'books.declaration_inputs_changed', entityType: null, entityId: null, say: { key: 'declarationInputsChanged', params: { year } }, details: JSON.parse(value) });
+    });
     return this.declaration(year, now);
   }
 

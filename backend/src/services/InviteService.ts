@@ -143,7 +143,10 @@ export class InviteService {
     const { businessId } = await this.actor(actorId);
     const invite = await this.inviteRepository.findById(inviteId, businessId);
     if (!invite) throw new NotFoundError('That invite does not exist');
-    await this.inviteRepository.revoke(invite.id);
+    await this.transactions.run(async (repos) => {
+      await repos.invites.revoke(invite.id);
+      await repos.activityLog.create({ userId: actorId, action: 'user.invite_cancelled', entityType: 'user', entityId: null, say: { key: 'inviteCancelled', params: { email: invite.email } } });
+    });
   }
 
   /** What the invite page shows before someone accepts. */

@@ -196,6 +196,7 @@ describe('emailed bills: the daily cap and failures', () => {
 
     await api().post(`/api/bill-emails/${row.id}/remove`).set(auth()).expect(200);
     expect((await rows())[0]!.status).toBe('removed');
+    expect((await context.db.selectFrom('activity_log').select('summary').where('action', '=', 'bill.email_removed').execute()).map((row) => row.summary)).toHaveLength(1);
     expect((await todo()).filter((item) => item.kind === 'bill_email')).toEqual([]);
 
     // Removed by mistake: the same file sent again is taken, not called a duplicate.

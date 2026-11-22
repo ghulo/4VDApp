@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { NOTIFICATION_TYPES } from '../constants/notifications.js';
 import type { ServerMessages } from '../i18n/messages.js';
 import { ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
-import type { BillEmailRecord, BillEmailRepository } from '../repositories/BillEmailRepository.js';
+import { type BillEmailRecord, BillEmailRepository } from '../repositories/BillEmailRepository.js';
 import type { SettingsRepository } from '../repositories/SettingsRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
 import type { UserRepository } from '../repositories/UserRepository.js';
@@ -168,12 +168,22 @@ export class BillEmailService {
     return result;
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(id: number, userId: number): Promise<void> {
     const row = await this.repository.findById(id);
     if (!row) throw new NotFoundError(`Emailed bill ${id} does not exist`);
     if (row.status !== 'waiting' && row.status !== 'failed') throw new ConflictError('This emailed bill has already been dealt with');
     // The file is kept: removing only takes it off the list, and the same file can be sent again.
-    await this.repository.markRemoved(id);
+    await this.transactions.run(async (repos) => {
+      await new BillEmailRepository(repos.db).markRemoved(id);
+      await repos.activityLog.create({
+        userId,
+        action: 'bill.email_removed',
+        entityType: null,
+        entityId: null,
+        say: { key: 'billEmailRemoved', params: { file: row.file_name ?? row.subject ?? '?', sender: row.sender } },
+        details: { billEmailId: id },
+      });
+    });
   }
 
   async open(): Promise<OpenBillEmailDto[]> {

@@ -1,5 +1,5 @@
 import { CaretDown, Check, type Icon } from '@phosphor-icons/react';
-import { Fragment, type KeyboardEvent, type ReactNode, useEffect, useId, useRef, useState } from 'react';
+import { Fragment, type KeyboardEvent, type ReactNode, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import type { ButtonVariant } from './buttonClass';
 import { Tooltip } from './Tooltip';
@@ -35,6 +35,9 @@ interface MenuButtonProps {
   footnote?: ReactNode;
 }
 
+/** How close to the screen's left edge the list may come before it flips to hang from the key's left edge. */
+const EDGE = 8;
+
 /**
  * A key that opens a short list of related actions, like the downloads of a
  * page. Arrow keys move through the list, Esc closes it and returns to the key.
@@ -57,6 +60,16 @@ export function MenuButton({ label, icon, items, variant = 'ghost', size = 'sm',
     },
   };
   const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const menuRef = useRef<HTMLUListElement>(null);
+
+  // The list hangs from the key's right edge; a key near the left of a phone
+  // would push it off screen, so it then hangs from the left edge instead.
+  useLayoutEffect(() => {
+    const menu = menuRef.current;
+    if (!open || !menu) return;
+    delete menu.dataset.align;
+    if (menu.getBoundingClientRect().left < EDGE) menu.dataset.align = 'start';
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -115,7 +128,7 @@ export function MenuButton({ label, icon, items, variant = 'ghost', size = 'sm',
         </Button>
       )}
       {/* Kept in the page while shut, so it can close the way it opened. */}
-      <ul id={menuId} hidden={!open} role="menu" aria-label={label} className="menu" onKeyDown={onMenuKey}>
+      <ul ref={menuRef} id={menuId} hidden={!open} role="menu" aria-label={label} className="menu" onKeyDown={onMenuKey}>
         {heading && (
           // A menu may only hold menu items, so the heading is a sighted cue only (callers repeat it elsewhere).
           <li role="none" aria-hidden="true" className="menu__heading">

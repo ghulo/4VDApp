@@ -2618,6 +2618,13 @@ input.switch:focus-visible {
   box-shadow: var(--shadow-float);
 }
 
+/* Set by MenuButton when hanging from the right would run off the left of the screen. */
+.menu[data-align='start'] {
+  right: auto;
+  left: 0;
+  transform-origin: top left;
+}
+
 /* Not an item: small print under the choices ("Runs on 4VD"). */
 .menu__footnote {
   margin-top: var(--space-1);

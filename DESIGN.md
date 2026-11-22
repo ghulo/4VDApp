@@ -905,29 +905,45 @@ Count badge: Ink pill with Paper text, To do count only (3.3).
 
 ### 10.13 Sign-in (AuthShell)
 Login and every page reached from an email link (forgot password, new
-password, confirm email, invites, the Windows app's welcome) share one
-**split screen**, like a real program's (user, 2026-11-22; it replaced a lone
-centred card that read as a box floating in a void). Left, a brand panel
-(raised paper, hairline edge): 4VD's mark and name at the top, "Back office
-and till for shops in Kosovo" in Display, three plain facts each behind an
-amber tick, "© 4VD" at the foot. Right, the form on the plain page (380px, no
-card), language and theme above it. Titles are the body sans at 600, not
-Display. Under 860px the panel goes and the mark sits in the top row.
+password, confirm email, invites, the Windows app's welcome) put the form on
+one **raised card** (400px, plain surface, float shadow), with the mark top
+left, language and theme top right, and "4 Vëllezërit Dacaj · Back office and
+till for shops in Kosovo" under the card. Titles are Display (Source Serif 4,
+500). The card is there at once, with no entrance motion. The page scrolls
+when it is short (768px monitors, zoom, the QR setup step).
+- **The login form only** (`showcase`), from 960px wide: the card on the
+  left and, on the right, a still **sample of the dashboard** (`SignInPeek`):
+  the real top bar, sidebar and Overview (Today so far, To do, Yesterday,
+  30-day takings) with made-up figures, tilted back a little and fading out to
+  the right and bottom, labelled "Example dashboard". It stays quiet so the
+  Log in key is the brightest thing on the page: grey bars with one muted amber
+  bar, neutral icons, no red, no amber keys, no live-looking notes. Nothing
+  real is loaded before sign-in; it is inert and hidden from screen readers.
+  It fades in once (Motion: Full only). 960-1240px: drawn at 85%. The code,
+  setup and reset steps are the card alone (user, 2026-11-22, after a
+  GPT-6.2 Sol + Gemini 4 Neon review; it replaced a split screen with a brand
+  panel and three facts, "seen before").
 - Login: title "Log in to 4VD"; email (remembered on this device, passkeys
-  offered in its autofill), password with "Forgot your password?" beside its
-  label, the amber **Log in** key; then one "or" rule and **Passkey** and
-  **Google** as two equal secondary keys side by side (one fills the row when
-  the other isn't offered).
+  offered in its autofill; a background autofill failure says nothing),
+  password, then "Forgot your password?" under it (after the field in Tab
+  order; it carries the email to the reset page, which fills it in), the amber
+  **Log in** key (it spins only for its own send), then one "or" rule and
+  **Sign in with a passkey** and **Google** as full-width keys, one under the
+  other. A wrong or empty password shakes the **password box**, and the
+  message under it appears without moving (`.form-error--still`). Typing
+  again clears the message. Fields focus themselves only with a mouse or
+  trackpad (no phone keyboard popping up on arrival).
 - Two-step code: six inset boxes in two threes (`CodeInput`, on input-otp:
-  one real input, so paste and one-time-code autofill work). The sixth digit
-  sends it; a wrong code shakes the boxes, clears them and keeps them red
-  until the next digit. "Lost your phone? Use a backup code" swaps in a plain
-  field. The quiet links sit in one row under the keys.
-- A business's own link: its mark and name in the panel (and the phone top
-  row), no facts, "Runs on 4VD" at the foot; no 4VD mark.
-- Windows app PC set up for the Counter: a stamp under the form says whether
-  the fiscal printer is ready (F-Link's folder and program), so the cashier
-  knows the till can print before signing in.
+  one real input, so paste and one-time-code autofill work). Sent with
+  **Check code** or Enter, so a mistyped digit can be put right first; a wrong
+  code shakes the boxes and clears them. "Use a backup code" swaps in a plain
+  field. An expired step turns the key into **Back to log in**.
+- A business's own link: its mark and name at the top and in the sample, and
+  "Runs on 4VD" under the card; no 4VD mark.
+- Windows app PC set up for the Counter: a stamp under the card says whether
+  the fiscal printer is ready (F-Link's folder and program), with **Check
+  again** when it isn't, so the cashier knows the till can print before
+  signing in.
 
 ## 11. The printed finish (vintage, used sparingly)
 

@@ -697,6 +697,12 @@
   animation: shake var(--motion-shake) var(--shake-curve);
 }
 
+/* Where the field itself shakes (sign-in's password, the code boxes), its
+   message just appears: one thing moves, and it's the thing to fix. */
+:root[data-motion='full'] .form-error--still {
+  animation: none;
+}
+
 /* ---------- Thinking: a soft wave of light runs over the words ----------
    The second loop in 4VD, after the loading wave: only while Claude reads,
    in the text's own ink (opacity only, never a coloured sweep). */

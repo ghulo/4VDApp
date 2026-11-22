@@ -72,6 +72,7 @@ export function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
+  const passkeyBoxRef = useRef<HTMLDivElement>(null);
 
   // Two-step sign-in: after the password (or Google), the code from the app.
   const [challenge, setChallenge] = useState<string | null>(null);
@@ -102,6 +103,8 @@ export function LoginPage() {
     onSuccess: (result) => afterPasskeyRef.current(result),
     // Listen in the email field again (the key's prompt replaced that one).
     onSettled: () => setAutofillRound((round) => round + 1),
+    // Back on the key they pressed, so a cancelled prompt doesn't lose their place.
+    onError: () => passkeyBoxRef.current?.querySelector('button')?.focus(),
   });
   useEffect(() => {
     if (!passkeysHere || challenge || setupChallenge) return;
@@ -113,8 +116,9 @@ export function LoginPage() {
         if (!live) return;
         const result = await passkeyApi.signIn(await startAuthentication({ optionsJSON, useBrowserAutofill: true }));
         if (live) await afterPasskeyRef.current(result);
-      } catch (autofillError) {
-        if (live && !passkeyCancelled(autofillError)) setError(autofillError);
+      } catch {
+        // A failure in the background autofill is not something they asked for: stay quiet.
+        // The Passkey key below reports its own errors.
       }
     })();
     return () => {
@@ -123,6 +127,8 @@ export function LoginPage() {
     };
   }, [passkeysHere, challenge, setupChallenge, autofillRound]);
   const busy = isSubmitting || google.isPending || passkey.isPending;
+  // The phone keyboard opens when they tap a field, not on arrival.
+  const [typingDevice] = useState(() => typeof window === 'undefined' || window.matchMedia('(pointer: fine)').matches);
   const notConfirmed = error instanceof ApiError && error.code === 'EMAIL_NOT_CONFIRMED';
 
   if (state.status === 'signedIn') return <Navigate to={redirectTo} replace />;
@@ -137,7 +143,9 @@ export function LoginPage() {
     };
     setFieldErrors(problems);
     if (problems.email || problems.password) {
-      (problems.email ? emailRef : passwordRef).current?.focus();
+      const field = (problems.email ? emailRef : passwordRef).current;
+      shake(problems.email ? field : field?.closest('.password-field__box') ?? field);
+      field?.focus();
       return;
     }
 
@@ -155,6 +163,8 @@ export function LoginPage() {
       setError(loginError);
       // Ready to type the password again at once.
       if (loginError instanceof ApiError && loginError.status === 401 && loginError.code !== 'EMAIL_NOT_CONFIRMED') {
+        // The password box shakes, like a wrong code; the message under it stays still.
+        shake(passwordRef.current?.closest('.password-field__box') ?? passwordRef.current);
         passwordRef.current?.focus();
         passwordRef.current?.select();
       }
@@ -202,7 +212,7 @@ export function LoginPage() {
   }
 
   return (
-    <AuthShell brand={linkBrand} title={linkBrand && !linkBrand.house ? t.auth.logIn : t.auth.logInTo('4VD')} foot={<PrinterStatus />}>
+    <AuthShell brand={linkBrand} title={linkBrand && !linkBrand.house ? t.auth.logIn : t.auth.logInTo('4VD')} foot={<PrinterStatus />} showcase>
       <form onSubmit={handleSubmit} noValidate aria-busy={busy || undefined}>
         <label className="field">
           <span className="field__label">{t.auth.email}</span>
@@ -217,13 +227,14 @@ export function LoginPage() {
             onChange={(event) => {
               setEmail(event.target.value);
               setFieldErrors((now) => ({ ...now, email: undefined }));
+              setError(null);
             }}
             readOnly={busy}
             required
             aria-invalid={fieldErrors.email ? true : undefined}
             aria-describedby={fieldErrors.email ? 'login-email-error' : undefined}
             // A remembered email goes straight to the password instead.
-            autoFocus={!email}
+            autoFocus={typingDevice && !email}
           />
           {fieldErrors.email && (
             <span className="field__error" id="login-email-error">
@@ -234,25 +245,26 @@ export function LoginPage() {
         <PasswordField
           ref={passwordRef}
           label={t.auth.password}
-          aside={
-            <Link to="/forgot-password" className="text-link">
-              {t.auth.forgot}
-            </Link>
-          }
           error={fieldErrors.password}
           autoComplete="current-password"
           value={password}
           onChange={(event) => {
             setPassword(event.target.value);
             setFieldErrors((now) => ({ ...now, password: undefined }));
+            setError(null);
           }}
           readOnly={busy}
           required
-          autoFocus={Boolean(email)}
+          autoFocus={typingDevice && Boolean(email)}
         />
+        <p className="auth__forgot">
+          <Link to="/forgot-password" state={{ email: email.trim() }} className="text-link">
+            {t.auth.forgot}
+          </Link>
+        </p>
 
         {Boolean(error) && (
-          <p className="form-error" role="alert">
+          <p className="form-error form-error--still" role="alert">
             {signInMessage(error)}
           </p>
         )}
@@ -273,33 +285,32 @@ export function LoginPage() {
           </p>
         )}
 
-        <Button type="submit" loading={busy} variant="primary" wide>
-          {busy ? t.auth.loggingIn : t.auth.logIn}
+        <Button type="submit" loading={isSubmitting} disabled={busy && !isSubmitting} variant="primary" wide>
+          {isSubmitting ? t.auth.loggingIn : t.auth.logIn}
         </Button>
       </form>
       {/* The other ways in, as two equal keys under one "or" rule. */}
       {(passkeysHere || googleOn) && (
         <div className="auth__other">
           <p className="auth__or">{t.common.or}</p>
-          <div className="auth__alt">
+          <div className="auth__alt" ref={passkeyBoxRef}>
             {passkeysHere && (
               <Button
                 variant="secondary"
                 wide
                 icon={Fingerprint}
-                aria-label={t.passkeys.signIn}
                 loading={passkey.isPending}
                 disabled={busy && !passkey.isPending}
                 onClick={() => passkey.mutate()}
               >
-                {t.auth.passkeyShort}
+                {t.passkeys.signIn}
               </Button>
             )}
             <GoogleButton bare label="signin_with" onCredential={(credential) => google.mutate(credential)} />
           </div>
           {passkey.isError && !passkeyCancelled(passkey.error) && (
             <p className="form-error" role="alert">
-              {passkeyMessage(passkey.error)}
+              {passkeyMessage(passkey.error)} {t.auth.passkeyFallback}
             </p>
           )}
         </div>
@@ -324,13 +335,18 @@ function PrinterStatus() {
   return (
     <p className="auth__status" role="status">
       <Badge tone={ready ? 'ok' : 'warn'}>{ready ? t.ready : status.data.folder ? t.notRunning : t.noFolder}</Badge>
+      {!ready && (
+        <button type="button" className="text-button" disabled={status.isFetching} onClick={() => void status.refetch()}>
+          {t.checkAgain}
+        </button>
+      )}
     </p>
   );
 }
 
 /**
- * The second step: the six-digit code from the app in six boxes (sent on the
- * sixth digit; a wrong one shakes, clears and starts again), or a backup code
+ * The second step: the six-digit code from the app in six boxes (sent with
+ * Check code; a wrong one shakes, clears and starts again), or a backup code
  * in a plain field behind "Lost your phone?".
  */
 function CodeStep({ challenge, onDone, onBack }: { challenge: string; onDone: (result: LoginResult) => Promise<void>; onBack: () => void }) {
@@ -439,7 +455,6 @@ function CodeStep({ challenge, onDone, onBack }: { challenge: string; onDone: (r
           <CodeInput
             value={code}
             onChange={typed}
-            onComplete={send}
             invalid={invalid}
             disabled={expired}
             label={t.auth.codeLabel}
@@ -455,13 +470,20 @@ function CodeStep({ challenge, onDone, onBack }: { challenge: string; onDone: (r
         </div>
       )}
       {check.isError && (
-        <p className="form-error" role="alert" id="login-code-error">
+        <p className="form-error form-error--still" role="alert" id="login-code-error">
           {backup && check.error instanceof ApiError && check.error.code === 'WRONG_CODE' ? t.auth.wrongBackup : signInMessage(check.error)}
         </p>
       )}
-      <Button type="submit" loading={check.isPending} variant="primary" wide disabled={expired || passkeyStep.isPending}>
-        {check.isPending ? t.auth.checkingCode : t.auth.checkCode}
-      </Button>
+      {/* Sent with the key, so a mistyped digit can be put right first; an expired step only goes back. */}
+      {expired ? (
+        <Button variant="primary" wide onClick={onBack}>
+          {t.auth.backToLogin}
+        </Button>
+      ) : (
+        <Button type="submit" loading={check.isPending} variant="primary" wide disabled={passkeyStep.isPending}>
+          {check.isPending ? t.auth.checkingCode : t.auth.checkCode}
+        </Button>
+      )}
       {offer.data && (
         <div className="code-step__passkey">
           <Button variant="secondary" wide icon={Fingerprint} loading={passkeyStep.isPending} disabled={expired || check.isPending} onClick={() => passkeyStep.mutate()}>
@@ -592,9 +614,6 @@ function SetupStep({ setupChallenge, onDone, onBack }: { setupChallenge: string;
                   setMissing(false);
                   if (confirm.isError && !expired) confirm.reset();
                 }}
-                onComplete={(value) => {
-                  if (!confirm.isPending && !expired) confirm.mutate(value);
-                }}
                 invalid={missing || (confirm.isError && !expired)}
                 disabled={expired}
                 label={t.auth.codeLabel}
@@ -607,15 +626,21 @@ function SetupStep({ setupChallenge, onDone, onBack }: { setupChallenge: string;
               </span>
             </div>
             {confirm.isError && (
-              <p className="form-error" role="alert" id="setup-code-error">
+              <p className="form-error form-error--still" role="alert" id="setup-code-error">
                 {signInMessage(confirm.error)}
               </p>
             )}
           </div>
         )}
-        <Button type="submit" loading={confirm.isPending} variant="primary" wide disabled={!qr.isSuccess || expired}>
-          {confirm.isPending ? t.auth.checkingCode : t.auth.setupConfirm}
-        </Button>
+        {expired ? (
+          <Button variant="primary" wide onClick={onBack}>
+            {t.auth.backToLogin}
+          </Button>
+        ) : (
+          <Button type="submit" loading={confirm.isPending} variant="primary" wide disabled={!qr.isSuccess}>
+            {confirm.isPending ? t.auth.checkingCode : t.auth.setupConfirm}
+          </Button>
+        )}
         <div className="auth__links-row">
           <button type="button" className="text-button" onClick={onBack}>
             {t.auth.useOtherAccount}

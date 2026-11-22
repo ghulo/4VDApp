@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useFinishSignIn } from '../auth/finishSignIn';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, useLocation, useParams } from 'react-router';
 import { useAuth } from '../auth/useAuth';
 import { announceSwitch } from '../auth/businessSwitch';
 import { forgetViewAs } from '../auth/viewAs';
@@ -38,13 +38,35 @@ function FormError({ error }: { error: unknown }) {
 
 // ---------- Forgot password ----------
 
+const EMAIL_SHAPE = /^[^s@]+@[^s@]+.[^s@]+$/;
+
+/** The email typed on the login page, else the last one that signed in here; still editable. */
+function startingEmail(passed: unknown): string {
+  if (typeof passed === 'string' && passed) return passed;
+  try {
+    return localStorage.getItem('4vd.lastEmail') ?? '';
+  } catch {
+    return '';
+  }
+}
+
 export function ForgotPasswordPage() {
   const t = useT();
-  const [email, setEmail] = useState('');
+  const location = useLocation();
+  const [email, setEmail] = useState(() => startingEmail((location.state as { email?: string } | null)?.email));
+  const [problem, setProblem] = useState<string | null>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
   const send = useMutation({ mutationFn: () => accountApi.forgotPassword(email.trim()) });
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
+    const trimmed = email.trim();
+    const wrong = !trimmed ? t.auth.enterEmail : EMAIL_SHAPE.test(trimmed) ? null : t.auth.badEmail;
+    setProblem(wrong);
+    if (wrong) {
+      emailRef.current?.focus();
+      return;
+    }
     send.mutate();
   }
 
@@ -58,10 +80,30 @@ export function ForgotPasswordPage() {
         <form onSubmit={handleSubmit} noValidate>
           <label className="field">
             <span className="field__label">{t.auth.email}</span>
-            <input type="email" autoComplete="email" spellCheck={false} required autoFocus value={email} onChange={(event) => setEmail(event.target.value)} />
+            <input
+              ref={emailRef}
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              spellCheck={false}
+              required
+              autoFocus
+              value={email}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                setProblem(null);
+              }}
+              aria-invalid={problem ? true : undefined}
+              aria-describedby={problem ? 'forgot-email-error' : undefined}
+            />
+            {problem && (
+              <span className="field__error" id="forgot-email-error">
+                {problem}
+              </span>
+            )}
           </label>
           <FormError error={send.error} />
-          <Button type="submit" disabled={!email.trim() || send.isPending} variant="primary" wide loading={send.isPending}>
+          <Button type="submit" disabled={send.isPending} variant="primary" wide loading={send.isPending}>
             {t.auth.emailMeLink}
           </Button>
         </form>

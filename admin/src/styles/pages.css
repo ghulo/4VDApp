@@ -742,26 +742,38 @@ form.product-form > .form-actions {
 }
 
 /* ---------- Login and email-link pages (AuthShell) ----------
-   A split screen (DESIGN.md 10.13): a brand panel on the left, the form on
-   the plain page on the right with language and theme above it. Under
-   860px the panel goes and the mark moves into the top row. */
+   DESIGN.md 10.13: the form on a raised card. On the login form itself
+   (.auth--showcase) a quiet sample picture of the dashboard (SignInPeek) sits
+   tilted back on the right from 960px up; every other step is the card alone,
+   in the middle. The page scrolls when it is short (768px monitors, zoom, the
+   QR setup step). */
 
 .auth {
   display: grid;
-  grid-template-columns: minmax(340px, 5fr) 7fr;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
   min-height: 100vh;
   min-height: 100dvh;
+  overflow-x: clip;
   background: var(--bg);
 }
 
-/* The panel rests on the page like every 4VD card, its edge a hairline. */
-.auth__aside {
+@media (min-width: 960px) {
+  .auth--showcase {
+    grid-template-columns: minmax(380px, 5fr) 7fr;
+  }
+}
+
+.auth__top {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  z-index: 2;
   display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-  padding: var(--space-5) var(--space-7) var(--space-6);
-  border-inline-end: 1px solid var(--line);
-  background: var(--light-raise), var(--surface);
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
 }
 
 .auth__wordmark {
@@ -776,72 +788,6 @@ form.product-form > .form-actions {
   overflow-wrap: anywhere;
 }
 
-.auth__pitch {
-  display: grid;
-  align-content: center;
-  flex: 1;
-  gap: var(--space-5);
-  max-width: 26rem;
-}
-
-.auth__pitch-line {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: var(--text-headline);
-  font-weight: 500;
-  line-height: 1.15;
-  letter-spacing: -0.01em;
-  text-wrap: balance;
-}
-
-.auth__points {
-  display: grid;
-  gap: var(--space-3);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  color: var(--ink-muted);
-}
-
-/* Each fact behind the logo's tick, in amber. */
-.auth__points li {
-  display: flex;
-  gap: var(--space-3);
-}
-
-.auth__points li::before {
-  flex: none;
-  width: 16px;
-  height: 1lh;
-  background-color: var(--amber-mark);
-  content: '';
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8.5 L6.5 12 L13 4' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 16px 16px no-repeat;
-}
-
-.auth__aside-foot {
-  margin: 0;
-  color: var(--ink-muted);
-  font-size: var(--text-sm);
-}
-
-.auth__side {
-  display: grid;
-  grid-template-rows: auto 1fr;
-  min-width: 0;
-}
-
-.auth__top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-4) var(--space-5);
-}
-
-.auth__wordmark--phone {
-  display: none;
-}
-
 .auth__prefs {
   display: flex;
   flex-wrap: wrap;
@@ -852,21 +798,81 @@ form.product-form > .form-actions {
 }
 
 .auth__main {
+  grid-column: 1;
+  grid-row: 2;
+  z-index: 1;
   display: grid;
   align-content: center;
   justify-items: center;
   gap: var(--space-5);
-  padding: var(--space-5) var(--space-4) var(--space-7);
+  padding: var(--space-5) var(--space-5) var(--space-7);
 }
 
 .auth__form {
-  width: min(380px, 100%);
+  width: min(400px, 100%);
+  padding: var(--space-6);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+}
+
+.auth__family {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+  text-wrap: balance;
+}
+
+/* The picture's room: the full height of the page on the right, the frame
+   running off its right and bottom edges. */
+.auth__stage {
+  display: none;
+}
+
+@media (min-width: 960px) {
+  .auth--showcase .auth__stage {
+    display: block;
+  }
+}
+
+.auth__stage {
+  position: relative;
+  max-height: 100dvh;
+  grid-column: 2;
+  grid-row: 1 / -1;
+  min-width: 0;
+  overflow: hidden;
+  border-inline-start: 1px solid var(--line);
+  background: var(--surface-sunk);
+  perspective: 1800px;
+}
+
+/* "Example dashboard": says plainly the figures beside it are made up. */
+.auth__sample {
+  position: absolute;
+  top: calc(var(--space-7) * 2 + var(--space-2));
+  left: var(--space-7);
+  z-index: 1;
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+/* Under the password: the way back in when it's forgotten, after the field in Tab order. */
+.auth__forgot {
+  margin: calc(var(--space-2) * -1) 0 var(--space-4);
+  font-size: var(--text-sm);
+  text-align: end;
 }
 
 .auth__title {
   margin: 0;
+  font-family: var(--font-display);
   font-size: var(--text-headline);
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.15;
   letter-spacing: -0.025em;
   text-wrap: balance;
@@ -889,12 +895,15 @@ form.product-form > .form-actions {
   text-align: center;
 }
 
-.auth__foot--phone {
-  display: none;
-}
 
 .auth__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2) var(--space-3);
   margin: 0;
+  font-size: var(--text-sm);
 }
 
 .auth__links {
@@ -911,7 +920,7 @@ form.product-form > .form-actions {
   font-size: var(--text-sm);
 }
 
-/* Passkey and Google: two equal keys side by side under one "or" rule. */
+/* Passkey and Google: full-width keys, one under the other, under one "or" rule. */
 .auth__other {
   display: grid;
   gap: var(--space-3);
@@ -936,32 +945,339 @@ form.product-form > .form-actions {
 
 .auth__alt {
   display: grid;
-  grid-auto-columns: minmax(0, 1fr);
-  grid-auto-flow: column;
   gap: var(--space-2);
 }
 
-@media (max-width: 860px) {
-  .auth {
-    grid-template-columns: minmax(0, 1fr);
+/* 960-1240px (a 1366px shop laptop at 125%): the picture a little smaller. */
+@media (min-width: 960px) and (max-width: 1240px) {
+  .peek__frame {
+    scale: 0.85;
   }
+}
 
-  .auth__aside {
-    display: none;
-  }
-
-  .auth__wordmark--phone,
-  .auth__foot--phone {
-    display: flex;
-  }
-
+@media (max-width: 600px) {
   .auth__top {
     padding-inline: var(--space-4);
   }
 
   .auth__main {
     align-content: start;
-    padding-top: var(--space-6);
+    padding: var(--space-3) var(--space-4) var(--space-6);
+  }
+
+  .auth__form {
+    padding: calc(var(--space-4) + var(--space-1));
+  }
+}
+
+/* ---------- The dashboard picture beside sign-in (SignInPeek) ----------
+   The real dashboard's parts at their real sizes, drawn once with made-up
+   figures and tilted back. Tokens only, so it follows light and dark. */
+
+.peek {
+  position: absolute;
+  inset: 0;
+  font-size: var(--text-sm);
+  pointer-events: none;
+  user-select: none;
+}
+
+.peek p {
+  margin: 0;
+}
+
+.peek__frame {
+  position: absolute;
+  top: calc(var(--space-7) * 3 + var(--space-2));
+  left: var(--space-7);
+  display: grid;
+  grid-template-columns: 190px 1fr;
+  grid-template-rows: 56px 1fr;
+  width: 940px;
+  height: 780px;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-panel);
+  background: var(--bg);
+  box-shadow: var(--shadow-float);
+  transform: rotateY(-10deg) rotateX(4deg) rotateZ(-1deg);
+  transform-origin: left center;
+}
+
+/* Fades the frame into the page on its far side and at its foot. */
+.peek::after {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, transparent 72%, var(--surface-sunk)),
+    linear-gradient(0deg, var(--surface-sunk), transparent 22%);
+  content: '';
+}
+
+.peek__bar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 0 var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.peek__search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 340px;
+  height: 34px;
+  padding: 0 6px 0 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-small);
+  background: var(--surface-sunk);
+  color: var(--ink-muted);
+}
+
+.peek__search > span {
+  flex: 1;
+}
+
+.peek__search kbd {
+  padding: 0 4px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-stamp);
+  font: inherit;
+  font-size: var(--text-xs);
+}
+
+.peek__avatar {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-left: auto;
+  border-radius: var(--radius-pill);
+  background: var(--line-strong);
+  color: var(--ink);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.peek__side {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-right: 1px solid var(--line);
+}
+
+.peek__group {
+  padding: 0 var(--space-2);
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.peek__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 6px var(--space-2);
+  border-radius: var(--radius-small);
+  color: var(--ink-muted);
+}
+
+.peek__item[data-on] {
+  background: var(--surface);
+  box-shadow: var(--shadow-raise);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.peek__count {
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: auto;
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--bg);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.peek__main {
+  display: grid;
+  align-content: start;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-6);
+}
+
+.peek__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.peek .peek__title {
+  margin-right: auto;
+  font-family: var(--font-display);
+  font-size: var(--text-headline);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.peek__key {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 32px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  box-shadow: var(--key-shine-paper), var(--key-drop);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.peek__key--small {
+  height: 28px;
+  font-size: var(--text-xs);
+}
+
+.peek__card {
+  border-radius: var(--radius-panel);
+  background: var(--light-raise), var(--surface);
+  box-shadow: var(--shadow-raise);
+}
+
+.peek__today {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+}
+
+.peek__label {
+  color: var(--ink-muted);
+  font-weight: 600;
+}
+
+.peek__figure {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.peek__figure--small {
+  font-size: var(--text-base);
+}
+
+.peek__muted {
+  color: var(--ink-muted);
+}
+
+.peek__up {
+  margin-left: auto;
+  color: var(--ink-muted);
+}
+
+.peek__desk {
+  display: grid;
+  grid-template-columns: 1.7fr 1fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.peek .peek__section {
+  margin-bottom: var(--space-2);
+  font-weight: 600;
+}
+
+.peek__task {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+
+.peek__task + .peek__task {
+  border-top: 1px solid var(--line);
+}
+
+.peek__task-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-small);
+  background: var(--surface-sunk);
+  color: var(--ink-muted);
+}
+
+.peek__task-text {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+
+.peek__task-text small {
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+}
+
+.peek__yesterday {
+  display: grid;
+  align-content: start;
+  gap: var(--space-1);
+  margin-top: calc(var(--space-2) + 1lh);
+  padding: var(--space-4) var(--space-5);
+}
+
+.peek__yesterday .peek__label {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+.peek__chart {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+}
+
+.peek__bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 120px;
+  border-bottom: 1px solid var(--line);
+}
+
+.peek__bars span {
+  flex: 1;
+  border-radius: 3px 3px 0 0;
+  background: var(--line-strong);
+}
+
+.peek__bars span[data-today] {
+  background: var(--amber-mark);
+  opacity: 0.7;
+}
+
+/* One short fade as the page opens, only under Motion: Full; the card is there at once. */
+:root[data-motion='full'] .peek {
+  animation: peek-in var(--dur-medium) var(--ease) both;
+}
+
+@keyframes peek-in {
+  from {
+    opacity: 0;
   }
 }
 

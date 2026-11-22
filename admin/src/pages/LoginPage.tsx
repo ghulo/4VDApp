@@ -13,7 +13,7 @@ import { CopyButton, QrCode } from '../components/TwoStepCard';
 import { ApiError } from '../services/apiClient';
 import { errorMessage } from '../utils/errors';
 import { useFinishSignIn } from '../auth/finishSignIn';
-import { Badge, Button, PasswordField } from '../components/ui';
+import { Badge, Button, CodeInput, PasswordField, shake } from '../components/ui';
 import { desktopBridge, useDesktopSetup } from '../desktop/desktopSetup';
 import { activeCatalogue, useT } from '../i18n/useT';
 import { useLinkBrand } from '../theme/useLinkBrand';
@@ -328,18 +328,31 @@ function PrinterStatus() {
   );
 }
 
-/** The second step: a six-digit code from the app, or a backup code. */
+/**
+ * The second step: the six-digit code from the app in six boxes (sent on the
+ * sixth digit; a wrong one shakes, clears and starts again), or a backup code
+ * in a plain field behind "Lost your phone?".
+ */
 function CodeStep({ challenge, onDone, onBack }: { challenge: string; onDone: (result: LoginResult) => Promise<void>; onBack: () => void }) {
   const t = useT();
   const [code, setCode] = useState('');
+  const [backup, setBackup] = useState(false);
   const [missing, setMissing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
   const check = useMutation({
-    mutationFn: () => authApi.twoStep(challenge, code.trim()),
+    mutationFn: (typed: string) => authApi.twoStep(challenge, typed.trim()),
     onSuccess: onDone,
     onError: () => {
-      inputRef.current?.focus();
-      inputRef.current?.select();
+      if (backup) {
+        shake(inputRef.current);
+        inputRef.current?.focus();
+        inputRef.current?.select();
+        return;
+      }
+      setCode('');
+      shake(boxRef.current);
+      requestAnimationFrame(() => inputRef.current?.focus());
     },
   });
   const expired = check.error instanceof ApiError && check.error.code === 'TWO_STEP_EXPIRED';
@@ -361,45 +374,89 @@ function CodeStep({ challenge, onDone, onBack }: { challenge: string; onDone: (r
     onSuccess: onDone,
   });
 
+  function typed(value: string) {
+    if (check.isPending) return;
+    setCode(value);
+    setMissing(false);
+    // The red goes once they start again; the message stays for an expired step.
+    if (check.isError && !expired) check.reset();
+  }
+
+  function send(value: string) {
+    if (check.isPending || expired) return;
+    check.mutate(value);
+  }
+
   function submit(event: FormEvent) {
     event.preventDefault();
     if (code.trim().length < 6) {
       setMissing(true);
+      shake(backup ? inputRef.current : boxRef.current);
       inputRef.current?.focus();
       return;
     }
-    check.mutate();
+    send(code);
   }
 
+  function switchMode() {
+    setBackup((now) => !now);
+    setCode('');
+    setMissing(false);
+    check.reset();
+    // The new field takes focus once it is on the page.
+    requestAnimationFrame(() => inputRef.current?.focus());
+  }
+
+  const invalid = missing || (check.isError && !expired);
+  const hintId = 'login-code-hint';
+  const describedBy = check.isError ? `${hintId} login-code-error` : hintId;
   return (
-    <form onSubmit={submit} noValidate aria-busy={check.isPending || undefined}>
-      <label className="field">
-        <span className="field__label">{t.auth.code}</span>
-        <input
-          ref={inputRef}
-          className="code-input"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          autoCapitalize="off"
-          spellCheck={false}
-          maxLength={20}
-          value={code}
-          onChange={(event) => {
-            setCode(event.target.value);
-            setMissing(false);
-          }}
-          readOnly={check.isPending}
-          aria-invalid={missing || check.isError ? true : undefined}
-          aria-describedby={check.isError ? 'login-code-hint login-code-error' : 'login-code-hint'}
-          autoFocus
-        />
-        <span className="field-hint" id="login-code-hint">
-          {missing ? t.auth.enterCode : t.auth.codeHint}
-        </span>
-      </label>
+    <form onSubmit={submit} noValidate aria-busy={check.isPending || undefined} className="code-step">
+      {backup ? (
+        <label className="field">
+          <span className="field__label">{t.auth.backupCode}</span>
+          <input
+            ref={inputRef}
+            className="code-input"
+            autoComplete="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            maxLength={20}
+            value={code}
+            onChange={(event) => typed(event.target.value)}
+            readOnly={check.isPending}
+            disabled={expired}
+            aria-invalid={invalid || undefined}
+            aria-describedby={describedBy}
+            autoFocus
+          />
+          <span className="field-hint" id={hintId}>
+            {missing ? t.auth.enterBackup : t.auth.backupHint}
+          </span>
+        </label>
+      ) : (
+        <div className="field">
+          <CodeInput
+            value={code}
+            onChange={typed}
+            onComplete={send}
+            invalid={invalid}
+            disabled={expired}
+            label={t.auth.codeLabel}
+            describedBy={describedBy}
+            boxRef={boxRef}
+            inputRef={inputRef}
+          />
+          {missing && (
+            <span className="field-hint" id={hintId}>
+              {t.auth.enterCode}
+            </span>
+          )}
+        </div>
+      )}
       {check.isError && (
         <p className="form-error" role="alert" id="login-code-error">
-          {signInMessage(check.error)}
+          {backup && check.error instanceof ApiError && check.error.code === 'WRONG_CODE' ? t.auth.wrongBackup : signInMessage(check.error)}
         </p>
       )}
       <Button type="submit" loading={check.isPending} variant="primary" wide disabled={expired || passkeyStep.isPending}>
@@ -417,11 +474,16 @@ function CodeStep({ challenge, onDone, onBack }: { challenge: string; onDone: (r
           )}
         </div>
       )}
-      <p className="field-hint">
+      <div className="auth__links-row">
+        {!expired && (
+          <button type="button" className="text-button" onClick={switchMode}>
+            {backup ? t.auth.useApp : t.auth.useBackup}
+          </button>
+        )}
         <button type="button" className="text-button" onClick={onBack}>
           {t.auth.useOtherAccount}
         </button>
-      </p>
+      </div>
     </form>
   );
 }
@@ -440,6 +502,7 @@ function SetupStep({ setupChallenge, onDone, onBack }: { setupChallenge: string;
   const [session, setSession] = useState<(LoginResult & { backupCodes: string[] }) | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const codesRef = useRef<HTMLUListElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
   const qr = useQuery({
     queryKey: ['auth', 'two-step-setup', setupChallenge],
     queryFn: () => accountApi.setupStart(setupChallenge),
@@ -448,14 +511,15 @@ function SetupStep({ setupChallenge, onDone, onBack }: { setupChallenge: string;
     retry: false,
   });
   const confirm = useMutation({
-    mutationFn: () => accountApi.setupConfirm(setupChallenge, code.trim()),
+    mutationFn: (typed: string) => accountApi.setupConfirm(setupChallenge, typed.trim()),
     onSuccess: (result) => {
       setCode('');
       setSession(result);
     },
     onError: () => {
-      inputRef.current?.focus();
-      inputRef.current?.select();
+      setCode('');
+      shake(boxRef.current);
+      requestAnimationFrame(() => inputRef.current?.focus());
     },
   });
   const leaving = useMutation({ mutationFn: (result: LoginResult) => onDone(result) });
@@ -494,10 +558,11 @@ function SetupStep({ setupChallenge, onDone, onBack }: { setupChallenge: string;
     event.preventDefault();
     if (code.trim().length < 6) {
       setMissing(true);
+      shake(boxRef.current);
       inputRef.current?.focus();
       return;
     }
-    confirm.mutate();
+    confirm.mutate(code);
   }
 
   return (
@@ -518,30 +583,29 @@ function SetupStep({ setupChallenge, onDone, onBack }: { setupChallenge: string;
             <p className="field-hint">
               {t.profile.twoStepKey} <span className="two-step__key">{qr.data.secret.replace(/(.{4})/g, '$1 ').trim()}</span>
             </p>
-            <label className="field">
-              <span className="field__label">{t.auth.code}</span>
-              <input
-                ref={inputRef}
-                className="code-input"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                autoCapitalize="off"
-                spellCheck={false}
-                maxLength={20}
+            <div className="field">
+              <CodeInput
                 value={code}
-                onChange={(event) => {
-                  setCode(event.target.value);
+                onChange={(value) => {
+                  if (confirm.isPending) return;
+                  setCode(value);
                   setMissing(false);
+                  if (confirm.isError && !expired) confirm.reset();
                 }}
-                readOnly={confirm.isPending}
-                aria-invalid={missing || confirm.isError ? true : undefined}
-                aria-describedby={confirm.isError ? 'setup-code-hint setup-code-error' : 'setup-code-hint'}
-                autoFocus
+                onComplete={(value) => {
+                  if (!confirm.isPending && !expired) confirm.mutate(value);
+                }}
+                invalid={missing || (confirm.isError && !expired)}
+                disabled={expired}
+                label={t.auth.codeLabel}
+                describedBy={confirm.isError ? 'setup-code-hint setup-code-error' : 'setup-code-hint'}
+                boxRef={boxRef}
+                inputRef={inputRef}
               />
               <span className="field-hint" id="setup-code-hint">
                 {missing ? t.auth.enterCode : t.auth.setupCodeHint}
               </span>
-            </label>
+            </div>
             {confirm.isError && (
               <p className="form-error" role="alert" id="setup-code-error">
                 {signInMessage(confirm.error)}
@@ -552,11 +616,11 @@ function SetupStep({ setupChallenge, onDone, onBack }: { setupChallenge: string;
         <Button type="submit" loading={confirm.isPending} variant="primary" wide disabled={!qr.isSuccess || expired}>
           {confirm.isPending ? t.auth.checkingCode : t.auth.setupConfirm}
         </Button>
-        <p className="field-hint">
+        <div className="auth__links-row">
           <button type="button" className="text-button" onClick={onBack}>
             {t.auth.useOtherAccount}
           </button>
-        </p>
+        </div>
       </form>
     </AuthShell>
   );

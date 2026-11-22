@@ -742,15 +742,92 @@ form.product-form > .form-actions {
 }
 
 /* ---------- Login and email-link pages (AuthShell) ----------
-   One centred card on the page (DESIGN.md "Sign-in"): 4VD's mark top left,
-   language and theme top right outside the card, one quiet line under it. */
+   A split screen (DESIGN.md 10.13): a brand panel on the left, the form on
+   the plain page on the right with language and theme above it. Under
+   860px the panel goes and the mark moves into the top row. */
 
 .auth {
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-columns: minmax(340px, 5fr) 7fr;
   min-height: 100vh;
   min-height: 100dvh;
   background: var(--bg);
+}
+
+/* The panel rests on the page like every 4VD card, its edge a hairline. */
+.auth__aside {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-5) var(--space-7) var(--space-6);
+  border-inline-end: 1px solid var(--line);
+  background: var(--light-raise), var(--surface);
+}
+
+.auth__wordmark {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.auth__pitch {
+  display: grid;
+  align-content: center;
+  flex: 1;
+  gap: var(--space-5);
+  max-width: 26rem;
+}
+
+.auth__pitch-line {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-headline);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.auth__points {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ink-muted);
+}
+
+/* Each fact behind the logo's tick, in amber. */
+.auth__points li {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.auth__points li::before {
+  flex: none;
+  width: 16px;
+  height: 1lh;
+  background-color: var(--amber-mark);
+  content: '';
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8.5 L6.5 12 L13 4' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 16px 16px no-repeat;
+}
+
+.auth__aside-foot {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.auth__side {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-width: 0;
 }
 
 .auth__top {
@@ -761,14 +838,8 @@ form.product-form > .form-actions {
   padding: var(--space-4) var(--space-5);
 }
 
-.auth__wordmark {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin: 0;
-  font-size: var(--text-lg);
-  font-weight: 600;
-  letter-spacing: -0.02em;
+.auth__wordmark--phone {
+  display: none;
 }
 
 .auth__prefs {
@@ -777,57 +848,38 @@ form.product-form > .form-actions {
   align-items: center;
   justify-content: flex-end;
   gap: var(--space-2);
+  margin-inline-start: auto;
 }
 
 .auth__main {
   display: grid;
   align-content: center;
   justify-items: center;
-  gap: var(--space-4);
-  padding: var(--space-5) var(--space-4) var(--space-8);
+  gap: var(--space-5);
+  padding: var(--space-5) var(--space-4) var(--space-7);
 }
 
-/* Paper resting on the page, like every 4VD card. */
-.auth__card {
-  width: min(400px, 100%);
-  padding: var(--space-6);
-  border: 1px solid transparent;
-  border-radius: var(--radius-panel);
-  background: var(--light-raise), var(--surface);
-  box-shadow: var(--shadow-raise);
-}
-
-.auth__brand {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  margin-bottom: var(--space-5);
-}
-
-.auth__brand-name {
-  margin: 0;
-  font-size: var(--text-lg);
-  font-weight: 600;
-  overflow-wrap: anywhere;
+.auth__form {
+  width: min(380px, 100%);
 }
 
 .auth__title {
   margin: 0;
-  font-family: var(--font-display);
   font-size: var(--text-headline);
-  font-weight: 500;
-  letter-spacing: -0.01em;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
   text-wrap: balance;
 }
 
 .auth__subtitle {
-  margin: var(--space-1) 0 0;
+  margin: var(--space-2) 0 0;
   color: var(--ink-muted);
 }
 
 .auth__title + :not(.auth__subtitle),
 .auth__subtitle + * {
-  margin-top: var(--space-5);
+  margin-top: var(--space-6);
 }
 
 .auth__foot {
@@ -837,12 +889,26 @@ form.product-form > .form-actions {
   text-align: center;
 }
 
+.auth__foot--phone {
+  display: none;
+}
+
 .auth__status {
   margin: 0;
 }
 
 .auth__links {
   margin-top: var(--space-4);
+}
+
+/* Under the keys: the quiet ways out, one each side. */
+.auth__links-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  margin-top: var(--space-5);
+  font-size: var(--text-sm);
 }
 
 /* Passkey and Google: two equal keys side by side under one "or" rule. */
@@ -875,22 +941,119 @@ form.product-form > .form-actions {
   gap: var(--space-2);
 }
 
-@media (max-width: 600px) {
+@media (max-width: 860px) {
+  .auth {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .auth__aside {
+    display: none;
+  }
+
+  .auth__wordmark--phone,
+  .auth__foot--phone {
+    display: flex;
+  }
+
   .auth__top {
     padding-inline: var(--space-4);
   }
 
-  .auth__card {
-    padding: var(--space-5);
+  .auth__main {
+    align-content: start;
+    padding-top: var(--space-6);
   }
 }
 
-/* The two-step code: wide, evenly spaced digits, easy to check against the phone. */
+/* A backup code in a plain field: wide, evenly spaced characters. */
 .code-input {
   font-family: var(--font-mono);
   font-size: var(--text-lg);
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.3em;
+  letter-spacing: 0.15em;
+}
+
+/* The six-digit code: six inset boxes in two threes, each one a field cell.
+   The real input lies over them, invisible (input-otp). */
+.code-boxes__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.code-boxes__group {
+  display: flex;
+  flex: 1;
+  gap: var(--space-2);
+}
+
+.code-boxes__dash {
+  flex: none;
+  width: var(--space-2);
+  height: 2px;
+  border-radius: 1px;
+  background: var(--line-strong);
+}
+
+.code-box {
+  display: grid;
+  flex: 1;
+  place-items: center;
+  min-width: 0;
+  height: calc(var(--control-h) + var(--space-4));
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-small);
+  background-color: var(--surface);
+  box-shadow: var(--shadow-inset);
+  color: var(--ink);
+  font-size: var(--text-figure);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  transition:
+    border-color var(--dur-small) var(--ease),
+    box-shadow var(--dur-small) var(--ease),
+    background-color var(--dur-small) var(--ease);
+}
+
+.code-boxes__row:hover .code-box:not([data-active]) {
+  border-color: color-mix(in srgb, var(--line-strong) 60%, var(--ink));
+}
+
+.code-box[data-active] {
+  border-color: var(--focus);
+  box-shadow: var(--shadow-inset), 0 0 0 3px color-mix(in srgb, var(--focus) 25%, transparent);
+}
+
+.code-boxes[data-invalid] .code-box {
+  border-color: var(--danger);
+}
+
+.code-boxes[data-invalid] .code-box[data-active] {
+  box-shadow: var(--shadow-inset), 0 0 0 3px color-mix(in srgb, var(--danger) 22%, transparent);
+}
+
+.code-boxes:has(input:disabled) .code-box {
+  background-color: var(--surface-sunk);
+  color: var(--ink-muted);
+  cursor: not-allowed;
+}
+
+.code-box__caret {
+  width: 2px;
+  height: 1.1em;
+  border-radius: 1px;
+  background: var(--ink);
+}
+
+:root[data-motion='full'] .code-box__caret,
+:root[data-motion='reduced'] .code-box__caret {
+  animation: code-caret 1.1s steps(1) infinite;
+}
+
+@keyframes code-caret {
+  50% {
+    opacity: 0;
+  }
 }
 
 /* Two-step setup in Profile: the QR code on a white tile (readable in dark mode), the key and the backup codes. */

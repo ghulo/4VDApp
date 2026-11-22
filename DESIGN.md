@@ -906,18 +906,26 @@ Count badge: Ink pill with Paper text, To do count only (3.3).
 ### 10.13 Sign-in (AuthShell)
 Login and every page reached from an email link (forgot password, new
 password, confirm email, invites, the Windows app's welcome) share one
-layout, like Stripe's or Linear's: **one centred card, 400px**, raised like
-every 4VD card, on the plain page. 4VD's mark and name top left; language and
-theme top right, outside the card. Under the card one quiet line, "Back office
-and till for shops in Kosovo". No second panel, no moving scene, no story.
+**split screen**, like a real program's (user, 2026-11-22; it replaced a lone
+centred card that read as a box floating in a void). Left, a brand panel
+(raised paper, hairline edge): 4VD's mark and name at the top, "Back office
+and till for shops in Kosovo" in Display, three plain facts each behind an
+amber tick, "© 4VD" at the foot. Right, the form on the plain page (380px, no
+card), language and theme above it. Titles are the body sans at 600, not
+Display. Under 860px the panel goes and the mark sits in the top row.
 - Login: title "Log in to 4VD"; email (remembered on this device, passkeys
   offered in its autofill), password with "Forgot your password?" beside its
   label, the amber **Log in** key; then one "or" rule and **Passkey** and
   **Google** as two equal secondary keys side by side (one fills the row when
   the other isn't offered).
-- A business's own link: its mark and name above the title inside the card,
-  "Runs on 4VD" under it; no 4VD mark top left.
-- Windows app PC set up for the Counter: a stamp under the card says whether
+- Two-step code: six inset boxes in two threes (`CodeInput`, on input-otp:
+  one real input, so paste and one-time-code autofill work). The sixth digit
+  sends it; a wrong code shakes the boxes, clears them and keeps them red
+  until the next digit. "Lost your phone? Use a backup code" swaps in a plain
+  field. The quiet links sit in one row under the keys.
+- A business's own link: its mark and name in the panel (and the phone top
+  row), no facts, "Runs on 4VD" at the foot; no 4VD mark.
+- Windows app PC set up for the Counter: a stamp under the form says whether
   the fiscal printer is ready (F-Link's folder and program), so the cashier
   knows the till can print before signing in.
 

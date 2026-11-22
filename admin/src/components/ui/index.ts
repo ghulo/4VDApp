@@ -37,3 +37,4 @@ export { Steps } from './Steps';
 export { ToastProvider, useToast, type ToastInput } from './Toast';
 export { Tooltip } from './Tooltip';
 export { PasswordField } from './PasswordField';
+export { CodeInput } from './CodeInput';

@@ -6,12 +6,17 @@ import { sendError, sendSuccess } from '../utils/apiResponse.js';
 /** How long the database check waits before calling the database down. */
 const DB_CHECK_MS = 5_000;
 
-/** Render's own check: the process answers. It never touches the database, so a database blip doesn't restart the API. */
+/**
+ * Render's own check: the process answers. It never touches the database, so a database blip doesn't restart the API.
+ * `commit` is the git commit Render built (RENDER_GIT_COMMIT, null elsewhere): CI's deploy-api job waits until it
+ * shows the pushed commit, so a deploy that fails on Render's side turns the run red (.github/scripts/wait-for-api.sh).
+ */
 export function getHealth(_req: Request, res: Response): void {
   sendSuccess(res, {
     status: 'ok',
     timestamp: new Date().toISOString(),
     uptimeSeconds: Math.round(process.uptime()),
+    commit: process.env.RENDER_GIT_COMMIT || null,
   });
 }
 

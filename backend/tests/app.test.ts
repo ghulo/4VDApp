@@ -25,6 +25,19 @@ describe('GET /health', () => {
     expect(response.body.data.status).toBe('ok');
     expect(response.body.error).toBeNull();
   });
+
+  it('names the commit Render built, so CI can tell when a deploy is live', async () => {
+    const before = process.env.RENDER_GIT_COMMIT;
+    try {
+      delete process.env.RENDER_GIT_COMMIT;
+      expect((await request(app).get('/health')).body.data.commit).toBeNull();
+      process.env.RENDER_GIT_COMMIT = 'abc123';
+      expect((await request(app).get('/health')).body.data.commit).toBe('abc123');
+    } finally {
+      if (before === undefined) delete process.env.RENDER_GIT_COMMIT;
+      else process.env.RENDER_GIT_COMMIT = before;
+    }
+  });
 });
 
 describe('GET /health/db', () => {

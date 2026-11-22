@@ -72,6 +72,7 @@ describe('the yearly declaration (CD / PD)', () => {
     expect((await api().put(`/api/books/declaration/${LAST}/inputs`).set(auth(employeeToken)).send(inputs)).status).toBe(403);
     const off = await saveInputs({ includeCarwash: false });
     expect(off.status).toBe(200);
+    expect((await context.db.selectFrom('activity_log').select('summary').where('action', '=', 'books.declaration_inputs_changed').execute()).map((row) => row.summary)).toEqual([`Changed the figures typed into the ${LAST} profit tax declaration`]);
     expect(off.body.data.income.lines.some((line: { key: string }) => line.key === 'carwash_takings')).toBe(false);
     expect(off.body.data.tax).toBe(4.95);
   });

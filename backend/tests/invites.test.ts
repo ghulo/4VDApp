@@ -69,6 +69,7 @@ describe('invites', () => {
     const cancelled = await invite({ email: 'bo@example.com', role: 'family' });
     const cancelledToken = tokenFrom(await linkSentTo('bo@example.com'));
     await request(context.app).delete(`/api/invites/${cancelled.body.data.id}`).set(auth(adminToken));
+    expect((await context.db.selectFrom('activity_log').select('summary').where('action', '=', 'user.invite_cancelled').execute()).map((row) => row.summary)).toEqual(['Cancelled the invite for bo@example.com']);
 
     await invite({ email: 'cy@example.com', role: 'employee' });
     const expiredToken = tokenFrom(await linkSentTo('cy@example.com'));

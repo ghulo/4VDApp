@@ -80,15 +80,15 @@ export function createPartnerRoutes({ partnerService, guards }: Container): Rout
     sendSuccess(res, await partnerService.addresses(ownerOf(req.params)));
   });
   router.post('/:side/:id/addresses', ...guards.staff, async (req: Request, res: Response) => {
-    sendSuccess(res, await partnerService.addAddress(ownerOf(req.params), parseInput(addressSchema, req.body)), { statusCode: 201, message: 'Address added' });
+    sendSuccess(res, await partnerService.addAddress(ownerOf(req.params), parseInput(addressSchema, req.body), req.user!.id), { statusCode: 201, message: 'Address added' });
   });
   router.put('/addresses/:id', ...guards.manage, async (req: Request, res: Response) => {
     const { id } = parseInput(idParamsSchema, req.params);
-    sendSuccess(res, await partnerService.updateAddress(id, parseInput(addressSchema, req.body)), { message: 'Address saved' });
+    sendSuccess(res, await partnerService.updateAddress(id, parseInput(addressSchema, req.body), req.user!.id), { message: 'Address saved' });
   });
   router.delete('/addresses/:id', ...guards.manage, async (req: Request, res: Response) => {
     const { id } = parseInput(idParamsSchema, req.params);
-    await partnerService.removeAddress(id);
+    await partnerService.removeAddress(id, req.user!.id);
     sendSuccess(res, null, { message: 'Address removed' });
   });
 

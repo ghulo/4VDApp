@@ -32,7 +32,7 @@ export function createBillEmailRoutes({ billEmailService, guards }: Container): 
 
   router.post('/:id/remove', async (req: Request, res: Response) => {
     const { id } = parseInput(idParamsSchema, req.params);
-    await billEmailService.remove(id);
+    await billEmailService.remove(id, req.user!.id);
     sendSuccess(res, null, { message: 'Removed' });
   });
 

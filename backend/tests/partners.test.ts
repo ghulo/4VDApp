@@ -122,6 +122,9 @@ describe('addresses', () => {
 
     expect((await api().delete(`/api/partners/addresses/${added.body.data.id}`).set(auth())).status).toBe(200);
     expect((await api().get(`/api/partners/customers/${id}/addresses`).set(auth())).body.data).toEqual([]);
+    // Each change is in History under the customer or supplier.
+    expect((await context.db.selectFrom('activity_log').select('summary').where('action', '=', 'customer.address_changed').execute()).map((row) => row.summary)).toHaveLength(3);
+    expect((await context.db.selectFrom('activity_log').select('summary').where('action', '=', 'supplier.address_changed').execute()).map((row) => row.summary)).toEqual([expect.stringMatching(/^Added the address "Depo" for /)]);
   });
 });
 

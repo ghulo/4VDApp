@@ -215,6 +215,7 @@ describe('quarterly profit tax (TM)', () => {
     expect((await api().put(`/api/books/year/${LAST}/inputs`).set(auth(employeeToken)).send({ previousTax: 100, profitBefore: 500 })).status).toBe(403);
     const saved = await api().put(`/api/books/year/${LAST}/inputs`).set(auth(accountantToken)).send({ previousTax: 100, profitBefore: 500 });
     expect(saved.status).toBe(200);
+    expect((await context.db.selectFrom('activity_log').select('summary').where('action', '=', 'books.tax_inputs_changed').execute()).map((row) => row.summary)).toEqual([`Changed what the ${LAST} profit tax is based on`]);
     const view = saved.body.data;
     expect(view).toMatchObject({ method: 'last_year', previousTax: 100, previousTaxSource: 'typed', share: 27.5, profitBefore: 500 });
     expect(view.quarters.map((quarter: { suggested: number }) => quarter.suggested)).toEqual([27.5, 27.5, 27.5, 27.5]);

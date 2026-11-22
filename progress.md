@@ -12,10 +12,10 @@ Finished sections are kept in `docs/archive/progress-done.md`.
 ## Architecture weak spots (from the architecture map, 2026-11-22)
 
 - [x] 1. A backend fix can miss going live: the deploy job now waits until /health names the pushed commit, so a deploy that fails on Render's side turns the run red and the next push deploys it again (2767ba71, 56ea4c08)
-- [ ] 2. Local API as a non-owner role (row security on locally): plan agreed? waits on the user
-- [ ] 3. A check that every edit writes its history entry: first list shown to the user, waits on where it runs + the allowlist
+- [x] 2. Local API under row security: it acts as fourvd_app_local (DATABASE_ROLE in backend/.env, `npm run db:local-role`); proven on demo with a second business (PR #23)
+- [x] 3. History catches every change: six missing entries added (VAT typed figures, profit tax and declaration inputs, emailed bill removed, invite cancelled, partner addresses) and tests/activityCoverage.test.ts fails on new ones not on the reviewed list (PR #22)
 - [x] 4. roundMoney check: not built on purpose (Postgres NUMERIC(…,2) rounds the same way on save; unbalanced entries already throw in entryBuilder.ts; property tests cover the books and VAT). Revisit only if a cent slip shows up
-- [x] 5. A print stuck by a locked print journal (Windows app; 767d0e57, 08c18142, e10d2fde; needs the next Windows app release). Follow-ups from its review: an offline sale the server refused, retried while the journal can't be read, can get a new key, and an owner-confirmed Print again could then print a second receipt (existed before); keep the fiscal key across offline retries
+- [x] 5. A print stuck by a locked print journal (Windows app; 767d0e57, 08c18142, e10d2fde; in Windows app 0.5.1, released 2026-11-22). Follow-ups from its review: an offline sale the server refused, retried while the journal can't be read, can get a new key, and an owner-confirmed Print again could then print a second receipt (existed before); keep the fiscal key across offline retries
 
 ## Code review fixes (three-model review, 2026-11-19)
 

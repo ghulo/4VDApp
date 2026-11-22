@@ -1,0 +1,844 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4VD Architecture Map</title>
+<meta name="description" content="Every part of 4VD on one page: hosting, the API's routes, services, repositories and tables, the dashboard's pages, the database, the Windows app, the mail worker and CI. Built from the code by generate.mjs.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f4f2ee; --bg-sunk: #ebe8e2; --card: #fbfaf8; --card-hi: #ffffff;
+  --ink: #1d1b18; --ink-2: #4f4a43; --ink-3: #807a71; --line: #dcd7cf; --line-2: #c9c3b9;
+  --amber: #f5b71a; --amber-ink: #8a5f00; --amber-wash: #fbecc4; --amber-line: #e9c25d;
+  --get: #2f6f4e; --post: #8a5f00; --put: #3c5b8a; --patch: #6a4f8a; --delete: #9a3b2e;
+  --c-client: #6b6359; --c-edge: #b07a00; --c-core: #1d1b18; --c-data: #3c5b8a; --c-external: #807a71; --c-ops: #2f6f4e; --c-device: #6a4f8a;
+  --shadow: 0 1px 0 rgba(255,255,255,.9) inset, 0 1px 2px rgba(40,30,10,.06), 0 4px 14px -6px rgba(40,30,10,.12);
+  --inset: inset 0 1px 2px rgba(40,30,10,.10), inset 0 0 0 1px var(--line);
+  --r: 12px; --r-s: 8px;
+  --font: 'Hanken Grotesk', system-ui, sans-serif;
+  --serif: 'Source Serif 4', Georgia, serif;
+  --mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141311; --bg-sunk: #0f0e0d; --card: #1c1a18; --card-hi: #23211e;
+    --ink: #f1ede6; --ink-2: #c3bdb3; --ink-3: #8f887d; --line: #2e2b27; --line-2: #3d3934;
+    --amber: #f5b71a; --amber-ink: #f5c94a; --amber-wash: #3a2d0c; --amber-line: #6e5413;
+    --get: #7cc49b; --post: #f5c94a; --put: #8fb0e3; --patch: #bfa4e6; --delete: #ef8f7d;
+    --c-client: #a59d92; --c-edge: #f5b71a; --c-core: #f1ede6; --c-data: #8fb0e3; --c-external: #8f887d; --c-ops: #7cc49b; --c-device: #bfa4e6;
+    --shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 1px 2px rgba(0,0,0,.4), 0 6px 18px -8px rgba(0,0,0,.6);
+    --inset: inset 0 1px 3px rgba(0,0,0,.5), inset 0 0 0 1px var(--line);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141311; --bg-sunk: #0f0e0d; --card: #1c1a18; --card-hi: #23211e;
+  --ink: #f1ede6; --ink-2: #c3bdb3; --ink-3: #8f887d; --line: #2e2b27; --line-2: #3d3934;
+  --amber: #f5b71a; --amber-ink: #f5c94a; --amber-wash: #3a2d0c; --amber-line: #6e5413;
+  --get: #7cc49b; --post: #f5c94a; --put: #8fb0e3; --patch: #bfa4e6; --delete: #ef8f7d;
+  --c-client: #a59d92; --c-edge: #f5b71a; --c-core: #f1ede6; --c-data: #8fb0e3; --c-external: #8f887d; --c-ops: #7cc49b; --c-device: #bfa4e6;
+  --shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 1px 2px rgba(0,0,0,.4), 0 6px 18px -8px rgba(0,0,0,.6);
+  --inset: inset 0 1px 3px rgba(0,0,0,.5), inset 0 0 0 1px var(--line);
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--font); }
+a { color: inherit; }
+code, .mono { font-family: var(--mono); font-size: .86em; }
+.wrap { max-width: 1440px; margin: 0 auto; padding: 0 16px; }
+@media (min-width: 760px) { .wrap { padding: 0 32px; } }
+
+header.top { padding: 40px 0 24px; display: grid; gap: 20px; }
+.top-row { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+.mark { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; background: var(--amber); color: #1d1b18; font: 700 15px var(--font); box-shadow: var(--shadow); flex: none; }
+h1 { font: 600 clamp(28px, 4vw, 40px)/1.1 var(--serif); margin: 0; letter-spacing: -.01em; }
+h2 { font: 600 24px/1.2 var(--serif); margin: 0 0 4px; }
+h3 { font: 600 15px/1.3 var(--font); margin: 0 0 8px; }
+.lede { color: var(--ink-2); max-width: 70ch; margin: 6px 0 0; }
+.meta { color: var(--ink-3); font-size: 13px; }
+.title-row { display: flex; gap: 14px; align-items: center; }
+
+.btn { font: 500 13px var(--font); color: var(--ink); background: var(--card-hi); border: 1px solid var(--line-2); border-radius: var(--r-s); padding: 7px 12px; cursor: pointer; box-shadow: var(--shadow); }
+.btn:hover { border-color: var(--amber-line); }
+.btn:active { transform: translateY(1px); box-shadow: none; }
+.btn[aria-pressed="true"] { background: var(--amber-wash); border-color: var(--amber-line); color: var(--amber-ink); }
+:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+.tile { background: var(--card); border-radius: var(--r); padding: 12px 14px; box-shadow: var(--shadow); border: 1px solid var(--line); }
+.tile b { display: block; font: 600 26px/1.1 var(--serif); font-variant-numeric: tabular-nums; }
+.tile span { color: var(--ink-3); font-size: 12.5px; }
+
+nav.toc { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); }
+nav.toc .wrap { display: flex; gap: 4px; overflow-x: auto; padding-top: 8px; padding-bottom: 8px; scrollbar-width: none; }
+nav.toc a { text-decoration: none; color: var(--ink-2); font-size: 13.5px; padding: 6px 10px; border-radius: 999px; white-space: nowrap; }
+nav.toc a:hover { background: var(--card); color: var(--ink); }
+
+section { padding: 40px 0 8px; scroll-margin-top: 48px; }
+.sec-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.sec-head p { margin: 0; color: var(--ink-2); max-width: 72ch; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); }
+.pad { padding: 16px; }
+
+/* system map */
+.sys { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+@media (min-width: 1100px) { .sys { grid-template-columns: minmax(0, 1fr) 340px; } }
+.sys-canvas { overflow-x: auto; }
+.sys svg { display: block; min-width: 860px; width: 100%; height: auto; }
+.sys .node rect { fill: var(--card-hi); stroke: var(--line-2); stroke-width: 1; }
+.sys .node { cursor: pointer; }
+.sys .node text { fill: var(--ink); font: 600 13px var(--font); }
+.sys .node .sub { fill: var(--ink-3); font: 500 10.5px var(--font); letter-spacing: .04em; text-transform: uppercase; }
+.sys .node .bar { stroke: none; }
+.sys .node:hover rect.box, .sys .node.on rect.box { stroke: var(--amber); stroke-width: 2; }
+.sys .edge path { fill: none; stroke: var(--line-2); stroke-width: 1.4; }
+.sys .edge text { fill: var(--ink-3); font: 500 10.5px var(--font); opacity: 0; transition: opacity .15s; }
+.sys .edge.on path { stroke: var(--amber); stroke-width: 2; }
+.sys .edge.on text { opacity: 1; fill: var(--amber-ink); }
+.sys.dim .node:not(.on):not(.near) { opacity: .35; }
+.sys.dim .edge:not(.on) { opacity: .25; }
+.col-label { fill: var(--ink-3); font: 600 11px var(--font); letter-spacing: .08em; text-transform: uppercase; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--ink-2); margin-top: 10px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+
+/* pipeline */
+.chain { display: grid; gap: 0; counter-reset: step; }
+@media (min-width: 900px) { .chain { grid-template-columns: repeat(5, 1fr); gap: 10px; } }
+.chain li { list-style: none; position: relative; padding: 10px 12px 10px 40px; border-radius: var(--r-s); background: var(--card); border: 1px solid var(--line); margin-bottom: 8px; box-shadow: var(--shadow); }
+.chain li::before { counter-increment: step; content: counter(step); position: absolute; left: 10px; top: 10px; width: 20px; height: 20px; border-radius: 6px; background: var(--bg-sunk); box-shadow: var(--inset); display: grid; place-items: center; font: 600 11px var(--font); color: var(--ink-2); }
+.chain li b { display: block; font: 600 13px var(--mono); word-break: break-word; }
+.chain li span { font-size: 12.5px; color: var(--ink-2); }
+.chain { padding: 0; margin: 0; }
+
+.notes { margin: 0; padding-left: 18px; color: var(--ink-2); }
+.notes li { margin: 4px 0; }
+
+/* explorer */
+.toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+.search { flex: 1 1 260px; min-width: 0; font: 15px var(--font); color: var(--ink); background: var(--bg-sunk); border: none; box-shadow: var(--inset); border-radius: var(--r-s); padding: 10px 12px; }
+.search::placeholder { color: var(--ink-3); }
+.explorer { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+@media (min-width: 1200px) { .explorer { grid-template-columns: minmax(0, 1fr) 380px; } }
+.cols { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(220px, 1fr); gap: 10px; overflow-x: auto; padding-bottom: 6px; }
+.col { display: flex; flex-direction: column; min-height: 0; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); }
+.col-h { padding: 10px 12px 8px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.col-h h3 { margin: 0; font-size: 13px; }
+.col-h small { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.list { overflow-y: auto; max-height: 62vh; padding: 6px; }
+.item { display: block; width: 100%; text-align: left; font: 500 13px/1.3 var(--font); color: var(--ink); background: transparent; border: 1px solid transparent; border-radius: 7px; padding: 6px 8px; cursor: pointer; }
+.item small { display: block; color: var(--ink-3); font: 11.5px/1.3 var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item:hover { background: var(--bg-sunk); }
+.item.sel { background: var(--amber-wash); border-color: var(--amber-line); }
+.item.up { box-shadow: inset 3px 0 0 var(--ink-3); background: var(--bg-sunk); }
+.item.down { box-shadow: inset 3px 0 0 var(--amber); background: var(--bg-sunk); }
+.cols.tracing .item:not(.sel):not(.up):not(.down) { opacity: .38; }
+.item[hidden] { display: none; }
+.detail { position: sticky; top: 60px; align-self: start; max-height: calc(100vh - 80px); overflow-y: auto; }
+.detail .empty { color: var(--ink-3); }
+.detail h3 { font: 600 18px/1.25 var(--serif); margin-bottom: 4px; word-break: break-word; }
+.detail .kind { display: inline-block; font: 600 10.5px var(--font); text-transform: uppercase; letter-spacing: .08em; color: var(--amber-ink); background: var(--amber-wash); border-radius: 5px; padding: 2px 6px; margin-bottom: 8px; }
+.detail .doc { color: var(--ink-2); margin: 8px 0 12px; }
+.detail h4 { font: 600 11.5px var(--font); text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); margin: 14px 0 6px; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip { font: 500 12px var(--mono); background: var(--bg-sunk); box-shadow: var(--inset); border: none; border-radius: 6px; padding: 3px 7px; color: var(--ink); cursor: pointer; }
+.chip:hover { color: var(--amber-ink); }
+.ep { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 2px 8px; font: 12px/1.45 var(--mono); padding: 3px 0; border-bottom: 1px dashed var(--line); }
+.ep:last-child { border-bottom: 0; }
+.ep .m { font-weight: 700; }
+.ep .g { grid-column: 2; color: var(--ink-3); font-size: 11px; }
+.m-GET { color: var(--get); } .m-POST { color: var(--post); } .m-PUT { color: var(--put); } .m-PATCH { color: var(--patch); } .m-DELETE { color: var(--delete); }
+.path { font: 12px var(--mono); color: var(--ink-2); word-break: break-all; }
+
+/* tables */
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+th { text-align: left; font: 600 11.5px var(--font); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); padding: 8px 10px; border-bottom: 1px solid var(--line-2); position: sticky; top: 0; background: var(--card); }
+td { padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+td.mono, td code { font: 12.5px var(--mono); }
+.tag { display: inline-block; font: 600 10.5px var(--font); text-transform: uppercase; letter-spacing: .06em; border-radius: 4px; padding: 1px 5px; background: var(--bg-sunk); box-shadow: var(--inset); color: var(--ink-2); margin: 1px 2px 1px 0; white-space: nowrap; }
+.tag.amber { background: var(--amber-wash); color: var(--amber-ink); box-shadow: none; }
+.scroll-y { max-height: 560px; overflow-y: auto; }
+.grid2 { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1000px) { .grid2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.grid3 { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1000px) { .grid3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* migrations strip */
+.mig { display: flex; flex-wrap: wrap; gap: 4px; }
+.mig button { width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--line-2); background: var(--card-hi); font: 600 10px var(--font); color: var(--ink-2); cursor: pointer; padding: 0; font-variant-numeric: tabular-nums; }
+.mig button.new { background: var(--amber-wash); border-color: var(--amber-line); color: var(--amber-ink); }
+.mig button:hover, .mig button.sel { border-color: var(--amber); color: var(--ink); }
+.mig-info { margin-top: 12px; min-height: 64px; color: var(--ink-2); }
+
+/* CI */
+.dag { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(170px, 1fr); gap: 14px; overflow-x: auto; padding-bottom: 6px; }
+.dag .lvl { display: flex; flex-direction: column; gap: 8px; justify-content: center; }
+.job { background: var(--card-hi); border: 1px solid var(--line-2); border-radius: var(--r-s); padding: 9px 10px; box-shadow: var(--shadow); }
+.job b { display: block; font-size: 13px; }
+.job small { color: var(--ink-3); font: 11px var(--mono); display: block; }
+.job.deploy { border-color: var(--amber-line); background: var(--amber-wash); }
+.lvl-h { font: 600 11px var(--font); color: var(--ink-3); text-transform: uppercase; letter-spacing: .07em; }
+
+details summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
+
+/* warning banner */
+.banner { margin: 0 0 8px; padding: 10px 14px; border-radius: var(--r-s); background: var(--amber-wash); border: 1px solid var(--amber-line); color: var(--ink); font-size: 13.5px; }
+
+/* flows */
+.flow-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.flow-head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; margin-bottom: 14px; }
+.flow-head p { margin: 0; color: var(--ink-2); }
+.timeline { list-style: none; margin: 0; padding: 0; position: relative; }
+.timeline li { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 4px 14px; position: relative; padding: 0 0 14px; }
+.timeline li::before { content: ''; position: absolute; left: 45px; top: 26px; bottom: 0; width: 2px; background: var(--line); }
+.timeline li:last-child::before { display: none; }
+.layer { justify-self: center; align-self: start; font: 600 10.5px var(--font); text-transform: uppercase; letter-spacing: .07em; padding: 4px 8px; border-radius: 6px; background: var(--card-hi); border: 1px solid var(--line-2); color: var(--ink-2); position: relative; z-index: 1; white-space: nowrap; }
+.layer[data-l="api"], .layer[data-l="service"] { border-color: var(--amber-line); color: var(--amber-ink); background: var(--amber-wash); }
+.layer[data-l="db"] { color: var(--c-data); }
+.layer[data-l="job"], .layer[data-l="ci"] { color: var(--c-ops); }
+.layer[data-l="desktop"], .layer[data-l="external"] { color: var(--c-device); }
+.step-what { margin: 2px 0 4px; }
+.ref { font: 12px var(--mono); color: var(--ink-2); background: var(--bg-sunk); box-shadow: var(--inset); border: none; border-radius: 6px; padding: 3px 7px; cursor: pointer; text-align: left; word-break: break-all; }
+.ref:hover { color: var(--amber-ink); }
+.ref.static { cursor: default; }
+.ref.bad { color: var(--delete); }
+
+/* call tree */
+.steps-grid { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1100px) { .steps-grid { grid-template-columns: minmax(0, 1fr) 360px; } }
+#tree { overflow-x: auto; min-height: 120px; }
+.tree, .tree ul { list-style: none; margin: 0; padding: 0; }
+.tree ul { padding-left: 18px; border-left: 1px dashed var(--line-2); margin-left: 7px; }
+.tree li { margin: 2px 0; }
+.tree summary { list-style: none; font-weight: 400; padding: 2px 0; display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: baseline; }
+.tree summary::-webkit-details-marker { display: none; }
+.tree summary::before { content: '▸'; color: var(--ink-3); width: 10px; flex: none; }
+.tree details[open] > summary::before { content: '▾'; }
+.tree .leaf { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: baseline; padding: 2px 0 2px 16px; }
+.mname { font: 600 12.5px var(--mono); }
+.mname .cls { color: var(--ink-3); font-weight: 500; }
+.k-controller .mname { color: var(--put); } .k-repository .mname { color: var(--c-data); }
+.tw, .tr { font: 600 10.5px var(--mono); border-radius: 4px; padding: 1px 5px; }
+.tw { background: var(--amber-wash); color: var(--amber-ink); }
+.tr { background: var(--bg-sunk); color: var(--ink-2); box-shadow: var(--inset); }
+.seen { color: var(--ink-3); font-size: 11.5px; font-style: italic; }
+.mdoc { color: var(--ink-3); font-size: 12px; flex-basis: 100%; padding-left: 16px; }
+.hand-job { margin-bottom: 14px; }
+.hand-row { display: grid; grid-template-columns: minmax(0, 170px) minmax(0, 1fr); gap: 8px; padding: 5px 0; border-bottom: 1px dashed var(--line); font-size: 13px; }
+.hand-row:last-child { border-bottom: 0; }
+
+/* why */
+.why-grid { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .why-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1300px) { .why-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.why { display: flex; flex-direction: column; gap: 8px; }
+.why h3 { font: 600 16px/1.3 var(--serif); margin: 0; }
+.why .area { font: 600 10.5px var(--font); text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); }
+.why p { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+.why .lbl { font: 600 11px var(--font); text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); margin-right: 6px; }
+.why .because { color: var(--ink); }
+.basis { font: 600 10.5px var(--font); text-transform: uppercase; letter-spacing: .06em; border-radius: 4px; padding: 1px 6px; }
+.basis.stated { background: var(--amber-wash); color: var(--amber-ink); }
+.basis.inferred { background: var(--bg-sunk); color: var(--ink-2); box-shadow: var(--inset); }
+.src { font-size: 12px; color: var(--ink-3); }
+.limit { padding: 8px 0; border-bottom: 1px dashed var(--line); }
+.limit:last-child { border-bottom: 0; }
+.limit b { display: block; font-size: 14px; }
+.limit p { margin: 3px 0; font-size: 13px; color: var(--ink-2); }
+.limit .check { font-size: 12.5px; color: var(--ink-3); }
+footer { padding: 48px 0 40px; color: var(--ink-3); font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<script>
+  try { const t = localStorage.getItem('archmap-theme'); if (t) document.documentElement.dataset.theme = t; } catch {}
+</script>
+<div class="wrap">
+  <header class="top">
+    <div class="top-row">
+      <div class="title-row">
+        <span class="mark" aria-hidden="true">4VD</span>
+        <div>
+          <h1>How 4VD fits together</h1>
+          <div class="meta" id="meta"></div>
+        </div>
+      </div>
+      <button class="btn" id="theme" type="button">Theme: auto</button>
+    </div>
+    <p class="lede">One installation serves many businesses. A React dashboard (also run inside the Windows app at the till) talks to one Express API on Postgres, where row security keeps each business's rows apart. Everything below except the hosting map is read from the code by <code>generate.mjs</code>; the same data is in <code>architecture.json</code>.</p>
+    <div class="tiles" id="tiles"></div>
+  </header>
+</div>
+<nav class="toc" aria-label="Sections"><div class="wrap">
+  <a href="#system">System</a><a href="#flows">Flows</a><a href="#steps">Backend steps</a><a href="#handoffs">Hand-offs</a><a href="#why">Why</a><a href="#blind">Blind spots</a><a href="#request">One request</a><a href="#explorer">Explorer</a><a href="#endpoints">Endpoints</a><a href="#dashboard">Dashboard</a><a href="#database">Database</a><a href="#jobs">Jobs &amp; scripts</a><a href="#delivery">Push to live</a><a href="#apps">Windows &amp; mail</a>
+</div></nav>
+<main class="wrap">
+
+<section id="system">
+  <div class="sec-head"><div><h2>The system</h2><p>Where each part runs and what talks to what. Pick a box to see what it does and its connections.</p></div></div>
+  <div class="sys">
+    <div class="card pad sys-canvas"><svg id="sys" role="img" aria-label="System map"></svg><div class="legend" id="legend"></div></div>
+    <div class="card pad" id="sys-detail" aria-live="polite"></div>
+  </div>
+</section>
+
+<section id="flows">
+  <div class="sec-head"><div><h2>Flows</h2><p>The main journeys, step by step across the browser, the Windows app, the API, the database and the timers. Written by hand in <code>flows.mjs</code>, but every step's reference is checked against the code on each rebuild. Pick a backend step to open its call tree.</p></div></div>
+  <div class="flow-tabs" id="flow-tabs" role="tablist" aria-label="Flows"></div>
+  <div class="card pad" id="flow"></div>
+</section>
+
+<section id="steps">
+  <div class="sec-head"><div><h2>Backend steps</h2><p>Pick an endpoint, or any method, to see what it calls, down to the repository methods and the tables each one reads (R) or writes (W). Built from the code: controller → service → repository, transactions (<code>repos.*</code>) included. Database triggers and the timer jobs that pick the rows up later are listed under it.</p></div></div>
+  <div class="toolbar">
+    <input class="search" id="sq" type="search" placeholder="Endpoint or method: POST /api/sales/basket, BooksPoster.sync, payroll…" aria-label="Find an endpoint or method" autocomplete="off" list="sq-list">
+    <datalist id="sq-list"></datalist>
+    <button class="btn" id="helpers" type="button" aria-pressed="false">Show small helpers</button>
+    <button class="btn" id="expand" type="button">Open all</button>
+  </div>
+  <div class="steps-grid">
+    <div class="card pad" id="tree"></div>
+    <aside class="card pad" id="tree-side"></aside>
+  </div>
+</section>
+
+<section id="handoffs">
+  <div class="sec-head"><div><h2>Hand-offs and triggers</h2><p>The links a call graph can't see: a request writes rows, and something else acts on them later. Database triggers act at once, inside the same transaction; timer jobs pick rows up within a minute (<code>minuteJobs</code>) or a few seconds (<code>pushJobs</code>).</p></div></div>
+  <div class="grid2">
+    <div class="card pad"><h3>Database triggers</h3><div class="tbl-wrap"><table><thead><tr><th>When this table changes</th><th>Function</th><th>It writes</th></tr></thead><tbody id="trig"></tbody></table></div></div>
+    <div class="card pad"><h3>Picked up later by a timer</h3><div id="hand"></div></div>
+  </div>
+</section>
+
+<section id="why">
+  <div class="sec-head"><div><h2>Why it's built this way</h2><p>The decisions behind the shape of 4VD: what was chosen, why, and what it costs. <b>Stated</b> means the reason is written in the source named; <b>Inferred</b> means it is a reading of the code, likely but not confirmed. Written in <code>decisions.mjs</code>; the code references are checked on every rebuild.</p></div>
+    <div class="flow-tabs" id="why-filter" role="group" aria-label="Filter by area"></div></div>
+  <div class="why-grid" id="why-list"></div>
+</section>
+
+<section id="blind">
+  <div class="sec-head"><div><h2>Blind spots</h2><p>What this map can't see, and where to look instead. The measured ones are counted from the code on every rebuild.</p></div></div>
+  <div class="grid2">
+    <div class="card pad"><h3>Known limits</h3><div id="limits"></div></div>
+    <div class="card pad"><h3>Measured in this build</h3><div id="measured"></div></div>
+  </div>
+</section>
+
+<section id="request">
+  <div class="sec-head"><div><h2>One API request</h2><p>The order things happen in <code>backend/src/app.ts</code>, from the socket to Postgres and back.</p></div></div>
+  <ol class="chain" id="chain"></ol>
+  <div class="grid2" style="margin-top:16px">
+    <div class="card pad"><h3>Many businesses (tenancy)</h3><ul class="notes" id="tenancy"></ul></div>
+    <div class="card pad"><h3>Layering rules</h3><ul class="notes">
+      <li><code>routes/</code> → middleware → <code>controllers/</code> (zod via <code>validators/</code>, one service call, <code>sendSuccess</code>) → <code>services/</code> (rules) → <code>repositories/</code> (SQL through Kysely only).</li>
+      <li><code>container.ts</code> builds every repository and service once and injects them by constructor; tests build their own with fakes.</li>
+      <li>Errors are <code>AppError</code> subclasses; answers are always <code>{ success, data, message, error, meta? }</code>.</li>
+      <li>Money goes through <code>roundMoney</code>; books post through <code>BooksPoster</code> and <code>postingRules.ts</code>; filed VAT months are locked (<code>periodLock.ts</code>).</li>
+      <li>Every change writes an Activity entry; <code>services/undo/</code> reverses it; deletes are soft (<code>deleted_at</code>).</li>
+    </ul></div>
+  </div>
+</section>
+
+<section id="explorer">
+  <div class="sec-head"><div><h2>Explorer: page to table</h2><p>Every dashboard page, API route group, service, repository and table, linked the way the code links them. Pick anything to trace it: grey bar = what uses it, amber bar = what it uses.</p></div></div>
+  <div class="toolbar">
+    <input class="search" id="q" type="search" placeholder="Filter: sales, payroll, /api/books, ledger_lines…" aria-label="Filter the explorer" autocomplete="off">
+    <button class="btn" id="deep" type="button" aria-pressed="false" title="Follow links all the way instead of one step">Follow all the way</button>
+    <button class="btn" id="clear" type="button">Clear</button>
+  </div>
+  <div class="explorer">
+    <div class="cols" id="cols"></div>
+    <aside class="card pad detail" id="detail" aria-live="polite"><p class="empty">Pick an item to see its file, what it does, its endpoints and its links.</p></aside>
+  </div>
+</section>
+
+<section id="endpoints">
+  <div class="sec-head"><div><h2>Every endpoint</h2><p>Method, path, who may call it (the guard) and the controller handler.</p></div>
+    <input class="search" id="eq" type="search" placeholder="Filter endpoints…" aria-label="Filter endpoints" style="max-width:340px"></div>
+  <div class="card tbl-wrap scroll-y"><table><thead><tr><th>Method</th><th>Path (open its call tree)</th><th>Guard</th><th>Handler</th><th>Writes</th></tr></thead><tbody id="eps"></tbody></table></div>
+</section>
+
+<section id="dashboard">
+  <div class="sec-head"><div><h2>Dashboard</h2><p id="dash-lede"></p></div>
+    <input class="search" id="rq" type="search" placeholder="Filter screens…" aria-label="Filter dashboard screens" style="max-width:340px"></div>
+  <div class="card tbl-wrap scroll-y"><table><thead><tr><th>Address</th><th>Screen</th><th>Shell</th><th>Calls</th></tr></thead><tbody id="routes"></tbody></table></div>
+  <div class="grid2" style="margin-top:16px">
+    <div class="card pad"><h3>Source folders (<code>admin/src</code>)</h3><div class="chips" id="afolders"></div>
+      <h3 style="margin-top:16px">UI kit (<code>components/ui</code>, shown at /kit)</h3><div class="chips" id="kit"></div></div>
+    <div class="card pad"><h3>API client objects (<code>admin/src/services</code>)</h3><div class="scroll-y" style="max-height:300px"><table><tbody id="clients"></tbody></table></div></div>
+  </div>
+</section>
+
+<section id="database">
+  <div class="sec-head"><div><h2>Database</h2><p id="db-lede"></p></div>
+    <input class="search" id="tq" type="search" placeholder="Filter tables…" aria-label="Filter tables" style="max-width:340px"></div>
+  <div class="grid2">
+    <div class="card tbl-wrap scroll-y"><table><thead><tr><th>Table</th><th>Made in</th><th>Read or written by</th></tr></thead><tbody id="tables"></tbody></table></div>
+    <div class="card pad"><h3>Migrations</h3><p class="meta" style="margin:0 0 10px">Numbered <code>NNN_name.ts</code>, each with up and down; the production container runs them on start. The last ten are amber.</p><div class="mig" id="mig"></div><div class="mig-info" id="mig-info" aria-live="polite"></div></div>
+  </div>
+</section>
+
+<section id="jobs">
+  <div class="sec-head"><div><h2>Background jobs and scripts</h2><p><code>server.ts</code> runs these timers inside every business in turn; a slow run skips a beat rather than overlap.</p></div></div>
+  <div class="grid2">
+    <div class="card pad" id="jobs-list"></div>
+    <div class="card pad"><h3><code>backend</code> npm scripts</h3><div class="scroll-y" style="max-height:360px"><table><tbody id="scripts"></tbody></table></div></div>
+  </div>
+  <div class="card pad" style="margin-top:16px"><h3>Service helper folders (<code>backend/src/services/*</code>)</h3><div class="grid3" id="sfolders"></div></div>
+</section>
+
+<section id="delivery">
+  <div class="sec-head"><div><h2>From a push to live</h2><p><code>ci.yml</code> runs only the checks for the parts that changed; when all pass, the deploy jobs put the dashboard on 4vd.app (wrangler) and call Render's deploy hook for the API.</p></div></div>
+  <div class="card pad"><div class="dag" id="dag"></div></div>
+  <div class="grid3" style="margin-top:16px" id="wfs"></div>
+</section>
+
+<section id="apps">
+  <div class="sec-head"><div><h2>Windows app, mail worker, browser tests</h2><p>Released by hand: the Windows app through GitHub Releases, the mail worker with wrangler.</p></div></div>
+  <div class="grid3">
+    <div class="card pad"><h3 id="desk-h">4VD for Windows</h3><div id="desk"></div></div>
+    <div class="card pad"><h3>Mail worker (<code>mail/</code>)</h3><div id="mail"></div></div>
+    <div class="card pad"><h3>Browser tests (<code>e2e/</code>)</h3><div id="e2e"></div></div>
+  </div>
+</section>
+</main>
+<div class="wrap"><footer id="foot"></footer></div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const h = (tag, attrs = {}, html = '') => { const el = document.createElement(tag); for (const [k, v] of Object.entries(attrs)) if (v != null) el.setAttribute(k, v); el.innerHTML = html; return el; };
+const short = (f) => (f || '').split('/').pop();
+
+// ---------- theme ----------
+(() => {
+  const btn = $('#theme'), order = ['auto', 'light', 'dark'];
+  const cur = () => document.documentElement.dataset.theme || 'auto';
+  const show = () => { btn.textContent = 'Theme: ' + cur(); };
+  btn.onclick = () => {
+    const next = order[(order.indexOf(cur()) + 1) % 3];
+    if (next === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = next;
+    try { next === 'auto' ? localStorage.removeItem('archmap-theme') : localStorage.setItem('archmap-theme', next); } catch {}
+    show();
+  };
+  show();
+})();
+
+// ---------- header ----------
+const C = DATA.counts;
+$('#meta').textContent = `Built from commit ${DATA.meta.commit ?? '?'} · ${new Date(DATA.meta.generatedAt).toLocaleString()} · run node ${DATA.meta.generator} to refresh`;
+[['Route groups', C.routeGroups], ['Endpoints', C.endpoints], ['Services', C.services], ['Repositories', C.repositories], ['Tables', C.tables], ['Migrations', C.migrations], ['Screens', C.dashboardRoutes], ['Page files', C.pages]]
+  .forEach(([l, n]) => $('#tiles').append(h('div', { class: 'tile' }, `<b>${n}</b><span>${l}</span>`)));
+
+// ---------- system map ----------
+(() => {
+  const S = DATA.system, svg = $('#sys');
+  const cols = [['client', 'device'], ['edge'], ['core'], ['data', 'external'], ['ops']];
+  const colNames = ['Who uses it', 'Cloudflare', 'The API', 'Data & services', 'Delivery'];
+  const W = 1000, colW = W / cols.length, boxW = 160, boxH = 46, gap = 22, top = 46;
+  const pos = {};
+  let H = 0;
+  cols.forEach((groups, ci) => {
+    const nodes = S.nodes.filter((n) => groups.includes(n.group));
+    nodes.forEach((n, i) => { pos[n.id] = { x: ci * colW + (colW - boxW) / 2, y: top + i * (boxH + gap), n }; });
+    H = Math.max(H, top + nodes.length * (boxH + gap));
+  });
+  // centre short columns vertically
+  cols.forEach((groups) => {
+    const ns = S.nodes.filter((n) => groups.includes(n.group));
+    const used = ns.length * (boxH + gap) - gap, off = (H - top - used) / 2 - gap / 2;
+    ns.forEach((n) => { pos[n.id].y += Math.max(0, off); });
+  });
+  svg.setAttribute('viewBox', `0 0 ${W} ${H + 10}`);
+  const NS = 'http://www.w3.org/2000/svg';
+  const mk = (tag, attrs, parent) => { const el = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v); parent.append(el); return el; };
+  colNames.forEach((t, i) => { const tx = mk('text', { x: i * colW + colW / 2, y: 18, 'text-anchor': 'middle', class: 'col-label' }, svg); tx.textContent = t; });
+  const gE = mk('g', {}, svg), gN = mk('g', {}, svg);
+  const edgeEls = S.edges.map((e) => {
+    const a = pos[e.from], b = pos[e.to];
+    const forward = b.x > a.x + 1, back = b.x < a.x - 1;
+    const x1 = forward ? a.x + boxW : back ? a.x : a.x + boxW / 2, y1 = forward || back ? a.y + boxH / 2 : a.y + (b.y > a.y ? boxH : 0);
+    const x2 = forward ? b.x : back ? b.x + boxW : b.x + boxW / 2, y2 = forward || back ? b.y + boxH / 2 : b.y + (b.y > a.y ? 0 : boxH);
+    const dx = Math.abs(x2 - x1) * .45;
+    const d = forward || back ? `M${x1},${y1} C${x1 + (forward ? dx : -dx)},${y1} ${x2 - (forward ? dx : -dx)},${y2} ${x2},${y2}` : `M${x1},${y1} C${x1 + 60},${y1} ${x2 + 60},${y2} ${x2},${y2}`;
+    const g = mk('g', { class: 'edge' }, gE);
+    mk('path', { d, 'marker-end': 'url(#arr)' }, g);
+    const t = mk('text', { x: (x1 + x2) / 2, y: (y1 + y2) / 2 - 5, 'text-anchor': 'middle' }, g); t.textContent = e.label;
+    return { e, g };
+  });
+  const defs = mk('defs', {}, svg);
+  const m = mk('marker', { id: 'arr', viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto-start-reverse' }, defs);
+  mk('path', { d: 'M0,0 L10,5 L0,10 z', fill: 'var(--line-2)' }, m);
+  const colour = (g) => `var(--c-${g})`;
+  const nodeEls = {};
+  for (const { x, y, n } of Object.values(pos)) {
+    const g = mk('g', { class: 'node', tabindex: 0, role: 'button', 'aria-label': n.label }, gN);
+    mk('rect', { class: 'box', x, y, width: boxW, height: boxH, rx: 9 }, g);
+    mk('rect', { class: 'bar', x: x + 1, y: y + 8, width: 3, height: boxH - 16, rx: 1.5, fill: colour(n.group) }, g);
+    const t = mk('text', { x: x + 14, y: y + 20 }, g); t.textContent = n.label;
+    const s = mk('text', { x: x + 14, y: y + 35, class: 'sub' }, g); s.textContent = n.group;
+    g.onclick = () => pick(n.id);
+    g.onkeydown = (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); pick(n.id); } };
+    nodeEls[n.id] = g;
+  }
+  const detail = $('#sys-detail');
+  function pick(id) {
+    const n = S.nodes.find((x) => x.id === id);
+    svg.classList.add('dim');
+    Object.entries(nodeEls).forEach(([k, el]) => el.classList.toggle('on', k === id));
+    const links = [];
+    edgeEls.forEach(({ e, g }) => {
+      const on = e.from === id || e.to === id;
+      g.classList.toggle('on', on);
+      if (on) { const other = e.from === id ? e.to : e.from; nodeEls[other].classList.add('near'); links.push({ dir: e.from === id ? '→' : '←', other: S.nodes.find((x) => x.id === other).label, label: e.label }); }
+    });
+    Object.entries(nodeEls).forEach(([k, el]) => { if (!links.some((l) => S.nodes.find((x) => x.label === l.other)?.id === k)) el.classList.remove('near'); });
+    detail.innerHTML = `<span class="kind">${esc(n.group)}</span><h3 style="font:600 20px/1.2 var(--serif)">${esc(n.label)}</h3><p style="color:var(--ink-2)">${esc(n.detail)}</p><h4 style="font:600 11.5px var(--font);text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3)">Connections</h4><ul class="notes">${links.map((l) => `<li>${l.dir} <b>${esc(l.other)}</b>: ${esc(l.label)}</li>`).join('')}</ul>`;
+  }
+  pick('api');
+  const groups = [...new Set(S.nodes.map((n) => n.group))];
+  $('#legend').innerHTML = groups.map((g) => `<span><i style="background:${colour(g)}"></i>${esc(g)}</span>`).join('');
+})();
+
+// ---------- health of the map ----------
+(() => {
+  const cov = DATA.meta.coverage, miss = DATA.meta.missingRefs || [];
+  const notes = [];
+  if (miss.length) notes.push(`${miss.length} flow step${miss.length > 1 ? 's' : ''} point at code that no longer exists (${miss.map((m) => `<code>${esc(m.ref)}</code>`).join(', ')}): update <code>flows.mjs</code>.`);
+  if (cov && cov.endpointsWithCalls < cov.endpoints) notes.push(`${cov.endpoints - cov.endpointsWithCalls} of ${cov.endpoints} endpoints have no traced call (inline handlers or a pattern the parser doesn't follow).`);
+  if (notes.length) $('header.top').append(h('div', { class: 'banner', role: 'status' }, notes.join(' ')));
+})();
+
+// ---------- call tree ----------
+const MT = DATA.methods;
+const EPS = DATA.backend.mounts.flatMap((m) => m.endpoints.map((e) => ({ ...e, file: m.file, key: `${e.method} ${e.path}` })));
+const EPK = Object.fromEntries(EPS.map((e) => [e.key, e]));
+const SMALL = /^(utils\/|services\/mappers\.ts|validators\/|i18n\/)|#(roundMoney|toMoney\w*|zonedDay|parts|lastDay|addMonths|addDays)$/;
+let showHelpers = false;
+const isSmall = (id) => SMALL.test(id);
+const tablesOf = (id) => { const n = MT[id]; return `${(n?.w || []).map((t) => `<span class="tw" title="writes">W ${esc(t)}</span>`).join('')}${(n?.r || []).map((t) => `<span class="tr" title="reads">R ${esc(t)}</span>`).join('')}`; };
+const nameOf = (id) => { const i = id.search(/[.#](?=[^.#]*$)/); return i < 0 ? `<span class="mname">${esc(id)}</span>` : `<span class="mname"><span class="cls">${esc(id.slice(0, i + 1))}</span>${esc(id.slice(i + 1))}</span>`; };
+function treeItem(id, seen, depth) {
+  const n = MT[id];
+  const li = document.createElement('li');
+  if (!n) { li.innerHTML = `<div class="leaf">${nameOf(id)}</div>`; return li; }
+  const kids = (n.c || []).filter((c) => showHelpers || !isSmall(c));
+  const head = `${nameOf(id)}${tablesOf(id)}${n.d ? `<span class="mdoc">${esc(n.d)}</span>` : ''}`;
+  li.className = 'k-' + n.k;
+  if (seen.has(id)) { li.innerHTML = `<div class="leaf">${nameOf(id)} <span class="seen">(opened above)</span></div>`; return li; }
+  if (!kids.length) { li.innerHTML = `<div class="leaf">${head}</div>`; return li; }
+  const det = document.createElement('details');
+  det.innerHTML = `<summary>${head}</summary>`;
+  const mine = new Set(seen); mine.add(id);
+  let filled = false;
+  const fill = () => { if (filled) return; filled = true; const ul = document.createElement('ul'); kids.forEach((k) => ul.append(treeItem(k, mine, depth + 1))); det.append(ul); };
+  det.addEventListener('toggle', () => det.open && fill());
+  if (depth < 2) { det.open = true; fill(); }
+  li.append(det);
+  return li;
+}
+let treeFor = null;
+function openTree(ref, scroll = true) {
+  treeFor = ref;
+  const ep = EPK[ref];
+  const roots = ep ? ep.calls : MT[ref] ? [ref] : [];
+  const tree = $('#tree'), side = $('#tree-side');
+  $('#sq').value = ref;
+  if (!roots.length) { tree.innerHTML = `<p class="empty">No traced call for <code>${esc(ref)}</code>.</p>`; side.innerHTML = ''; return; }
+  const n = MT[ref];
+  tree.innerHTML = ep
+    ? `<h3 style="font:600 18px var(--serif)"><span class="m-${ep.method}">${ep.method}</span> ${esc(ep.path)}</h3><div class="path">${esc(ep.file)} · guard: ${esc(ep.guards.join(', ') || 'none found')}</div>`
+    : `<h3 style="font:600 18px var(--serif)">${esc(ref)}</h3><div class="path">${esc(n.f)}:${n.l}</div>${n.d ? `<p class="doc" style="color:var(--ink-2)">${esc(n.d)}</p>` : ''}`;
+  const ul = document.createElement('ul'); ul.className = 'tree'; ul.style.marginTop = '12px';
+  roots.forEach((r) => ul.append(treeItem(r, new Set(), 0)));
+  tree.append(ul);
+  // side: totals, triggers, timers
+  const all = { r: new Set(), w: new Set() }, seen = new Set();
+  const go = (x) => { if (seen.has(x) || !MT[x]) return; seen.add(x); (MT[x].r || []).forEach((t) => all.r.add(t)); (MT[x].w || []).forEach((t) => all.w.add(t)); (MT[x].c || []).forEach(go); };
+  roots.forEach(go);
+  const writes = ep ? new Set(ep.writes) : all.w;
+  const trig = DATA.database.triggers.filter((t) => writes.has(t.table) && t.writes.length);
+  const later = DATA.backend.handoffs.filter((h) => writes.has(h.table));
+  const prefix = ep ? DATA.backend.mounts.find((m) => m.endpoints.some((e) => `${e.method} ${e.path}` === ref))?.prefix : null;
+  const users = prefix ? DATA.dashboard.pages.filter((p) => p.endpoints.includes(prefix)) : [];
+  side.innerHTML = `<h4>Writes (${writes.size})</h4><div class="chips">${[...writes].sort().map((t) => `<span class="tw">${esc(t)}</span>`).join('') || '<span class="meta">nothing</span>'}</div>`
+    + `<h4>Reads</h4><div class="chips">${[...all.r].filter((t) => !writes.has(t)).sort().map((t) => `<span class="tr">${esc(t)}</span>`).join('') || '<span class="meta">nothing</span>'}</div>`
+    + `<h4>Then, at once (database triggers)</h4>${trig.length ? trig.map((t) => `<div class="path">${esc(t.table)} → ${esc(t.fn)}() → ${esc(t.writes.join(', '))}</div>`).join('') : '<p class="meta">None</p>'}`
+    + `<h4>Then, later (timer jobs)</h4>${later.length ? later.map((h) => `<div style="margin-bottom:4px"><span class="tag">${esc(h.job)}</span> <button class="ref" type="button" data-tree="${esc(h.consumer)}">${esc(h.consumer)}</button> <span class="meta">picks up ${esc(h.table)}</span></div>`).join('') : '<p class="meta">None</p>'}`
+    + (users.length ? `<h4>Dashboard pages calling this group</h4><div class="chips">${users.map((p) => `<span class="chip" style="cursor:default">${esc(short(p.file).replace(/\.tsx$/, ''))}</span>`).join('')}</div>` : '')
+    + (() => {
+      const stops = [...new Set([...seen].flatMap((x) => MT[x]?.s || []))];
+      const dyn = [...seen].filter((x) => MT[x]?.x);
+      return stops.length || dyn.length
+        ? `<h4>Not followed (blind spots)</h4>${stops.map((s) => `<div class="path">${esc(s)} <span class="meta">· interface, real class set in container.ts</span></div>`).join('')}${dyn.map((x) => `<div class="path">${esc(x)} <span class="meta">· table named by a variable</span></div>`).join('')}`
+        : '';
+    })()
+    + `<p class="meta" style="margin-top:14px">${seen.size} methods reached.</p>`;
+  side.querySelectorAll('h4').forEach((x) => (x.style.cssText = 'font:600 11.5px var(--font);text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3);margin:14px 0 6px'));
+  side.querySelectorAll('[data-tree]').forEach((b) => (b.onclick = () => openTree(b.dataset.tree)));
+  if (scroll) $('#steps').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+}
+(() => {
+  const list = $('#sq-list');
+  [...EPS.map((e) => e.key), ...Object.keys(MT).filter((k) => /^[A-Z]\w*(Service|Poster|Alert|Rules)\./.test(k))].forEach((k) => list.append(h('option', { value: k })));
+  $('#sq').addEventListener('change', (e) => { const v = e.target.value.trim(); if (EPK[v] || MT[v]) openTree(v, false); });
+  $('#sq').addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const v = e.target.value.trim().toLowerCase();
+    const hit = EPS.find((x) => x.key.toLowerCase() === v) ?? EPS.find((x) => x.key.toLowerCase().includes(v)) ?? Object.keys(MT).find((k) => k.toLowerCase().includes(v));
+    if (hit) openTree(hit.key ?? hit, false);
+  });
+  $('#helpers').onclick = (e) => { showHelpers = !showHelpers; e.currentTarget.setAttribute('aria-pressed', showHelpers); if (treeFor) openTree(treeFor, false); };
+  $('#expand').onclick = () => { let more = true, guard = 0; while (more && guard++ < 6) { more = false; $('#tree').querySelectorAll('details:not([open])').forEach((d) => { d.open = true; more = true; }); } };
+  openTree('POST /api/sales/basket', false);
+})();
+
+// ---------- flows ----------
+(() => {
+  const tabs = $('#flow-tabs'), box = $('#flow');
+  const isTree = (ref) => ref && (EPK[ref] || MT[ref]);
+  function show(f) {
+    tabs.querySelectorAll('button').forEach((b) => b.setAttribute('aria-selected', b.dataset.id === f.id));
+    tabs.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.id === f.id));
+    box.innerHTML = `<div class="flow-head"><h3 style="font:600 20px var(--serif);margin:0">${esc(f.title)}</h3><p>${esc(f.trigger)}</p></div><ol class="timeline">${f.steps.map((s) => `<li><span class="layer" data-l="${esc(s.layer)}">${esc(s.layer)}</span><div><p class="step-what">${esc(s.what)}</p>${s.ref ? `<button class="ref${isTree(s.ref) ? '' : ' static'}${s.ok ? '' : ' bad'}" type="button" ${isTree(s.ref) ? `data-tree="${esc(s.ref)}"` : 'tabindex="-1"'} title="${s.ok ? (isTree(s.ref) ? 'Open its call tree' : 'Where it is in the code') : 'Not found in the code any more'}">${esc(s.ref)}${s.ok ? '' : ' ⚠'}</button>` : ''}</div></li>`).join('')}</ol>`;
+    box.querySelectorAll('[data-tree]').forEach((b) => (b.onclick = () => openTree(b.dataset.tree)));
+  }
+  DATA.flows.forEach((f, i) => {
+    const b = h('button', { class: 'btn', type: 'button', role: 'tab', 'data-id': f.id }, esc(f.title));
+    b.onclick = () => show(f);
+    tabs.append(b);
+    if (i === 0) show(f);
+  });
+})();
+
+// ---------- hand-offs ----------
+(() => {
+  $('#trig').innerHTML = DATA.database.triggers.map((t) => `<tr><td class="mono"><b>${esc(t.table)}</b></td><td class="mono">${esc(t.fn)}() <span class="meta">· ${t.migration}</span></td><td>${t.writes.map((w) => `<span class="tw">${esc(w)}</span>`).join(' ') || '<span class="meta">guards the row</span>'}</td></tr>`).join('');
+  const byJob = {};
+  DATA.backend.handoffs.forEach((x) => (byJob[x.job] ??= []).push(x));
+  $('#hand').innerHTML = Object.entries(byJob).map(([job, rows]) => `<div class="hand-job"><h3><code>${esc(job)}</code> <span class="meta">${esc(DATA.backend.jobs.find((j) => j.name === job)?.doc ?? '')}</span></h3>${rows.sort((a, b) => b.writtenBy - a.writtenBy).map((x) => `<div class="hand-row"><span><span class="tw">${esc(x.table)}</span></span><span>written by ${x.writtenBy} endpoint${x.writtenBy > 1 ? 's' : ''}, picked up by <button class="ref" type="button" data-tree="${esc(x.consumer)}">${esc(x.consumer)}</button></span></div>`).join('')}</div>`).join('');
+  $('#hand').querySelectorAll('[data-tree]').forEach((b) => (b.onclick = () => openTree(b.dataset.tree)));
+})();
+
+// ---------- why ----------
+(() => {
+  const list = $('#why-list'), filter = $('#why-filter');
+  const refBtn = (w) => {
+    const tree = EPK[w.ref] || MT[w.ref];
+    return `<button class="ref${tree ? '' : ' static'}${w.ok ? '' : ' bad'}" type="button" ${tree ? `data-tree="${esc(w.ref)}"` : 'tabindex="-1"'} title="${w.ok ? (tree ? 'Open its call tree' : 'Where it is in the code') : 'Not found in the code any more'}">${esc(w.ref)}${w.ok ? '' : ' ⚠'}</button>`;
+  };
+  const draw = (area) => {
+    list.innerHTML = DATA.decisions.filter((d) => !area || d.area === area).map((d) => `<article class="card pad why" id="why-${esc(d.id)}">
+      <span class="area">${esc(d.area)}</span>
+      <h3>${esc(d.title)}</h3>
+      <p>${esc(d.decision)}</p>
+      <p class="because"><span class="lbl">Why</span><span class="basis ${d.basis}">${d.basis === 'stated' ? 'Stated' : 'Inferred'}</span> ${esc(d.why)}</p>
+      <p><span class="lbl">The cost</span>${esc(d.cost)}</p>
+      <div class="chips">${d.where.map(refBtn).join('')}</div>
+      <span class="src">Source: ${esc(d.source)}</span></article>`).join('');
+    list.querySelectorAll('[data-tree]').forEach((b) => (b.onclick = () => openTree(b.dataset.tree)));
+  };
+  const areas = [...new Set(DATA.decisions.map((d) => d.area))];
+  [['', 'All'], ...areas.map((a) => [a, a])].forEach(([a, label], i) => {
+    const b = h('button', { class: 'btn', type: 'button', 'aria-pressed': i === 0 }, esc(label));
+    b.onclick = () => { filter.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b)); draw(a); };
+    filter.append(b);
+  });
+  draw('');
+})();
+
+// ---------- blind spots ----------
+(() => {
+  const B = DATA.blindSpots;
+  $('#limits').innerHTML = B.known.map((k) => `<div class="limit"><b>${esc(k.title)}</b><p>${esc(k.what)}</p><span class="check">Instead: ${esc(k.check)}</span></div>`).join('');
+  const m = B.measured;
+  const btns = (ids) => ids.map((x) => `<button class="ref" type="button" data-tree="${esc(x)}">${esc(x)}</button>`).join(' ');
+  $('#measured').innerHTML =
+    `<div class="limit"><b>Calls that stop at an interface (${m.interfaceStops.length} types)</b><p>The call tree can't tell which class runs here; container.ts picks it at start-up.</p>${m.interfaceStops.map((s) => `<p><code>${esc(s.type)}</code> <span class="meta">${esc(s.calls.map((c) => c.split('.')[1]).join(', '))} · from ${s.fromCount}</span><br>${btns(s.from.slice(0, 4))}</p>`).join('')}</div>`
+    + `<div class="limit"><b>Tables named by a variable (${m.dynamicTables.length} methods)</b><p>Their reads and writes are not counted.</p><div class="chips">${btns(m.dynamicTables.map((x) => x.method))}</div></div>`
+    + `<div class="limit"><b>Endpoints with no traced call (${m.untracedEndpoints.length})</b><p>Handlers written inside the route file, or a path built at run time.</p>${m.untracedEndpoints.map((e) => `<div class="path">${esc(e.endpoint)} <span class="meta">· ${esc(short(e.file))}</span></div>`).join('')}</div>`
+    + `<div class="limit"><b>Screens that call no API object (${m.pagesWithoutApi.length})</b><p>Static pages, or calls made in a way the import scan misses.</p>${m.pagesWithoutApi.map((f) => `<div class="path">${esc(f)}</div>`).join('')}</div>`;
+  $('#measured').querySelectorAll('[data-tree]').forEach((b) => (b.onclick = () => openTree(b.dataset.tree)));
+})();
+
+// ---------- request chain, tenancy ----------
+DATA.backend.middlewareChain.forEach((s) => $('#chain').append(h('li', {}, `<b>${esc(s.name)}</b><span>${esc(s.what)}</span>`)));
+DATA.tenancy.forEach((t) => $('#tenancy').append(h('li', {}, esc(t).replace(/([a-zA-Z_]+\.ts|business_id|app\.business_id|business_rows|fourvd_app)/g, '<code>$1</code>'))));
+
+// ---------- explorer graph ----------
+const G = { nodes: new Map(), out: new Map(), in: new Map() };
+const addNode = (id, col, label, sub, data) => G.nodes.set(id, { id, col, label, sub, data });
+const link = (a, b) => { if (!G.nodes.has(a) || !G.nodes.has(b) || a === b) return; (G.out.get(a) ?? G.out.set(a, new Set()).get(a)).add(b); (G.in.get(b) ?? G.in.set(b, new Set()).get(b)).add(a); };
+const B = DATA.backend, D = DATA.dashboard;
+const pageRoutes = {};
+D.routes.forEach((r) => { if (r.file) (pageRoutes[r.file] ??= []).push(r.path); });
+D.pages.forEach((p) => addNode('p:' + p.file, 0, short(p.file).replace(/\.tsx?$/, ''), (pageRoutes[p.file] || []).slice(0, 3).join('  '), p));
+B.mounts.forEach((m) => addNode('m:' + m.prefix, 1, m.prefix, `${m.endpoints.length} endpoints · ${short(m.file)}`, m));
+B.services.forEach((s) => addNode('s:' + s.id, 2, s.class, s.kind === 'helper' ? 'helper · ' + short(s.file) : short(s.file), s));
+B.repositories.forEach((r) => addNode('r:' + r.id, 3, r.class, short(r.file), r));
+DATA.database.tables.forEach((t) => addNode('t:' + t.name, 4, t.name, (t.global ? 'global · ' : '') + (t.createdIn ? 'migration ' + t.createdIn : 'view/other'), t));
+D.pages.forEach((p) => p.endpoints.forEach((e) => link('p:' + p.file, 'm:' + e)));
+B.mounts.forEach((m) => m.services.forEach((s) => link('m:' + m.prefix, (G.nodes.has('s:' + s) ? 's:' : 'r:') + s)));
+[...B.services, ...B.repositories].forEach((n) => {
+  const me = (n.kind === 'repository' ? 'r:' : 's:') + n.id;
+  n.deps.forEach((d) => link(me, (G.nodes.has('s:' + d) ? 's:' : 'r:') + d));
+  n.tables.forEach((t) => link(me, 't:' + t));
+});
+const COLS = ['Dashboard pages', 'API route groups', 'Services', 'Repositories', 'Tables'];
+const colsEl = $('#cols');
+const itemEls = new Map();
+COLS.forEach((name, ci) => {
+  const col = h('div', { class: 'col' }), list = h('div', { class: 'list' });
+  const ns = [...G.nodes.values()].filter((n) => n.col === ci).sort((a, b) => a.label.localeCompare(b.label));
+  col.append(h('div', { class: 'col-h' }, `<h3>${name}</h3><small data-count>${ns.length}</small>`), list);
+  ns.forEach((n) => {
+    const b = h('button', { class: 'item', type: 'button', 'data-id': n.id }, `${esc(n.label)}<small>${esc(n.sub)}</small>`);
+    b.onclick = () => select(n.id);
+    list.append(b); itemEls.set(n.id, b);
+  });
+  colsEl.append(col);
+});
+let selected = null, deep = false;
+function walk(start, map, max) {
+  const seen = new Set(), queue = [[start, 0]];
+  while (queue.length) {
+    const [id, d] = queue.shift();
+    for (const nx of map.get(id) ?? []) if (!seen.has(nx) && nx !== start) { seen.add(nx); if (d + 1 < max) queue.push([nx, d + 1]); }
+  }
+  return seen;
+}
+function select(id) {
+  selected = id;
+  const max = deep ? 99 : 1;
+  const down = walk(id, G.out, max), up = walk(id, G.in, max);
+  colsEl.classList.add('tracing');
+  itemEls.forEach((el, k) => { el.classList.toggle('sel', k === id); el.classList.toggle('down', down.has(k)); el.classList.toggle('up', up.has(k) && !down.has(k)); el.setAttribute('aria-pressed', k === id); });
+  itemEls.get(id).scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  showDetail(id, up, down);
+}
+const chipList = (ids) => ids.length ? `<div class="chips">${ids.map((x) => `<button class="chip" type="button" data-go="${esc(x)}">${esc(G.nodes.get(x)?.label ?? x)}</button>`).join('')}</div>` : '<p class="meta">None</p>';
+function showDetail(id, up, down) {
+  const n = G.nodes.get(id), d = n.data;
+  const direct = (map) => [...(map.get(id) ?? [])];
+  const kinds = ['Dashboard page', 'API route group', d.kind === 'helper' ? 'Helper' : 'Service', 'Repository', d.global ? 'Global table' : 'Table'];
+  let html = `<span class="kind">${kinds[n.col]}</span><h3>${esc(n.label)}</h3>`;
+  const file = d.file || (n.col === 4 && d.createdIn ? DATA.database.migrations.find((m) => m.n === d.createdIn)?.file : null);
+  if (file) html += `<div class="path">${esc(file)}${d.lines ? ` · ${d.lines} lines` : ''}</div>`;
+  if (d.doc) html += `<p class="doc">${esc(d.doc)}</p>`;
+  if (n.col === 0) html += `<h4>Addresses</h4>${(pageRoutes[d.file] || []).map((p) => `<div class="path">${esc(p)}</div>`).join('')}<h4>API objects</h4><div class="chips">${d.apis.map((a) => `<span class="chip" style="cursor:default">${esc(a)}</span>`).join('') || '<span class="meta">None</span>'}</div>`;
+  if (n.col === 1) html += `<h4>Endpoints (${d.endpoints.length})</h4>${d.endpoints.map((e) => `<div class="ep"><span class="m m-${e.method}">${e.method}</span><span>${esc(e.path)}</span>${e.guards.length ? `<span class="g">${esc(e.guards.join(', '))}${e.handler ? ' · ' + esc(e.handler) : ''}</span>` : ''}</div>`).join('')}${d.controllers.length ? `<h4>Controllers</h4>${d.controllers.map((c) => `<div class="path">${esc(c)}</div>`).join('')}` : ''}`;
+  if ((n.col === 2 || n.col === 3) && (d.writes?.length || d.reads?.length)) html += `<h4>Writes (through its methods)</h4><div class="chips">${(d.writes || []).map((t) => `<span class="tw">${esc(t)}</span>`).join(' ') || '<span class="meta">nothing</span>'}</div><h4>Methods (${d.methods.length})</h4><div class="chips">${d.methods.map((m) => `<button class="chip" type="button" data-tree="${esc(d.class + '.' + m)}">${esc(m)}</button>`).join('')}</div>`;
+  if (n.col === 1) html += `<p class="meta" style="margin-top:10px">Pick an endpoint path in “Every endpoint” to see its call tree.</p>`;
+  if (n.col === 4) html += `<p class="meta">${d.global ? 'Global: shared by every business (listed in globalTables.ts).' : 'Business table: business_id + row security.'}</p>`;
+  html += `<h4>Uses (${direct(G.out).length})</h4>${chipList(direct(G.out))}<h4>Used by (${direct(G.in).length})</h4>${chipList(direct(G.in))}`;
+  if (deep) html += `<p class="meta" style="margin-top:12px">All the way: ${down.size} downstream, ${up.size} upstream.</p>`;
+  $('#detail').innerHTML = html;
+  $('#detail').querySelectorAll('[data-go]').forEach((b) => (b.onclick = () => select(b.dataset.go)));
+  $('#detail').querySelectorAll('[data-tree]').forEach((b) => (b.onclick = () => openTree(b.dataset.tree)));
+}
+$('#deep').onclick = (e) => { deep = !deep; e.currentTarget.setAttribute('aria-pressed', deep); if (selected) select(selected); };
+$('#clear').onclick = () => { selected = null; colsEl.classList.remove('tracing'); itemEls.forEach((el) => { el.classList.remove('sel', 'up', 'down'); el.removeAttribute('aria-pressed'); }); $('#detail').innerHTML = '<p class="empty">Pick an item to see its file, what it does, its endpoints and its links.</p>'; $('#q').value = ''; filter(''); };
+function filter(q) {
+  q = q.trim().toLowerCase();
+  const counts = [0, 0, 0, 0, 0];
+  itemEls.forEach((el, id) => {
+    const n = G.nodes.get(id), d = n.data;
+    const hay = q && [n.label, n.sub, d.file, d.doc, d.prefix, ...(d.endpoints || []).map((e) => typeof e === 'string' ? e : e.path), ...(d.tables || [])].join(' ').toLowerCase();
+    const show = !q || hay.includes(q);
+    el.hidden = !show; if (show) counts[n.col]++;
+  });
+  colsEl.querySelectorAll('[data-count]').forEach((c, i) => (c.textContent = counts[i]));
+}
+$('#q').oninput = (e) => filter(e.target.value);
+
+// ---------- endpoints ----------
+(() => {
+  const rows = B.mounts.flatMap((m) => m.endpoints.map((e) => ({ ...e, file: m.file })));
+  const body = $('#eps');
+  const draw = (q) => {
+    q = q.trim().toLowerCase();
+    body.innerHTML = rows.filter((r) => !q || `${r.method} ${r.path} ${r.guards.join(' ')} ${r.handler} ${r.file}`.toLowerCase().includes(q))
+      .map((r) => `<tr><td class="mono m-${r.method}"><b>${r.method}</b></td><td class="mono"><button class="ref" type="button" data-tree="${esc(r.method + ' ' + r.path)}" title="Open its call tree">${esc(r.path)}</button></td><td>${r.guards.map((g) => `<span class="tag">${esc(g)}</span>`).join('') || '<span class="tag amber">none found</span>'}</td><td class="mono">${esc(r.handler ?? '')}</td><td>${(r.writes || []).slice(0, 6).map((t) => `<span class="tw">${esc(t)}</span>`).join(' ')}${(r.writes || []).length > 6 ? ` <span class="meta">+${r.writes.length - 6}</span>` : ''}</td></tr>`).join('');
+  };
+  draw(''); $('#eq').oninput = (e) => draw(e.target.value);
+  body.addEventListener('click', (e) => { const b = e.target.closest('[data-tree]'); if (b) openTree(b.dataset.tree); });
+})();
+
+// ---------- dashboard ----------
+(() => {
+  const shellOf = (r) => r.path.startsWith('/portal') ? 'Portal' : r.path.startsWith('/counter') ? 'Counter' : r.layout || (r.wrappers.length <= 1 ? 'Public' : r.wrappers.filter((w) => w !== 'Root').join(' › '));
+  const pageBy = Object.fromEntries(D.pages.map((p) => [p.file, p]));
+  $('#dash-lede').innerHTML = `${esc(D.stack)}. ${D.routes.length} addresses in <code>admin/src/App.tsx</code>; owners get the full menu (<code>navigation/sections.ts</code>, ${D.menu.length} entries), staff the phone layout, the till is <code>/counter</code>, business customers <code>/portal</code>. “Calls” = the API route groups a page reaches through its own and its components’ API objects.`;
+  const body = $('#routes');
+  const draw = (q) => {
+    q = q.trim().toLowerCase();
+    body.innerHTML = D.routes.filter((r) => !q || `${r.path} ${r.element} ${r.file} ${(pageBy[r.file]?.endpoints || []).join(' ')}`.toLowerCase().includes(q)).map((r) => {
+      const p = pageBy[r.file];
+      return `<tr><td class="mono">${esc(r.path)}</td><td>${r.redirect ? `→ <code>${esc(r.redirect)}</code>` : `<b>${esc(r.element)}</b><div class="path">${esc(r.file ?? '')}</div>`}</td><td><span class="tag">${esc(shellOf(r))}</span></td><td>${(p?.endpoints || []).map((e) => `<span class="tag">${esc(e.replace('/api', ''))}</span>`).join('')}</td></tr>`;
+    }).join('');
+  };
+  draw(''); $('#rq').oninput = (e) => draw(e.target.value);
+  $('#afolders').innerHTML = D.folders.map((f) => `<span class="chip" style="cursor:default">${esc(short(f.folder))} · ${f.files}</span>`).join('');
+  $('#kit').innerHTML = D.uiKit.map((k) => `<span class="chip" style="cursor:default">${esc(k)}</span>`).join('');
+  $('#clients').innerHTML = D.apiClients.map((c) => `<tr><td class="mono"><b>${esc(c.name)}</b><div class="path">${esc(short(c.file))}</div></td><td>${c.prefixes.map((p) => `<span class="tag">${esc(p.replace('/api', ''))}</span>`).join('')}</td></tr>`).join('');
+})();
+
+// ---------- database ----------
+(() => {
+  const T = DATA.database;
+  $('#db-lede').innerHTML = `Postgres 18 through Kysely. ${T.tables.length} tables found in migrations and queries; ${T.globalTables.length} are global (people, sign-in, the business list), every other carries <code>business_id</code> under row security. Local: Docker <code>four-vd-app-postgres</code>.`;
+  const body = $('#tables');
+  const draw = (q) => {
+    q = q.trim().toLowerCase();
+    body.innerHTML = T.tables.filter((t) => !q || `${t.name} ${t.usedBy.join(' ')}`.toLowerCase().includes(q)).map((t) => `<tr><td class="mono"><b>${esc(t.name)}</b>${t.global ? ' <span class="tag amber">global</span>' : ''}</td><td class="mono">${t.createdIn ?? '—'}</td><td>${t.usedBy.slice(0, 8).map((u) => `<span class="tag">${esc(short(u).replace(/\.ts$/, ''))}</span>`).join('')}${t.usedBy.length > 8 ? `<span class="tag">+${t.usedBy.length - 8}</span>` : ''}</td></tr>`).join('');
+  };
+  draw(''); $('#tq').oninput = (e) => draw(e.target.value);
+  const last = T.migrations.at(-1).n;
+  const info = $('#mig-info');
+  T.migrations.forEach((m) => {
+    const b = h('button', { type: 'button', class: m.n > last - 10 ? 'new' : null, 'aria-label': `Migration ${m.n}: ${m.name}`, title: `${m.n} ${m.name}` }, String(m.n));
+    const show = () => { $('#mig').querySelectorAll('.sel').forEach((x) => x.classList.remove('sel')); b.classList.add('sel'); info.innerHTML = `<b>${String(m.n).padStart(3, '0')} ${esc(m.name.replaceAll('_', ' '))}</b><div class="path">${esc(m.file)}</div><p style="margin:6px 0">${esc(m.doc || '')}</p>${m.creates.length ? `<div>Creates: ${m.creates.map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}${m.alters.length ? `<div>Changes: ${m.alters.map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}`; };
+    b.onclick = show; b.onmouseenter = show; b.onfocus = show;
+    $('#mig').append(b);
+  });
+})();
+
+// ---------- jobs, scripts, service folders ----------
+$('#jobs-list').innerHTML = B.jobs.map((j) => `<h3><code>${esc(j.name)}</code></h3><p style="margin:0 0 6px;color:var(--ink-2)">${esc(j.doc)}</p><div class="chips" style="margin-bottom:14px">${j.calls.map((c) => `<span class="chip" style="cursor:default">${esc(c)}</span>`).join('')}</div>`).join('')
+  + `<h3>AI helpers</h3><p style="margin:0;color:var(--ink-2)"><code>services/ai/</code>: bill reading, categorising, bank statements, partner reader and Ask, through Anthropic; staff names are masked first.</p>`;
+$('#scripts').innerHTML = Object.entries(B.scripts).map(([k, v]) => `<tr><td class="mono"><b>${esc(k)}</b></td><td class="mono" style="color:var(--ink-3)">${esc(v)}</td></tr>`).join('');
+$('#sfolders').innerHTML = B.serviceFolders.map((f) => `<div><h3><code>${esc(short(f.folder))}/</code></h3><ul class="notes" style="font-size:13px">${f.files.map((x) => `<li><code>${esc(short(x.file))}</code>${x.doc ? ' – ' + esc(x.doc) : ''}</li>`).join('')}</ul></div>`).join('');
+
+// ---------- CI ----------
+(() => {
+  const ci = DATA.ci.workflows.find((w) => w.file.endsWith('ci.yml'));
+  if (ci) {
+    const lvl = {};
+    const depth = (j) => lvl[j.id] ??= j.needs.length ? 1 + Math.max(...j.needs.map((n) => depth(ci.jobs.find((x) => x.id === n) ?? { id: n, needs: [] }))) : 0;
+    ci.jobs.forEach(depth);
+    const max = Math.max(...Object.values(lvl));
+    const names = ['Work out what changed', 'Checks', 'Gates', 'Go live'];
+    for (let i = 0; i <= max; i++) {
+      const col = h('div', { class: 'lvl' }, `<div class="lvl-h">${names[i] ?? 'Step ' + (i + 1)}</div>`);
+      ci.jobs.filter((j) => lvl[j.id] === i).forEach((j) => col.append(h('div', { class: 'job' + (j.id.startsWith('deploy') ? ' deploy' : '') }, `<b>${esc(j.name)}</b><small>${esc(j.id)}${j.needs.length ? ' ← ' + esc(j.needs.join(', ')) : ''}</small>`)));
+      $('#dag').append(col);
+    }
+  }
+  $('#wfs').innerHTML = DATA.ci.workflows.filter((w) => w !== ci).map((w) => `<div class="card pad"><h3>${esc(w.name)}</h3><div class="path">${esc(w.file)}</div><p style="margin:6px 0 0;color:var(--ink-2)">${w.cron ? `Schedule <code>${esc(w.cron)}</code> (UTC)` : ''}${w.on.includes('workflow_dispatch') ? ' · can run by hand' : ''}</p><div class="chips" style="margin-top:8px">${w.jobs.map((j) => `<span class="chip" style="cursor:default">${esc(j.name)}</span>`).join('')}</div></div>`).join('');
+})();
+
+// ---------- desktop, mail, e2e ----------
+const fileList = (fs) => `<ul class="notes" style="font-size:13px">${fs.map((f) => `<li><code>${esc(short(f.file))}</code> <span class="meta">${f.lines} lines</span>${f.doc ? '<br>' + esc(f.doc) : ''}</li>`).join('')}</ul>`;
+$('#desk-h').innerHTML = `4VD for Windows (<code>desktop/</code>, v${esc(DATA.desktop.package)})`;
+$('#desk').innerHTML = '<p style="margin:0 0 8px;color:var(--ink-2)">Electron: loads 4vd.app, starts offline from the saved copy, prints through F-Link to the Datecs fiscal printer, keeps a print journal, updates from GitHub Releases.</p>' + fileList(DATA.desktop.files);
+$('#mail').innerHTML = '<p style="margin:0 0 8px;color:var(--ink-2)">Cloudflare Email Worker for bills@4vd.app and bills+&lt;short&gt;@4vd.app.</p>' + fileList(DATA.mail.files);
+$('#e2e').innerHTML = '<p style="margin:0 0 8px;color:var(--ink-2)">Playwright on the money paths, own API and dashboard on ports 3100/5180, database <code>four_vd_app_e2e</code>.</p><ul class="notes" style="font-size:13px">' + DATA.e2e.map((f) => `<li><code>${esc(f.replace('e2e/', ''))}</code></li>`).join('') + '</ul>';
+$('#foot').innerHTML = `Sources: ${DATA.meta.sources.map((s) => `<code>${esc(s)}</code>`).join(', ')}. The hosting map (System) is kept by hand in generate.mjs; everything else is parsed, so a run after a change keeps it true.`;
+</script>
+</body>
+</html>

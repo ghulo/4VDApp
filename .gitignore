@@ -46,3 +46,10 @@ Thumbs.db
 
 # Session handoff notes (local, written by Claude)
 handoff.md
+
+# Architecture map: rebuilt by the git hooks from generate.mjs, never committed
+docs/architecture-map/architecture.json
+docs/architecture-map/index.html
+docs/architecture-map/last-error.txt
+docs/architecture-map/.*.tmp
+docs/architecture-map/.hook-err.*

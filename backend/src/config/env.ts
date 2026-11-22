@@ -4,6 +4,12 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  /**
+   * Local only: the API server acts as this role on every connection (SET ROLE), so row security keeps businesses
+   * apart as it does live, while scripts and migrations keep DATABASE_URL's own user (docs/DEPLOYMENT.md, "Local API
+   * as a limited role"). Live connects as its own role instead and leaves this unset.
+   */
+  DATABASE_ROLE: z.preprocess((value) => (value === '' ? undefined : value), z.string().regex(/^[a-z_][a-z0-9_]*$/, 'DATABASE_ROLE must be a plain role name').optional()),
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 characters'),
   JWT_EXPIRES_IN: z.string().default('7d'),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(30),
@@ -68,6 +74,8 @@ export interface AppConfig {
   nodeEnv: 'development' | 'test' | 'production';
   port: number;
   databaseUrl: string;
+  /** The role the API server acts as (SET ROLE); unset: DATABASE_URL's own user. */
+  databaseRole?: string;
   jwtSecret: string;
   jwtExpiresIn: string;
   refreshTokenTtlDays: number;
@@ -114,6 +122,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
     nodeEnv: env.NODE_ENV,
     port: env.PORT,
     databaseUrl: env.DATABASE_URL,
+    databaseRole: env.DATABASE_ROLE || undefined,
     jwtSecret: env.JWT_SECRET,
     jwtExpiresIn: env.JWT_EXPIRES_IN,
     refreshTokenTtlDays: env.REFRESH_TOKEN_TTL_DAYS,

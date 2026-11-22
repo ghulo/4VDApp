@@ -14,6 +14,8 @@ const env = {
   ...process.env,
   DATABASE_URL: url.toString(),
   MIGRATION_DATABASE_URL: '',
+  // The role comes from the URL above (DEMO_APP_ROLE), not backend/.env's DATABASE_ROLE.
+  DATABASE_ROLE: '',
   NODE_ENV: 'development',
   PORT: '3000',
   JWT_SECRET: 'verify-demo-only-secret-that-is-long-enough-to-pass',

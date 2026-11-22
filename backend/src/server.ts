@@ -13,7 +13,7 @@ import { logger } from './utils/logger.js';
 
 const config = loadConfig();
 initErrorTracking(config.sentryDsn, config.nodeEnv);
-const db = createDatabase(config.databaseUrl);
+const db = createDatabase(config.databaseUrl, { role: config.databaseRole });
 const role = await databaseRole(db);
 const refused = refuseRole(role, config.nodeEnv);
 if (refused) {

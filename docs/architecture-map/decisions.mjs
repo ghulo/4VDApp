@@ -48,9 +48,9 @@ export const DECISIONS = [
     title: 'Row security in the database, not only WHERE clauses',
     decision: 'Every business table has business_id and forced row-level security; the live API connects as fourvd_app, which is not the owner and has no BYPASSRLS, and refuses to start as a superuser.',
     why: 'One installation serves many businesses and a business\'s rows must be invisible to every other. With row security a forgotten filter in a query returns nothing instead of another business\'s data, and the app role can\'t switch it off.',
-    cost: 'Migrations and backups run as the owner with app.maintenance=on; a data fix by hand needs the same. Local development connects as a superuser, so local checks can\'t show isolation (tests use a non-owner role).',
+    cost: 'Migrations and backups run as the owner with app.maintenance=on; a data fix by hand needs the same. Locally the API signs in as the postgres superuser but acts as fourvd_app_local (DATABASE_ROLE, set up by npm run db:local-role, 2026-11-22), so local checks show isolation too; scripts still run as the owner.',
     basis: 'stated', source: 'docs/ARCHITECTURE.md "Many businesses"; docs/DEPLOYMENT.md "The app\'s own database role"',
-    where: ['backend/src/database/roleCheck.ts:refuseRole', 'backend/src/database/globalTables.ts:'],
+    where: ['backend/src/database/roleCheck.ts:refuseRole', 'backend/src/database/globalTables.ts:', 'backend/src/scripts/localAppRole.ts:'],
   },
   {
     id: 'per-connection', area: 'Many businesses',
@@ -153,9 +153,9 @@ export const DECISIONS = [
     title: 'Every change is recorded and can be undone',
     decision: 'Changes that matter write an Activity entry with from/to details; undo reverses them; deletes are soft (deleted_at) with a recycle bin.',
     why: 'Nothing touches stock or money without a record, and mistakes must be fixable rather than locked.',
-    cost: 'Every new edit path must write its log entry, or its History card and undo miss it.',
+    cost: 'Every new edit path must write its log entry, or its History card and undo miss it. Checked since 2026-11-22: tests/activityCoverage.test.ts fails on an endpoint that writes without an Activity entry unless it is on the reviewed list (tests/helpers/activityAllowlist.ts); it only sees what the call graph can trace.',
     basis: 'stated', source: 'DESIGN.md §2 principle 5 and §3.6',
-    where: ['ActivityLogRepository.create', 'backend/src/services/undo/UndoService.ts:', 'backend/src/services/undo/RecordRestoreService.ts:'],
+    where: ['ActivityLogRepository.create', 'backend/src/services/undo/UndoService.ts:', 'backend/src/services/undo/RecordRestoreService.ts:', 'backend/tests/activityCoverage.test.ts:'],
   },
   {
     id: 'activity-keys', area: 'Records',

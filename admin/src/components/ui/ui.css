@@ -1291,7 +1291,13 @@
   padding-right: var(--control-h);
 }
 
-.password-field__box > :last-child {
+.password-field__box > :last-child,
+.password-field__eye {
+  grid-area: 1 / 1;
+}
+
+.password-field__box > :last-child,
+.password-field__eye {
   justify-self: end;
   align-self: center;
 }

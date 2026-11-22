@@ -29,7 +29,11 @@
 //   printed ("unknown") is never acknowledged and never goes: only a print of
 //   it again (after an owner's look) settles it.
 // - A journal file that can't be read is never written over: a broken one is
-//   moved aside first, a locked one waits until it can be read.
+//   moved aside first, a locked one waits until it can be read. Until then no
+//   receipt with a key prints (not_saved) and a lookup says unknown, since the
+//   file may know that sale already.
+// - The app writes what memory has once more as it quits (flush), so a write
+//   the disk refused a moment ago isn't lost with the app.
 const realFs = require('node:fs');
 
 /** Acknowledged entries: enough for weeks of receipts; the oldest go first. */
@@ -152,7 +156,9 @@ function openJournal(file, options = {}) {
   /** What happened to this sale's last receipt, or null if none went to the printer from this app. */
   function lookup(key) {
     if (!validKey(key)) return null;
-    load();
+    // The disk's journal can't be read (locked): it may know this receipt, so "none went" would be a guess. Unknown
+    // makes the Counter ask someone to look at the printer, as for a print cut off mid-way.
+    if (!load()) return { key, job: null, status: 'unknown', receiptNo: null, message: null, at: now() };
     const entry = entries.get(key);
     if (!entry) return null;
     // "printing" only while this app really has the job; otherwise it was cut off, and how it went is unknown.
@@ -182,7 +188,9 @@ function openJournal(file, options = {}) {
    */
   async function track(key, name, run, { confirmed = false } = {}) {
     if (!validKey(key)) return run(() => true);
-    load();
+    // What the disk knows must be in memory before deciding anything: a journal that can't be read now might say
+    // this sale printed already, and if it became readable mid-print, memory's new entry would hide that. Nothing prints.
+    if (!load()) return { status: 'not_saved', message: null };
     const running = inflight.get(key);
     if (running) return running;
     let known = entries.get(key);

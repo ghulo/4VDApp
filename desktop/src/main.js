@@ -311,3 +311,12 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => app.quit());
+// One last try at writing the print journal: a write the disk refused a moment ago (journal.js retries every few seconds)
+// would otherwise go with the app, and the next start would only know the receipt as "printing" (then unknown).
+app.on('before-quit', () => {
+  try {
+    printJournal?.flush();
+  } catch {
+    // Nothing more to do while quitting; the next start settles it from F-Link's folder.
+  }
+});

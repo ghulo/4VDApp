@@ -295,3 +295,32 @@ test('an outcome the till never acknowledged stays, however old', async () => {
   await journal.track(KEY, 'job', printed('4'));
   assert.equal(openJournal(file).lookup('old').receiptNo, '3');
 });
+
+test('a journal that can’t be read when a print starts never prints, even if it becomes readable a moment later', async () => {
+  const file = fresh();
+  fs.writeFileSync(file, JSON.stringify([{ key: KEY, job: 'job', status: 'printed', receiptNo: '9', at: Date.now(), acked: true }]));
+  const { fs: lockable, state } = lockableFs();
+  state.reads = false;
+  const journal = openJournal(file, { fs: lockable, retryMs: 10 });
+  let sent = 0;
+  const pending = journal.track(KEY, 'job', async () => {
+    sent += 1;
+    return { status: 'printed', receiptNo: '10' };
+  });
+  // The antivirus lets go before the job's first step runs.
+  state.reads = true;
+  assert.equal((await pending).status, 'not_saved');
+  assert.equal(sent, 0);
+  assert.equal(journal.lookup(KEY).receiptNo, '9');
+});
+
+test('a lookup on a journal that can’t be read says unknown, never "no receipt went"', () => {
+  const file = fresh();
+  fs.writeFileSync(file, JSON.stringify([{ key: KEY, job: 'job', status: 'printed', receiptNo: '9', at: Date.now() }]));
+  const { fs: lockable, state } = lockableFs();
+  state.reads = false;
+  const journal = openJournal(file, { fs: lockable });
+  assert.equal(journal.lookup(KEY).status, 'unknown');
+  state.reads = true;
+  assert.equal(journal.lookup(KEY).status, 'printed');
+});

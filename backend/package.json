@@ -19,6 +19,7 @@
     "test:related": "vitest related --run",
     "migrate": "tsx src/scripts/migrate.ts",
     "migrate:down": "tsx src/scripts/migrate.ts --down",
+    "db:local-role": "tsx src/scripts/localAppRole.ts",
     "seed": "tsx src/scripts/seed.ts",
     "seed:demo": "tsx src/scripts/seed.ts --demo",
     "db:setup": "npm run migrate && npm run seed",

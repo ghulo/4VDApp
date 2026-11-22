@@ -29,6 +29,8 @@ const apiEnv = {
   NODE_ENV: 'development',
   PORT: String(API_PORT),
   DATABASE_URL: databaseUrl(),
+  // backend/.env's local DATABASE_ROLE has no grants on the e2e database: the e2e API signs in as DATABASE_URL's user.
+  DATABASE_ROLE: '',
   JWT_SECRET: 'e2e-only-secret-that-is-long-enough-to-pass',
   CORS_ORIGINS: WEB_URL,
   DASHBOARD_URL: WEB_URL,

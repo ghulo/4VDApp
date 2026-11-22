@@ -133,6 +133,16 @@ Every business table has row-level security (migration 081): a row is only seen 
 - A data fix by hand as the owner: `SET app.maintenance = 'on'` first, or row security hides every row.
 - Undo: set `DATABASE_URL` to the owner's URL and redeploy (row security still applies to the owner, FORCE is on).
 
+### Local API as a limited role
+
+On this PC the API signs in as the `postgres` superuser (backend/.env `DATABASE_URL`), which skips row security, so one business could see another's rows without anyone noticing. So the local API switches to a limited role on every connection, like live:
+
+1. Docker Desktop running, then in `backend/`: `npm run db:local-role` (for `four_vd_app`) and `npm run db:local-role -- four_vd_app_demo`. It makes `fourvd_app_local` (NOLOGIN, not superuser, no BYPASSRLS), grants it the tables, sequences and functions, and grants it future tables too. Run it again for any new local database.
+2. In `backend/.env`: `DATABASE_ROLE=fourvd_app_local`. Only the API server uses it (`SET ROLE` on each connection); `npm run migrate`, `seed:demo`, `import:trefin` and the other scripts keep signing in as `postgres`.
+3. Restart the API: its log says `Connected to the database ... "role":"fourvd_app_local"`.
+
+Undo: delete the `DATABASE_ROLE` line and restart. The verify skill's demo API acts as its own limited role (`four_vd_app_demo_app`); the e2e API sets `DATABASE_ROLE` empty. Live leaves `DATABASE_ROLE` unset: it signs in as `fourvd_app` directly.
+
 ## Errors and Uptime
 
 **Error emails.** Every error the server logs is counted, and the developer

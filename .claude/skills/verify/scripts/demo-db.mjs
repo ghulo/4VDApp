@@ -97,6 +97,10 @@ await withClient(demoUrl, async (client) => {
   await client.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ${DEMO_APP_ROLE}`);
   await client.query(`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${DEMO_APP_ROLE}`);
   await client.query(`GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO ${DEMO_APP_ROLE}`);
+  // Tables that later migrations add are granted too, so a migrated demo database keeps working.
+  await client.query(`ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ${DEMO_APP_ROLE}`);
+  await client.query(`ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO ${DEMO_APP_ROLE}`);
+  await client.query(`ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO ${DEMO_APP_ROLE}`);
 });
 say(`role ${DEMO_APP_ROLE} granted (row security applies to it)`);
 

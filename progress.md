@@ -9,6 +9,14 @@ Finished sections are kept in `docs/archive/progress-done.md`.
 - [ ] Link from a product to the supplier you usually buy it from (optional)
 - [ ] Run the TREFIN import for real at launch (`npm run import:trefin`)
 
+## Architecture weak spots (from the architecture map, 2026-11-22)
+
+- [x] 1. A backend fix can miss going live: the deploy job now waits until /health names the pushed commit, so a deploy that fails on Render's side turns the run red and the next push deploys it again (2767ba71, 56ea4c08)
+- [ ] 2. Local API as a non-owner role (row security on locally): plan agreed? waits on the user
+- [ ] 3. A check that every edit writes its history entry: first list shown to the user, waits on where it runs + the allowlist
+- [x] 4. roundMoney check: not built on purpose (Postgres NUMERIC(…,2) rounds the same way on save; unbalanced entries already throw in entryBuilder.ts; property tests cover the books and VAT). Revisit only if a cent slip shows up
+- [x] 5. A print stuck by a locked print journal (Windows app; 767d0e57, 08c18142, e10d2fde; needs the next Windows app release). Follow-ups from its review: an offline sale the server refused, retried while the journal can't be read, can get a new key, and an owner-confirmed Print again could then print a second receipt (existed before); keep the fiscal key across offline retries
+
 ## Code review fixes (three-model review, 2026-11-19)
 
 Done:
@@ -58,6 +66,10 @@ UI and features (ask first):
 - [ ] Books: FIFO or average cost, foreign-currency bills, editable chart of accounts, bank matching
 
 ## To test by hand
+
+**Print journal locked (Windows app, after the next release; 767d0e57, e10d2fde)**
+- [ ] Shop PC: with the app running, make fiscal-journal.json (in the app's settings folder) read-only or open it locked in another program; sell: the receipt doesn't print and the till says it couldn't be noted; unlock it: the next sale prints once
+- [ ] Lock the journal, close and reopen the app, then unlock it: a receipt that was printing when it closed settles by itself (its number lands on the sale), and nothing prints twice
 
 **The look: motion, sign-in, Overview** (Task 8, 2026-11-21: 2e83ad05, 6fea3874, 9c08f79d, bb60be87, 2d43a91e, 167e6d25)
 - [ ] Profile → Look → Motion: Automatic, Full, Reduced, Off each change the feel at once on this device only (another PC keeps its own); Off: sheets, toasts and pages appear with no movement; the arrow keys move between the choices

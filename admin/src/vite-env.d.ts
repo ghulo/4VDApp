@@ -44,7 +44,8 @@ interface Window {
     confirmsLeave?: boolean;
     /** What happened to a sale's last receipt, from the app's own job journal; missing before 0.4.6. */
     fiscalLookup?(key: string): Promise<{
-      status: 'printing' | 'printed' | 'failed' | 'not_running' | 'no_folder' | 'unknown';
+      /** unavailable (0.5.1+): the app can't read its journal right now; ask again later. */
+      status: 'printing' | 'printed' | 'failed' | 'not_running' | 'no_folder' | 'unknown' | 'unavailable';
       receiptNo: string | null;
       message: string | null;
     } | null>;

@@ -192,7 +192,10 @@ export function useFiscalPrinter(enabled: boolean, t: Catalogue['counter']) {
     async (key: string): Promise<PrintOutcome | null> => {
       if (!bridge?.fiscalLookup) return null;
       try {
-        return journalOutcome(await bridge.fiscalLookup(key), t);
+        const entry = await bridge.fiscalLookup(key);
+        // The app can't read its journal right now: as if it couldn't be asked (nothing is marked; a print waits for it).
+        if (entry?.status === 'unavailable') return null;
+        return journalOutcome(entry, t);
       } catch {
         return { kind: 'unknown' };
       }

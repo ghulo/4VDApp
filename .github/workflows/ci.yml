@@ -60,6 +60,7 @@ jobs:
             backend:
               - *ci
               - 'backend/**'
+              - '.github/scripts/wait-for-api.sh'
             admin:
               - *ci
               - 'admin/**'
@@ -352,6 +353,10 @@ jobs:
     # other apps' too, and a red Cloudflare build of the retired team app held
     # every API deploy back without a word (2026-11-18 and 19). Same rule as the
     # dashboard: a job skipped because its folder didn't change counts as fine.
+    # The job then waits until /health names this commit, so it is green only
+    # once Render really runs it. A deploy that fails on Render's side turns the
+    # run red, and the next push to main (whatever it touches) compares with the
+    # last green commit and deploys the backend again.
     needs: [changes, backend, backend-image, admin, mail, e2e]
     if: >-
       always() &&
@@ -360,8 +365,11 @@ jobs:
       !contains(needs.*.result, 'failure') &&
       !contains(needs.*.result, 'cancelled')
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 25
     steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
       - name: Ask Render to deploy this commit
         env:
           HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
@@ -369,3 +377,5 @@ jobs:
           if [ -z "$HOOK" ]; then echo "::error::The secret RENDER_DEPLOY_HOOK_URL is missing (docs/DEPLOYMENT.md)"; exit 1; fi
           # A 404 means Render doesn't know the commit; curl -f turns it into a red step.
           curl -fsS -X POST "${HOOK}&ref=${GITHUB_SHA}" -o /dev/null -w "Render answered %{http_code}\n"
+      - name: Wait until the API runs this commit
+        run: bash .github/scripts/wait-for-api.sh "$GITHUB_SHA" https://api.4vd.app/health 1200

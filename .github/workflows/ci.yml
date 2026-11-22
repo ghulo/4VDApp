@@ -61,6 +61,8 @@ jobs:
               - *ci
               - 'backend/**'
               - '.github/scripts/wait-for-api.sh'
+              # tests/activityCoverage.test.ts runs the architecture map's generator
+              - 'docs/architecture-map/**'
             admin:
               - *ci
               - 'admin/**'

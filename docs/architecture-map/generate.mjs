@@ -531,7 +531,9 @@ const data = {
 };
 
 // write to temp files, then rename, so a reader never sees half a file
-const put = (name, text) => { const tmp = join(HERE, `.${name}.${process.pid}.tmp`); writeFileSync(tmp, text); renameSync(tmp, join(HERE, name)); };
+// MAP_OUT_DIR: write somewhere else (the backend test that checks every edit writes its history entry uses a temp folder).
+const OUT = process.env.MAP_OUT_DIR || HERE;
+const put = (name, text) => { const tmp = join(OUT, `.${name}.${process.pid}.tmp`); writeFileSync(tmp, text); renameSync(tmp, join(OUT, name)); };
 put('architecture.json', JSON.stringify(data, null, 1));
 put('index.html', read(join(HERE, 'template.html')).replace('/*__DATA__*/null', JSON.stringify(data).replaceAll('</', '<\\/')));
 rmSync(ERROR_FILE, { force: true });

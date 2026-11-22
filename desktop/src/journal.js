@@ -107,7 +107,28 @@ function openJournal(file, options = {}) {
       entries.set(entry.key, entry);
     }
     loaded = true;
+    // The first read of the disk's journal: jobs it lists as printing were cut off when the app last closed. Settled
+    // here, not only at start, so a journal locked at start is still settled once it can be read.
+    settleCutOff();
     return true;
+  }
+
+  /** A job noted as printing that this app doesn't have was cut off: how it went, from F-Link's folder if it can say. */
+  function settleCutOff() {
+    let changed = false;
+    for (const entry of [...entries.values()]) {
+      if (entry.status !== 'printing' || inflight.has(entry.key)) continue;
+      // File name noted as none: it never reached F-Link (the file only goes once its name is on the disk), so nothing
+      // printed. A journal from before file names were noted has no such field at all: that one stays a guess (unknown).
+      const found = entry.file === null ? { status: 'failed', receiptNo: null, message: null } : recovered(entry);
+      const status = found && found.status !== 'still_queued' ? found.status : 'unknown';
+      entries.set(entry.key, { ...entry, status, receiptNo: found?.receiptNo ?? null, message: found?.message ?? entry.message ?? null });
+      changed = true;
+    }
+    if (changed) {
+      dirty = true;
+      schedule();
+    }
   }
 
   function pruned() {
@@ -156,12 +177,12 @@ function openJournal(file, options = {}) {
   /** What happened to this sale's last receipt, or null if none went to the printer from this app. */
   function lookup(key) {
     if (!validKey(key)) return null;
-    // The disk's journal can't be read (locked): it may know this receipt, so "none went" would be a guess. Unknown
-    // makes the Counter ask someone to look at the printer, as for a print cut off mid-way.
-    if (!load()) return { key, job: null, status: 'unknown', receiptNo: null, message: null, at: now() };
+    // The disk's journal can't be read (locked): it may know this receipt, so "none went" would be a guess.
+    // "unavailable": the Counter asks again later (and a print waits: track refuses until it can be read).
+    if (!load()) return { key, job: null, status: 'unavailable', receiptNo: null, message: null, at: now() };
     const entry = entries.get(key);
     if (!entry) return null;
-    // "printing" only while this app really has the job; otherwise it was cut off, and how it went is unknown.
+    // "printing" only while this app really has the job (a cut-off one is settled when the journal is read).
     if (entry.status === 'printing' && !inflight.has(key)) return { ...view(entry), status: 'unknown' };
     return view(entry);
   }
@@ -262,18 +283,10 @@ function openJournal(file, options = {}) {
     return persist();
   }
 
-  /** At start: a job left "printing" was cut off when the app closed. F-Link's folder says how it went, if it can; else it is unknown. */
+  /** At start: read the disk's journal, which settles jobs cut off when the app closed (settleCutOff); written at once if it can be. */
   function settleStale() {
-    load();
-    let changed = false;
-    for (const entry of [...entries.values()]) {
-      if (entry.status !== 'printing' || inflight.has(entry.key)) continue;
-      const found = recovered(entry);
-      const status = found && found.status !== 'still_queued' ? found.status : 'unknown';
-      entries.set(entry.key, { ...entry, status, receiptNo: found?.receiptNo ?? null, message: found?.message ?? entry.message ?? null });
-      changed = true;
-    }
-    return changed ? persist() : true;
+    if (!load()) return false;
+    return dirty ? persist() : true;
   }
 
   return { lookup, track, ack, settleStale, flush: () => (dirty ? persist() : true) };

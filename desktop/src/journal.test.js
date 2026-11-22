@@ -129,7 +129,8 @@ test('after a restart, a cut-off job’s outcome comes from F-Link’s folder wh
   assert.equal(journal.settleStale(), true);
   assert.deepEqual([journal.lookup('a').status, journal.lookup('a').receiptNo], ['printed', '77']);
   assert.equal(journal.lookup('b').status, 'unknown');
-  assert.equal(journal.lookup('c').status, 'unknown');
+  // Its file name was noted as none: it never reached F-Link.
+  assert.equal(journal.lookup('c').status, 'failed');
 });
 
 test('F-Link’s folder: a printed job gives its number, a refused one fails, one never taken is taken back', () => {
@@ -314,13 +315,35 @@ test('a journal that can’t be read when a print starts never prints, even if i
   assert.equal(journal.lookup(KEY).receiptNo, '9');
 });
 
-test('a lookup on a journal that can’t be read says unknown, never "no receipt went"', () => {
+test('a lookup on a journal that can’t be read says unavailable, never "no receipt went"', () => {
   const file = fresh();
   fs.writeFileSync(file, JSON.stringify([{ key: KEY, job: 'job', status: 'printed', receiptNo: '9', at: Date.now() }]));
   const { fs: lockable, state } = lockableFs();
   state.reads = false;
   const journal = openJournal(file, { fs: lockable });
-  assert.equal(journal.lookup(KEY).status, 'unknown');
+  assert.equal(journal.lookup(KEY).status, 'unavailable');
   state.reads = true;
   assert.equal(journal.lookup(KEY).status, 'printed');
+});
+
+test('a job noted as printing with no file name never reached F-Link: after a restart it reads as failed, not unknown', () => {
+  const file = fresh();
+  fs.writeFileSync(file, JSON.stringify([{ key: KEY, job: 'job', status: 'printing', file: null, at: Date.now() }]));
+  let asked = 0;
+  const journal = openJournal(file, { recover: () => ((asked += 1), null) });
+  journal.settleStale();
+  assert.equal(journal.lookup(KEY).status, 'failed');
+  assert.equal(asked, 0);
+  assert.equal(JSON.parse(fs.readFileSync(file, 'utf8'))[0].status, 'failed');
+});
+
+test('a journal locked at start still settles its cut-off jobs once it can be read', () => {
+  const file = fresh();
+  fs.writeFileSync(file, JSON.stringify([{ key: KEY, job: 'job', status: 'printing', file: 'job', at: Date.now() }]));
+  const { fs: lockable, state } = lockableFs();
+  state.reads = false;
+  const journal = openJournal(file, { fs: lockable, recover: () => ({ status: 'printed', receiptNo: '77' }) });
+  assert.equal(journal.settleStale(), false);
+  state.reads = true;
+  assert.deepEqual([journal.lookup(KEY).status, journal.lookup(KEY).receiptNo], ['printed', '77']);
 });

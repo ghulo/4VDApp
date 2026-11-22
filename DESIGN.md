@@ -671,6 +671,13 @@ The canvas weave is faint (1.2% light, 1% dark).
   out" become one cell of short lines (StatGrid does it), and a change badge is
   left off when a figure dropped to nothing ("↘100%" says no more than the €0).
 - Controls 36px (30px small) on desktop, **44px (36px small) under 900px**. Every tap area on a phone is at least 44px.
+- **Edge lines** (gridlines pass, 2026-11-22, Claude): the menu has a box line at
+  22px (group names and the icon boxes start there; 18px icons, so labels start
+  at 50px, Collapse included) and the top bar's first and last items sit 16px
+  from the window. Section tabs hang one tab padding into the margin, so the
+  first tab's label starts on the page title's line. Single fields stop at
+  `--field-max` on purpose (reading width); a sunk Counter card's text sits 12px
+  inside its own box.
 
 ### Two kinds of surface
 - **Raised card** (Paper + Raise shadow, 16px corners): things you work in:

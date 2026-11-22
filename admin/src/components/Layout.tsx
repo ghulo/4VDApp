@@ -243,7 +243,7 @@ function FullLayout() {
             onClick={toggleCollapsed}
             aria-label={collapsed ? t.nav.expand : t.nav.collapseMenu}
           >
-            {collapsed ? <CaretDoubleRight size={16} aria-hidden="true" /> : <CaretDoubleLeft size={16} aria-hidden="true" />}
+            {collapsed ? <CaretDoubleRight size={18} aria-hidden="true" /> : <CaretDoubleLeft size={18} aria-hidden="true" />}
             <span className="sidebar__label">{t.nav.collapse}</span>
           </button>
         </Tooltip>

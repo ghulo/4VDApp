@@ -56,22 +56,24 @@ export function ProductPage() {
         }
       />
       <nav className="section-tabs" aria-label={name}>
-        <NavLink to={`/products/${productId}`} end className="section-tabs__tab">
-          {t.productPage.stock}
-        </NavLink>
-        <NavLink to={`/products/${productId}/details`} end className="section-tabs__tab">
-          {t.productPage.details}
-        </NavLink>
-        {features.recipes && (
-          <NavLink to={`/products/${productId}/made-from`} end className="section-tabs__tab">
-            {t.productPage.madeFrom}
+        <div className="section-tabs__row">
+          <NavLink to={`/products/${productId}`} end className="section-tabs__tab">
+            {t.productPage.stock}
           </NavLink>
-        )}
-        {features.serials && (
-          <NavLink to={`/products/${productId}/serials`} end className="section-tabs__tab">
-            {t.productPage.serials}
+          <NavLink to={`/products/${productId}/details`} end className="section-tabs__tab">
+            {t.productPage.details}
           </NavLink>
-        )}
+          {features.recipes && (
+            <NavLink to={`/products/${productId}/made-from`} end className="section-tabs__tab">
+              {t.productPage.madeFrom}
+            </NavLink>
+          )}
+          {features.serials && (
+            <NavLink to={`/products/${productId}/serials`} end className="section-tabs__tab">
+              {t.productPage.serials}
+            </NavLink>
+          )}
+        </div>
       </nav>
       <Suspense fallback={<Loading />}>
         <Outlet />

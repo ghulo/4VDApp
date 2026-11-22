@@ -1049,11 +1049,15 @@
   overflow: visible;
 }
 
+/* The row hangs one tab padding into the margin, so the first tab's label
+   starts on the page title's line while its hover and focus keep their size
+   (gridlines pass 2026-11-22). The line under the tabs stays on the title's line. */
 .section-tabs__row {
   display: flex;
   flex: 0 1 auto;
   gap: var(--space-1);
   min-width: 0;
+  margin-inline-start: calc(-1 * var(--space-3));
   overflow-x: auto;
   scrollbar-width: none;
 }

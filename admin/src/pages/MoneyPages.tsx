@@ -306,12 +306,14 @@ function PlaceHeader({ place, places, view }: { place: MoneyPlace; places: Money
       />
       {place.kind === 'bank' && (
         <nav className="section-tabs" aria-label={placeName(t, place)}>
-          <NavLink to={`/money/${place.id}`} end className="section-tabs__tab" aria-current={view === 'book' ? 'page' : undefined}>
-            {t.money.tabs.book}
-          </NavLink>
-          <NavLink to={`/money/${place.id}/statement`} end className="section-tabs__tab" aria-current={view === 'statement' ? 'page' : undefined}>
-            {place.openLines > 0 ? t.money.tabs.statementCount(place.openLines) : t.money.tabs.statement}
-          </NavLink>
+          <div className="section-tabs__row">
+            <NavLink to={`/money/${place.id}`} end className="section-tabs__tab" aria-current={view === 'book' ? 'page' : undefined}>
+              {t.money.tabs.book}
+            </NavLink>
+            <NavLink to={`/money/${place.id}/statement`} end className="section-tabs__tab" aria-current={view === 'statement' ? 'page' : undefined}>
+              {place.openLines > 0 ? t.money.tabs.statementCount(place.openLines) : t.money.tabs.statement}
+            </NavLink>
+          </div>
         </nav>
       )}
       <Sheet open={moving} onClose={() => setMoving(false)} title={t.money.move.title} description={t.money.move.hint}>

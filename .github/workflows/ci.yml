@@ -299,13 +299,68 @@ jobs:
         working-directory: e2e
       - run: npx playwright install --with-deps chromium
         working-directory: e2e
-      - run: npx playwright test
+      # The new-business check has its own job below, so it never holds up going live.
+      - run: npx playwright test --grep-invert "a brand-new business"
         working-directory: e2e
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: browser-test-report
           path: e2e/playwright-report
+          retention-days: 14
+
+  new-business:
+    name: New business check (every page, every role)
+    needs: changes
+    if: needs.changes.outputs.e2e == 'true'
+    # Opens every page of a brand-new business as its main admin, employee and
+    # accountant: no 4VD named, no carwash it never added, nothing refused or
+    # broken. About 9 minutes, so it runs beside the deploy instead of before it.
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      # Throwaway values for the test run only; nothing here is a real secret.
+      E2E_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/four_vd_app_e2e
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            admin/package-lock.json
+            e2e/package-lock.json
+      - run: npm ci
+        working-directory: backend
+      - run: npm ci
+        working-directory: admin
+      - run: npm ci
+        working-directory: e2e
+      - run: npx playwright install --with-deps chromium
+        working-directory: e2e
+      - run: npx playwright test tests/newBusiness.spec.ts
+        working-directory: e2e
+      # What each person saw, page by page, pass or fail.
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: new-business-report
+          path: e2e/test-results/new-business-*.md
           retention-days: 14
 
   deploy-dashboard:

@@ -4,6 +4,7 @@ import { useLocation } from 'react-router';
 import { businessApi } from '../services/api';
 import type { Brand } from '../services/types';
 import { applyBrand, clearBrand } from './applyBrand';
+import { useTabTitle } from './useTabTitle';
 
 /** Pages that are always 4VD's, whichever business is open (All logs is the developer's own). */
 const HOUSE_PAGES = ['/all-logs'];
@@ -23,5 +24,6 @@ export function useBrand(): Brand | undefined {
     if (housePage) clearBrand(false);
     else applyBrand(brand);
   }, [brand, housePage]);
+  useTabTitle(housePage || !brand || brand.house ? null : brand.name);
   return housePage ? undefined : brand;
 }

@@ -43,6 +43,7 @@ import { CameraScanSheet, type ScanStatus } from '../components/CameraScanner';
 import { LogoMark } from '../components/LogoMark';
 import { Badge, Button, ButtonLink, MenuButton, type MenuItem, Sheet } from '../components/ui';
 import { useT } from '../i18n/useT';
+import { useTabTitle } from '../theme/useTabTitle';
 import { type BasketSale, businessApi, cashApi, counterApi, customersApi, documentsApi, expiryApi, offersApi, productsApi, salesApi, serialsApi, settingsApi } from '../services/api';
 import { useFeatures } from '../utils/useFeatures';
 import type { CounterEventInput, Customer, Product } from '../services/types';
@@ -237,6 +238,7 @@ export function CounterPage() {
   const noStockRule = shopRules.data?.noStockSales ?? 'block';
   // The Z report's header shows the business's own name (4VD's own business: 4VD).
   const business = useQuery({ queryKey: tillKey(businessId, 'business'), queryFn: () => businessApi.get(tillOwner) });
+  useTabTitle(business.data && !business.data.brand.house ? business.data.brand.name : null);
   const today = useQuery({ queryKey: ['counter', 'today'], queryFn: counterApi.today });
   const customers = useQuery({ queryKey: tillKey(businessId, 'customers'), queryFn: () => customersApi.list(tillOwner) });
   // The shop drawer today: its opening cash and whether it was counted (never what 4VD expects).

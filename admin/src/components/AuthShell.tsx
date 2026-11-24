@@ -6,6 +6,7 @@ import { BrandMark } from './BrandMark';
 import { SignInPeek } from './SignInPeek';
 import type { Brand } from '../services/types';
 import { useT } from '../i18n/useT';
+import { useTabTitle } from '../theme/useTabTitle';
 
 /**
  * Login and every page reached from an email link (DESIGN.md 10.13): the form
@@ -36,6 +37,7 @@ export function AuthShell({
 }) {
   const t = useT();
   const own = brand && !brand.house ? brand : null;
+  useTabTitle(own?.name);
   return (
     <div className={showcase ? 'auth auth--showcase' : 'auth'}>
       <header className="auth__top">

@@ -46,6 +46,10 @@ export interface BusinessDto {
   receiptHeader: string | null;
   /** How it shows itself: 4VD's own look, or its own name, logo and colours. */
   brand: BrandDto;
+  /** It has an open carwash: carwash takings, drawers and lines show only then. */
+  hasCarwash: boolean;
+  /** It came from TREFIN (its history was brought over, or it is 4VD's own shop): TREFIN filters and pages show only then. */
+  hasTrefin: boolean;
 }
 
 export interface BusinessChanges {
@@ -67,7 +71,7 @@ export interface BusinessChanges {
   receiptHeader?: string | null;
 }
 
-const toDto = (business: BusinessRow): BusinessDto => ({
+const toDto = (business: BusinessRow, setUp: { carwash: boolean; trefin: boolean } = { carwash: false, trefin: false }): BusinessDto => ({
   id: business.id,
   name: business.name,
   address: business.address,
@@ -93,6 +97,8 @@ const toDto = (business: BusinessRow): BusinessDto => ({
   brandDefault: defaultTheme(business),
   receiptHeader: business.receipt_header,
   brand: brandOf(business),
+  hasCarwash: setUp.carwash,
+  hasTrefin: setUp.trefin || brandOf(business).house,
 });
 
 const THEME_FIELDS: string[] = ['brandColour', 'brandAccent', 'brandGradient', 'brandGreys'];
@@ -121,7 +127,8 @@ export class BusinessService {
   }
 
   async get(userId: number): Promise<BusinessDto> {
-    return toDto(await this.businessOf(userId));
+    const business = await this.businessOf(userId);
+    return toDto(business, await this.businessRepository.setUp(business.id));
   }
 
   async update(userId: number, changes: BusinessChanges, logExtra?: Record<string, unknown>): Promise<BusinessDto> {
@@ -182,7 +189,7 @@ export class BusinessService {
         },
       });
     }
-    return toDto(updated);
+    return toDto(updated, await this.businessRepository.setUp(updated.id));
   }
 
   /** The logo, the stamp or the signature: a new picture replaces the old one. */
@@ -192,7 +199,7 @@ export class BusinessService {
     const updated = await this.businessRepository.update(business.id, { [PICTURE_COLUMN[which]]: mediaId });
     await this.mediaService.remove(business[PICTURE_COLUMN[which]]);
     await this.logPicture(userId, business.id, which, true);
-    return toDto(updated);
+    return toDto(updated, await this.businessRepository.setUp(updated.id));
   }
 
   async removePicture(userId: number, which: ShopPicture): Promise<BusinessDto> {
@@ -200,7 +207,7 @@ export class BusinessService {
     const updated = await this.businessRepository.update(business.id, { [PICTURE_COLUMN[which]]: null });
     await this.mediaService.remove(business[PICTURE_COLUMN[which]]);
     await this.logPicture(userId, business.id, which, false);
-    return toDto(updated);
+    return toDto(updated, await this.businessRepository.setUp(updated.id));
   }
 
   async setLogo(userId: number, upload: Buffer): Promise<BusinessDto> {

@@ -114,6 +114,7 @@ export interface ServerMessages {
     cashDetail: (p: { name: string | null; day: string }) => string;
     closeDayTitle: (left: number) => string;
     closeDayDetail: string;
+    closeDayDetailNoCarwash: string;
     shiftTitle: (left: number) => string;
     shiftDetail: string;
     duplicatesTitle: (count: number) => string;
@@ -444,6 +445,7 @@ export const en: ServerMessages = {
     cashDetail: ({ name, day }) => `${name ? `Counted by ${name}` : 'Counted'} on ${day}. Look into it, then mark it as checked.`,
     closeDayTitle: (left) => `Close the day: ${left} ${left === 1 ? 'step' : 'steps'} left`,
     closeDayDetail: 'Count the drawers, enter the carwash and add the expenses before you go.',
+    closeDayDetailNoCarwash: 'Count the drawers and add the expenses before you go.',
     shiftTitle: (left) => `End your shift: ${left} ${left === 1 ? 'step' : 'steps'} left`,
     shiftDetail: 'Count your drawer and enter the takings before you go.',
     duplicatesTitle: (count) => `${count} ${count === 1 ? 'product may be' : 'products may be'} listed twice`,
@@ -792,6 +794,7 @@ export const sq: ServerMessages = {
     cashDetail: ({ name, day }) => `${name ? `E numëroi ${name}` : 'E numëruar'} më ${day}. Shiko çfarë ndodhi, pastaj shëno si të kontrolluar.`,
     closeDayTitle: (left) => `Mbyll ditën: ${left === 1 ? 'mbetet 1 hap' : `mbeten ${left} hapa`}`,
     closeDayDetail: 'Numëro arkat, fut lavazhin dhe shto shpenzimet para se të ikësh.',
+    closeDayDetailNoCarwash: 'Numëro arkat dhe shto shpenzimet para se të ikësh.',
     shiftTitle: (left) => `Mbyll turnin: ${left === 1 ? 'mbetet 1 hap' : `mbeten ${left} hapa`}`,
     shiftDetail: 'Numëro arkën dhe fut të ardhurat para se të ikësh.',
     duplicatesTitle: (count) => `${count === 1 ? 'Një produkt mund të jetë' : `${count} produkte mund të jenë`} dy herë në listë`,

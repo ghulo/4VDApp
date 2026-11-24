@@ -135,3 +135,25 @@ describe('a business look by its link', () => {
     expect((await api().get('/api/brand/..%2Fadmin')).status).toBe(400);
   });
 });
+
+describe('what the business has set up', () => {
+  it('says whether the business has a carwash and TREFIN history, so screens hide what it does not use', async () => {
+    await becomeCustomer();
+    const withCarwash = await api().get('/api/business').set(auth(employeeToken));
+    expect(withCarwash.body.data).toMatchObject({ hasCarwash: true, hasTrefin: false });
+
+    await sql`UPDATE carwashes SET archived_at = now()`.execute(context.db);
+    const without = await api().get('/api/business').set(auth(employeeToken));
+    expect(without.body.data.hasCarwash).toBe(false);
+
+    await sql`INSERT INTO trefin_stock_documents (trefin_ref, kind, dated, source) VALUES ('d1', 'opening', '2026-01-01', 'test')`.execute(context.db);
+    const imported = await api().get('/api/business').set(auth(employeeToken));
+    expect(imported.body.data.hasTrefin).toBe(true);
+  });
+
+  it("shows the TREFIN parts to 4VD's own business, where TREFIN was used", async () => {
+    await sql`UPDATE businesses SET short_name = '4vd'`.execute(context.db);
+    const response = await api().get('/api/business').set(auth(employeeToken));
+    expect(response.body.data.hasTrefin).toBe(true);
+  });
+});

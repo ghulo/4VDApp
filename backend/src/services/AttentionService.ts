@@ -269,7 +269,8 @@ export class AttentionService {
         kind: 'close_day',
         severity: 'check',
         title: t.todo.closeDayTitle(day.total - day.done),
-        detail: t.todo.closeDayDetail,
+        // A business without a carwash has nothing to enter there.
+        detail: day.steps.some((step) => step.kind === 'carwash') ? t.todo.closeDayDetail : t.todo.closeDayDetailNoCarwash,
         verb: 'closeDay',
         to: '/day',
       });

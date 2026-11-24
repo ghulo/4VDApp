@@ -1,7 +1,7 @@
 import { Plus, Truck } from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router';
-import { canManage } from '../auth/roles';
+import { canManage, canOversee } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { SearchInput } from '../components/SearchInput';
@@ -23,8 +23,9 @@ export function SuppliersPage() {
   const suppliers = useQuery({ queryKey: ['suppliers'], queryFn: suppliersApi.list });
   const summary = useQuery({ queryKey: ['bills', 'summary'], queryFn: billsApi.summary });
   const orders = useQuery({ queryKey: ['orders'], queryFn: ordersApi.list });
-  const reorder = useQuery({ queryKey: ['reports', 'reorder'], queryFn: reportsApi.reorderSuggestions });
-  const usual = useQuery({ queryKey: ['orders', 'usual-suppliers'], queryFn: ordersApi.usualSuppliers });
+  // Restock hints need the oversee power; the accountant sees the list without them.
+  const reorder = useQuery({ queryKey: ['reports', 'reorder'], queryFn: reportsApi.reorderSuggestions, enabled: canOversee(role) });
+  const usual = useQuery({ queryKey: ['orders', 'usual-suppliers'], queryFn: ordersApi.usualSuppliers, enabled: canOversee(role) });
   const manager = canManage(role);
 
   const owedBy = new Map(summary.data?.bySupplier.map((row) => [row.supplierId, row]));

@@ -1,6 +1,7 @@
 import { Badge } from './ui';
 import { useT } from '../i18n/useT';
 import type { RecordSource } from '../services/types';
+import { useSetUp } from '../auth/useSetUp';
 
 /** The small stamp on a record brought over from TREFIN's history. */
 export function TrefinTag() {
@@ -18,9 +19,11 @@ export function sourceFrom(params: URLSearchParams): RecordSource | undefined {
   return value === '4vd' || value === 'trefin' ? value : undefined;
 }
 
-/** The filter every list with TREFIN records has: both, 4VD only, TREFIN only. */
+/** The filter every list with TREFIN records has: both, 4VD only, TREFIN only. Only for a business that has TREFIN's history. */
 export function SourceFilter({ value, onChange }: { value: RecordSource | undefined; onChange: (next: RecordSource | undefined) => void }) {
   const t = useT();
+  const { trefin } = useSetUp();
+  if (!trefin) return null;
   return (
     <select
       aria-label={t.fromTrefin.show}

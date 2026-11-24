@@ -8,7 +8,8 @@ import { type SectionTab, shownTo, tabSearch } from '../navigation/sections';
 import { useCurrentUser } from '../auth/useAuth';
 import { useLocations } from '../utils/useLocations';
 import { useFeatures } from '../utils/useFeatures';
-import { MenuButton } from './ui';
+import { useSetUp } from '../auth/useSetUp';
+import { ButtonLink, EmptyState, MenuButton, PageHeader } from './ui';
 import { TabsSlotContext, useTabsSlotOwner } from './ui/tabsSlot';
 
 /**
@@ -25,8 +26,12 @@ export function SectionTabs({ tabs, labelKey }: { tabs: SectionTab[]; labelKey: 
   const { role } = useCurrentUser();
   const { several } = useLocations();
   const features = useFeatures();
+  const setUp = useSetUp();
   // A shop with one location never sees Move stock, unless a link brought you to it.
-  const shown = tabs.filter((tab) => shownTo(role, tab) && (!tab.locations || several || tab.to === pathname) && (!tab.feature || features[tab.feature] || tab.to === pathname));
+  const shown = tabs.filter((tab) => shownTo(role, tab) && (!tab.locations || several || tab.to === pathname) && (!tab.feature || features[tab.feature] || tab.to === pathname) && (!tab.setUp || setUp[tab.setUp] || tab.to === pathname));
+  // A page this role isn't given (a link or a typed address led here): say so, instead of loading it and being refused.
+  const current = tabs.find((tab) => tab.to === pathname);
+  const notForRole = current !== undefined && !shownTo(role, current);
   const inRow = shown.filter((tab) => !tab.rare || tab.to === pathname);
   const later = shown.filter((tab) => tab.rare && tab.to !== pathname);
   const to = (tab: SectionTab) => ({ pathname: tab.to, search: tabSearch(tab, search) });
@@ -59,9 +64,18 @@ export function SectionTabs({ tabs, labelKey }: { tabs: SectionTab[]; labelKey: 
   return (
     <TabsSlotContext value={slot}>
       {slot.owner === null && nav}
-      <Suspense fallback={<Loading />}>
-        <Outlet />
-      </Suspense>
+      {notForRole ? (
+        <>
+          <PageHeader title={label} />
+          <EmptyState title={t.nav.notForRole.title} action={<ButtonLink to="/">{t.nav.notForRole.home}</ButtonLink>}>
+            {t.nav.notForRole.body}
+          </EmptyState>
+        </>
+      ) : (
+        <Suspense fallback={<Loading />}>
+          <Outlet />
+        </Suspense>
+      )}
     </TabsSlotContext>
   );
 }

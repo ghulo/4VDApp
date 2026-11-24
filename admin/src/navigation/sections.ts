@@ -61,6 +61,8 @@ export interface SectionTab {
   locations?: boolean;
   /** Only once this feature is switched on (Settings → Features). */
   feature?: keyof ShopFeatures;
+  /** Only for a business that has this set up: an open carwash, TREFIN's history (useSetUp). */
+  setUp?: 'carwash' | 'trefin';
   /** Only for roles with this power (Settings → Roles), like pay for the owner and the accountant. */
   power?: Power;
 }
@@ -113,7 +115,7 @@ export const SECTIONS = {
   day: [
     { to: '/day', key: 'close' },
     { to: '/cash', key: 'cash' },
-    { to: '/carwash', key: 'carwash' },
+    { to: '/carwash', key: 'carwash', setUp: 'carwash' },
   ],
   buy: [
     { to: '/suppliers', key: 'suppliers', accountant: true },
@@ -132,7 +134,7 @@ export const SECTIONS = {
     { to: '/books/assets', key: 'assets', accountant: true },
     { to: '/books/year', key: 'year', accountant: true, rare: true },
     { to: '/books/declaration', key: 'declaration', accountant: true, rare: true },
-    { to: '/books/trefin', key: 'trefin', keepSearch: ['month'], accountant: true, rare: true },
+    { to: '/books/trefin', key: 'trefin', keepSearch: ['month'], accountant: true, rare: true, setUp: 'trefin' },
   ],
   payroll: [
     { to: '/payroll', key: 'payrollPeople', power: 'payroll', accountant: true },

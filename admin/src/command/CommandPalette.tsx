@@ -5,6 +5,7 @@ import { documentsApi, productsApi, usersApi } from '../services/api';
 import { useCatalogue, useT } from '../i18n/useT';
 import { rankMatches, type Searchable } from './matching';
 import { useCurrentUser } from '../auth/useAuth';
+import { useSetUp } from '../auth/useSetUp';
 import type { UserRole } from '../services/types';
 import { canEditProducts, canManage, canOversee, canReadBooks } from '../auth/roles';
 import { formatMoney } from '../utils/format';
@@ -105,6 +106,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
   const english = useCatalogue('en');
   const commands = useMemo(() => staticCommands(t, english), [t, english]);
   const { role } = useCurrentUser();
+  const setUp = useSetUp();
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
   const input = useRef<HTMLInputElement>(null);
@@ -155,13 +157,13 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
     const ranked = [
       ...documentCommands,
       ...rankMatches(trimmed, commands.actions.filter((action) => !action.allowed || action.allowed(role))),
-      ...rankMatches(trimmed, commands.pages.filter((page) => role !== 'accountant' || ACCOUNTANT_PAGES.has(page.key!))),
+      ...rankMatches(trimmed, commands.pages.filter((page) => (role !== 'accountant' || ACCOUNTANT_PAGES.has(page.key!)) && (page.key !== 'carwash' || setUp.carwash))),
       // Products already come back filtered by the server's search.
       ...productCommands,
       ...(trimmed ? rankMatches(trimmed, peopleCommands) : []),
     ];
     return GROUP_ORDER.flatMap((group) => ranked.filter((command) => command.group === group).slice(0, MAX_PER_GROUP));
-  }, [trimmed, products.data, people.data, documents.data, documentNumber, role, t, commands]);
+  }, [trimmed, products.data, people.data, documents.data, documentNumber, role, t, commands, setUp.carwash]);
 
   useEffect(() => {
     input.current?.focus();

@@ -14,7 +14,7 @@ import { formatDateTime, formatMoney } from '../utils/format';
 import { Button, ButtonLink, Card, DataTable, PageHeader } from '../components/ui';
 import { Camera } from '@phosphor-icons/react';
 import { ManagersOnly } from '../components/ManagersOnly';
-import { canEditProducts, canManage } from '../auth/roles';
+import { canEditProducts, canManage, canOversee } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
 import { useT } from '../i18n/useT';
 import type { Catalogue } from '../i18n/en';
@@ -455,7 +455,7 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                     </label>
                   </div>
                   {margin !== null && <p className="field-hint">{t.productForm.margin(margin, markup(price) ?? 0)}</p>}
-                  {!isNew && <PriceSuggestionBox productId={product.id} onUse={(price) => update('price', String(price))} />}
+                  {!isNew && canOversee(role) && <PriceSuggestionBox productId={product.id} onUse={(price) => update('price', String(price))} />}
 
                   <h3 className="subheading">{t.productForm.wholesale}</h3>
                   <label className="field field--narrow">
@@ -598,7 +598,7 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
           {!isNew && (
             <div className="product-layout__side">
               <BarcodeCard product={product} />
-              <PriceHistory productId={product.id} />
+              {canOversee(role) && <PriceHistory productId={product.id} />}
               <HistoryCard entityType="product" entityId={product.id} />
             </div>
           )}

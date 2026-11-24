@@ -10,6 +10,7 @@ import { ErrorNotice, Loading } from '../components/Feedback';
 import { PlaceSelect, placeInSentence } from '../components/MoneyParts';
 import { Badge, Button, Card, DateField, Field, MenuButton, PageHeader, Sheet, StatGrid, StatTile, SwapText, type Tone } from '../components/ui';
 import { useLanguage, useT } from '../i18n/useT';
+import { useSetUp } from '../auth/useSetUp';
 import { booksApi, moneyApi } from '../services/api';
 import { canPayTax, type Declaration, type DeclarationAccount, type DeclarationInputs, declarationApi, statementsApi } from '../services/statements';
 import { todayIso } from '../utils/bills';
@@ -158,6 +159,7 @@ function Summary({ data }: { data: Declaration }) {
 /** The declaration as a ledger: income, costs, book profit, what is added back, losses, taxable profit, tax and what was paid. */
 function Figures({ data }: { data: Declaration }) {
   const t = useT();
+  const setUp = useSetUp();
   const w = t.declaration.figures;
   const search = `?period=custom&from=${data.year}-01-01&to=${data.year}-12-31`;
   const accounts = (list: DeclarationAccount[]) =>
@@ -183,7 +185,7 @@ function Figures({ data }: { data: Declaration }) {
       {extra && <div className="declaration__more">{extra}</div>}
     </div>
   );
-  const shown = <T extends { amount: number; key: string }>(lines: T[]) => lines.filter((line) => line.amount !== 0 || line.key === 'sales' || line.key.startsWith('carwash'));
+  const shown = <T extends { amount: number; key: string }>(lines: T[]) => lines.filter((line) => line.amount !== 0 || line.key === 'sales' || (setUp.carwash && line.key.startsWith('carwash')));
   const addBacks = data.adjustments.filter((line) => line.amount !== 0);
   const used = data.losses.filter((loss) => loss.used > 0);
 
@@ -256,6 +258,7 @@ const moneyText = (value: number | null) => (value === null ? '' : String(value)
 /** What the accountant adds: the carwash switch, adjustments and losses from TREFIN years. */
 function Inputs({ data, canEdit }: { data: Declaration; canEdit: boolean }) {
   const t = useT();
+  const setUp = useSetUp();
   const w = t.declaration.inputs;
   const queryClient = useQueryClient();
   const locked = data.status === 'filed' || !canEdit;
@@ -291,7 +294,8 @@ function Inputs({ data, canEdit }: { data: Declaration; canEdit: boolean }) {
     <Card title={w.title} description={locked && data.status === 'filed' ? w.locked : w.description}>
       <form className="settings-form declaration__inputs" onSubmit={handleSubmit}>
         <fieldset disabled={locked} className="declaration__fieldset">
-          {data.legalForm === 'company' && (
+          {/* A business without a carwash has nothing to count here. */}
+          {data.legalForm === 'company' && setUp.carwash && (
             <div className="field">
               <label className="toggle">
                 <input type="checkbox" name="includeCarwash" checked={includeCarwash} onChange={(event) => setIncludeCarwash(event.target.checked)} aria-describedby="declaration-carwash-hint" />

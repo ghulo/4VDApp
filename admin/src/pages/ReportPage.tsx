@@ -6,6 +6,7 @@ import { Link, useSearchParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { Badge, Button, ButtonLink, Card, ColumnChart, DataTable, DateField, EmptyState, MetricCard, MetricGrid, PageHeader, Section, StatGrid, StatTile } from '../components/ui';
 import { useT } from '../i18n/useT';
+import { useSetUp } from '../auth/useSetUp';
 import { fullReportsApi } from '../services/api';
 import type { FullReport, ReportKind } from '../services/types';
 import { formatDate, formatDateWith, formatHeadlineMoney, formatMoney, formatPercent } from '../utils/format';
@@ -100,6 +101,7 @@ function period(report: FullReport, through: (from: string, to: string) => strin
 
 function ReportSections({ report }: { report: FullReport }) {
   const t = useT();
+  const setUp = useSetUp();
   const s = report.sections;
   const none = (text: string) => <p className="field-hint">{text}</p>;
   // A table stands on the page under its heading; other parts sit in a card.
@@ -117,7 +119,7 @@ function ReportSections({ report }: { report: FullReport }) {
           <MetricGrid>
             <MetricCard label={t.fullReport.revenue} value={formatHeadlineMoney(s.sales.revenue)} change={s.sales.change} hint={t.fullReport.before(formatMoney(s.sales.previousRevenue))} />
             <MetricCard label={t.fullReport.profit} value={formatHeadlineMoney(s.sales.profit)} hint={s.sales.margin === null ? undefined : t.fullReport.margin(formatPercent(s.sales.margin))} />
-            <MetricCard label={t.fullReport.net} value={formatHeadlineMoney(s.sales.netProfit)} hint={t.fullReport.netHint} />
+            <MetricCard label={t.fullReport.net} value={formatHeadlineMoney(s.sales.netProfit)} hint={setUp.carwash ? t.fullReport.netHint : t.fullReport.netHintNoCarwash} />
             <MetricCard label={t.fullReport.salesCount} value={s.sales.salesCount} hint={t.fullReport.units(s.sales.unitsSold, formatMoney(s.sales.averageSale))} />
           </MetricGrid>
           {/* One day is already the revenue card; a week gets its columns with the figures beside them. */}
@@ -244,6 +246,7 @@ function ReportSections({ report }: { report: FullReport }) {
             </StatGrid>,
           )}
         {s.carwash &&
+          setUp.carwash &&
           card(
             'carwash',
             s.carwash.each.length === 0 ? (

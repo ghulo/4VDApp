@@ -11,11 +11,12 @@ function seriesPeriod(range: { startDate: string; endDate: string }): RevenueSer
 }
 
 /** Sales per day (or week) over a range; the cards' mini graphs and the Reports chart share it. */
-export function useSalesSeries(range: { startDate: string; endDate: string }) {
+export function useSalesSeries(range: { startDate: string; endDate: string }, enabled = true) {
   const period = seriesPeriod(range);
   return useQuery({
     queryKey: ['analytics', 'revenue', period, range.startDate, range.endDate],
     queryFn: () => analyticsApi.revenue(period, range.startDate, range.endDate),
     placeholderData: keepPreviousData,
+    enabled,
   });
 }

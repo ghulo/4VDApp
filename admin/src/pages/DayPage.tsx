@@ -5,6 +5,7 @@ import { CashCountsTable, CountForm, formatDay } from '../components/CashCount';
 import { DayChecklist } from '../components/DayChecklist';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { useT } from '../i18n/useT';
+import { useSetUp } from '../auth/useSetUp';
 import type { ShopDay } from '../services/types';
 import { formatDateWith, formatMoney } from '../utils/format';
 import { carwashLabel, useCarwashes } from '../utils/useCarwashes';
@@ -23,6 +24,7 @@ const longDay = (day: string) =>
  */
 export function DayPage() {
   const t = useT();
+  const setUp = useSetUp();
   const [params, setParams] = useSearchParams();
   const date = params.get('date') ?? undefined;
   const day = useDayChecklist(date);
@@ -38,7 +40,7 @@ export function DayPage() {
       </Sheet>
       <PageHeader
         title={t.nav.items.day}
-        description={day.data ? t.dayPage.description(longDay(day.data.day)) : undefined}
+        description={day.data ? (setUp.carwash ? t.dayPage.description : t.dayPage.descriptionNoCarwash)(longDay(day.data.day)) : undefined}
         actions={
           day.data && (
             <span className="report-toolbar__dates">

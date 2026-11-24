@@ -1471,6 +1471,10 @@ export interface Business {
   /** Lines printed under the name on documents. */
   receiptHeader: string | null;
   brand: Brand;
+  /** It has an open carwash: carwash takings, drawers and lines show only then. */
+  hasCarwash: boolean;
+  /** It came from TREFIN (or is 4VD's own shop): TREFIN filters and pages show only then. */
+  hasTrefin: boolean;
 }
 
 export type BrandGreys = 'plain' | 'tinted';

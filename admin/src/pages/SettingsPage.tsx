@@ -32,14 +32,20 @@ const RolesPanel = lazyNamed(() => import('../components/RolesPanel'), 'RolesPan
 const ThisComputerPanel = lazyNamed(() => import('../components/ThisComputerPanel'), 'ThisComputerPanel');
 const WipeDataPanel = lazyNamed(() => import('../components/WipeDataPanel'), 'WipeDataPanel');
 
+/** The Settings sections the accountant can use; the rest call what their role is refused. */
+const ACCOUNTANT_SECTIONS = new Set(['shop', 'books']);
+
 export function SettingsPage() {
   const t = useT();
   const { role } = useCurrentUser();
   const isDeveloper = role === 'developer';
   const leads = isDeveloper || role === 'main_admin' || role === 'owner' || role === 'admin';
+  // The accountant may not read the shop's settings; they see only the business and Books sections.
+  const accountant = role === 'accountant';
   const settings = useQuery({
     queryKey: ['settings'],
     queryFn: settingsApi.get,
+    enabled: !accountant,
   });
   const launch = useQuery({ queryKey: ['settings', 'launch-checklist'], queryFn: settingsApi.launchChecklist, enabled: isDeveloper });
   const launchDone = launch.data?.filter((step) => step.done).length;
@@ -178,7 +184,7 @@ export function SettingsPage() {
                 { id: 'wipe', label: t.wipe.title, icon: Warning, content: <WipeDataPanel /> },
               ]
             : []),
-        ]}
+        ].filter((section) => !accountant || ACCOUNTANT_SECTIONS.has(section.id))}
       />
     </>
   );

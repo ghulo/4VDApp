@@ -6,6 +6,7 @@ import { DayChecklist } from '../../components/DayChecklist';
 import { ErrorNotice, Loading, SavedToast } from '../../components/Feedback';
 import { Button, Field, PageHeader, Sheet } from '../../components/ui';
 import { useT } from '../../i18n/useT';
+import { useSetUp } from '../../auth/useSetUp';
 import { teamApi } from '../../services/teamApi';
 import { errorMessage } from '../../utils/errors';
 import { formatMoney } from '../../utils/format';
@@ -22,6 +23,7 @@ const isAmount = (value: string) => value.trim() !== '' && Number.isFinite(toNum
  */
 export function EndShiftPage() {
   const t = useT();
+  const setUp = useSetUp();
   const location = useLocation();
   const day = useDayChecklist();
   const [counting, setCounting] = useState<string | null>(null);
@@ -36,7 +38,7 @@ export function EndShiftPage() {
       <Sheet open={carwash !== null} onClose={() => setCarwash(null)} title={t.staff.carwash.title}>
         {carwash !== null && <CarwashTakingsForm carwashId={carwash === 'first' ? null : carwash} onDone={() => setCarwash(null)} />}
       </Sheet>
-      <PageHeader title={t.staff.shift.title} description={t.staff.shift.intro} crumbs={[{ label: t.staff.nav.home, to: '/' }]} />
+      <PageHeader title={t.staff.shift.title} description={setUp.carwash ? t.staff.shift.intro : t.staff.shift.introNoCarwash} crumbs={[{ label: t.staff.nav.home, to: '/' }]} />
       {day.isPending && <Loading />}
       {day.isError && <ErrorNotice error={day.error} onRetry={() => day.refetch()} />}
       {day.data && <DayChecklist day={day.data} onCountDrawer={setCounting} onEnterCarwash={setCarwash} />}

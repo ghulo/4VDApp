@@ -8,6 +8,7 @@ import { PeriodPicker } from '../components/PeriodPicker';
 import { canManage } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
 import { useT } from '../i18n/useT';
+import { useSetUp } from '../auth/useSetUp';
 import { expensesApi, type ReportRange, suppliersApi } from '../services/api';
 import { EXPENSE_CATEGORIES, type Expense, type ExpenseCategory, type ExpensePlace, type ExpenseTotals, type RecurringExpense } from '../services/types';
 import { errorMessage } from '../utils/errors';
@@ -30,6 +31,7 @@ const formatDay = (day: string) =>
 /** What the business spends, so reports can show real profit. */
 export function ExpensesPage() {
   const t = useT();
+  const setUp = useSetUp();
   const { period, from, to, range, rangeKey, changePeriod } = usePeriodParams('this-month');
   const expenses = useQuery({
     queryKey: ['expenses', rangeKey],
@@ -44,7 +46,7 @@ export function ExpensesPage() {
     <>
       <PageHeader
         title={t.expenses.title}
-        description={t.expenses.description(range.label)}
+        description={(setUp.carwash ? t.expenses.description : t.expenses.descriptionNoCarwash)(range.label)}
         actions={
           canManage(role) && (
             <Button variant="primary" icon={Plus} onClick={() => setAdding(true)}>
@@ -71,6 +73,7 @@ export function ExpensesPage() {
 
 function Totals({ totals }: { totals: ExpenseTotals }) {
   const t = useT();
+  const setUp = useSetUp();
   const biggest = EXPENSE_CATEGORIES.reduce<ExpenseCategory | null>(
     (best, category) => (totals.byCategory[category] > 0 && (best === null || totals.byCategory[category] > totals.byCategory[best]) ? category : best),
     null,
@@ -80,12 +83,14 @@ function Totals({ totals }: { totals: ExpenseTotals }) {
       <StatTile label={t.expenses.total} value={formatHeadlineMoney(totals.total)} />
       {/* One figure per tile; a place with nothing spent says so in words. "Both" shows only when used. */}
       <StatTile label={t.expenses.places.shop} value={formatHeadlineMoney(totals.byPlace.shop)} words={totals.byPlace.shop === 0 && t.expenses.nothingSpent} />
-      <StatTile
-        label={t.expenses.places.carwash}
-        value={formatHeadlineMoney(totals.byPlace.carwash)}
-        words={totals.byPlace.carwash === 0 && t.expenses.nothingSpent}
-        hint={totals.byCarwash.length > 1 ? totals.byCarwash.map((row) => `${row.name} ${formatMoney(row.total)}`).join(' · ') : undefined}
-      />
+      {(setUp.carwash || totals.byPlace.carwash > 0) && (
+        <StatTile
+          label={t.expenses.places.carwash}
+          value={formatHeadlineMoney(totals.byPlace.carwash)}
+          words={totals.byPlace.carwash === 0 && t.expenses.nothingSpent}
+          hint={totals.byCarwash.length > 1 ? totals.byCarwash.map((row) => `${row.name} ${formatMoney(row.total)}`).join(' · ') : undefined}
+        />
+      )}
       {totals.byPlace.both > 0 && <StatTile label={t.expenses.places.both} value={formatHeadlineMoney(totals.byPlace.both)} />}
       <StatTile
         label={t.expenses.biggest}
@@ -180,7 +185,7 @@ function ExpenseForm() {
                 {carwashLabel(t.expenses.places.carwash, carwash.name, several)}
               </option>
             ))}
-            <option value="both">{t.expenses.places.both}</option>
+            {carwashes.length > 0 && <option value="both">{t.expenses.places.both}</option>}
           </select>
         </Field>
       </div>

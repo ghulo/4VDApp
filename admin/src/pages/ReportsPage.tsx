@@ -12,6 +12,7 @@ import { RevenueChart } from '../components/RevenueChart';
 import { BusyHoursCard, CategoriesCard, PatternCards, TopProductsCard, usePatterns } from '../components/SalesPatterns';
 import { analyticsApi, exportsApi, reportsApi } from '../services/api';
 import { useT } from '../i18n/useT';
+import { useSetUp } from '../auth/useSetUp';
 import { useCurrentUser } from '../auth/useAuth';
 import { shownTo } from '../navigation/sections';
 import { errorMessage } from '../utils/errors';
@@ -25,6 +26,7 @@ export type ReportsView = 'figures' | 'team' | 'counter' | 'profit' | 'downloads
 
 export function ReportsPage({ view }: { view: ReportsView }) {
   const t = useT();
+  const setUp = useSetUp();
   const seesPrices = shownTo(useCurrentUser().role, { to: '/prices', overseersOnly: true });
   const { period, from, to, range, rangeKey, comparedRange, changePeriod, compare, changeCompare } = usePeriodParams('this-month');
 
@@ -72,29 +74,34 @@ export function ReportsPage({ view }: { view: ReportsView }) {
       >
         {({ current, carwash, expenses, netProfit }) => (
           <>
-            <MetricCard
-              label={t.reports.carwash}
-              value={formatHeadlineMoney(carwash.current.total)}
-              change={carwash.change}
-              hint={
-                carwash.byCarwash.length > 1
-                  ? carwash.byCarwash.map((row) => `${row.name} ${formatMoney(row.total)}`).join(' · ')
-                  : t.reports.carwashSplit(formatMoney(carwash.current.carwash), formatMoney(carwash.current.change))
-              }
-              to="/carwash"
-            />
-            <MetricCard
-              label={t.reports.together}
-              value={formatHeadlineMoney(current.revenue + carwash.current.total)}
-              hint={t.reports.togetherHint}
-              to="/report"
-            />
+            {/* A business without a carwash has no carwash figures. */}
+            {setUp.carwash && (
+              <>
+                <MetricCard
+                  label={t.reports.carwash}
+                  value={formatHeadlineMoney(carwash.current.total)}
+                  change={carwash.change}
+                  hint={
+                    carwash.byCarwash.length > 1
+                      ? carwash.byCarwash.map((row) => `${row.name} ${formatMoney(row.total)}`).join(' · ')
+                      : t.reports.carwashSplit(formatMoney(carwash.current.carwash), formatMoney(carwash.current.change))
+                  }
+                  to="/carwash"
+                />
+                <MetricCard
+                  label={t.reports.together}
+                  value={formatHeadlineMoney(current.revenue + carwash.current.total)}
+                  hint={t.reports.togetherHint}
+                  to="/report"
+                />
+              </>
+            )}
             <MetricCard label={t.reports.expenses} value={formatHeadlineMoney(expenses.current)} hint={t.reports.expensesHint} to="/expenses" />
             <MetricCard
               label={t.reports.netProfit}
               value={formatHeadlineMoney(netProfit.current)}
               change={netProfit.change}
-              hint={t.reports.netProfitHint}
+              hint={setUp.carwash ? t.reports.netProfitHint : t.reports.netProfitHintNoCarwash}
               to="/report"
             />
             <MetricCard
@@ -476,6 +483,7 @@ const EXPORTS: Array<{ kind: ExportKind; icon: Icon; title: (t: Catalogue) => st
 /** Each download as a card: what's in it, for when, and the two formats. */
 function Exports({ range, label }: { range: { startDate: string; endDate: string }; label: string }) {
   const t = useT();
+  const setUp = useSetUp();
   const download = useMutation({
     mutationFn: ({ kind, format }: { kind: ExportKind; format: 'xlsx' | 'csv' }) =>
       exportsApi.download(kind, format, kind === 'stock' ? undefined : range),
@@ -493,7 +501,7 @@ function Exports({ range, label }: { range: { startDate: string; endDate: string
             </span>
             <span className="download-card__text">
               <span className="download-card__title">{title(t)}</span>
-              <span className="download-card__what">{t.reports.downloads[kind]}</span>
+              <span className="download-card__what">{kind === 'money' && !setUp.carwash ? t.reports.downloads.moneyNoCarwash : t.reports.downloads[kind]}</span>
               <span className="download-card__when">{kind === 'stock' ? t.reports.downloads.rightNow : t.reports.downloads.forPeriod(label)}</span>
             </span>
             <span className="download-card__actions">

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { Link } from 'react-router';
 import { useT } from '../i18n/useT';
+import { useSetUp } from '../auth/useSetUp';
 import { fullReportsApi } from '../services/api';
 import { REPORT_SECTIONS, type ReportSettings } from '../services/types';
 import { errorMessage } from '../utils/errors';
@@ -22,6 +23,7 @@ export function ReportSettingsPanel() {
 
 function ReportSettingsForm({ initial }: { initial: ReportSettings }) {
   const t = useT();
+  const setUp = useSetUp();
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState(initial);
   const save = useMutation({
@@ -122,7 +124,8 @@ function ReportSettingsForm({ initial }: { initial: ReportSettings }) {
             {draft.sections.length === 0 ? <span className="form-error">{t.reportSettings.pickOne}</span> : t.reportSettings.sectionsHint}
           </p>
           <div className="report-sections__grid">
-            {REPORT_SECTIONS.map((section) => (
+            {/* No carwash, no carwash part in the report. */}
+            {REPORT_SECTIONS.filter((section) => section !== 'carwash' || setUp.carwash).map((section) => (
               <label key={section} className="toggle">
                 <input
                   type="checkbox"

@@ -17,6 +17,7 @@ import type { PeriodKey } from '../utils/periods';
 import { usePeriodParams } from '../utils/usePeriodParams';
 import { Badge, Button, DataTable, MetricCard, MetricGrid, PageHeader, Section, Sheet, useNewSheet } from '../components/ui';
 import { useCurrentUser } from '../auth/useAuth';
+import { canOversee } from '../auth/roles';
 import type { Checkout } from '../services/types';
 import { useT } from '../i18n/useT';
 
@@ -65,7 +66,8 @@ export function SalesPage() {
 function PeriodSummary({ range }: { range: Parameters<typeof reportsApi.summary>[0] }) {
   const t = useT();
   const summary = useQuery({ queryKey: ['reports', 'summary', range], queryFn: () => reportsApi.summary(range), placeholderData: keepPreviousData });
-  const series = useSalesSeries(range);
+  // The chart needs the oversee power; the accountant gets the figures without it.
+  const series = useSalesSeries(range, canOversee(useCurrentUser().role));
   const points = series.data?.points ?? [];
 
   if (summary.isPending) return <Loading />;
@@ -124,8 +126,9 @@ function SalesHistory({ range }: { range: { startDate: string; endDate: string }
   const soldBy = params.get('seller') ?? '';
   const search = params.get('search') ?? '';
   const source = sourceFrom(params);
-  // Everyone who has ever sold: history keeps them all. Products are searched as you type (any product, sold out or not).
-  const people = useQuery({ queryKey: ['users'], queryFn: () => usersApi.list(1) });
+  const { role } = useCurrentUser();
+  // Everyone who has ever sold: history keeps them all (people need the oversee power, so the accountant filters without names). Products are searched as you type.
+  const people = useQuery({ queryKey: ['users'], queryFn: () => usersApi.list(1), enabled: canOversee(role) });
 
   // The checkout that is open to show its lines, and the line being returned.
   const [openKey, setOpenKey] = useState<string | null>(null);

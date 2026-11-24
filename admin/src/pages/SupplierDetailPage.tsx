@@ -30,8 +30,8 @@ export function SupplierDetailPage() {
   const suppliers = useQuery({ queryKey: ['suppliers'], queryFn: suppliersApi.list });
   const orders = useQuery({ queryKey: ['orders'], queryFn: ordersApi.list });
   const bills = useQuery({ queryKey: ['bills', { supplierId: id }], queryFn: () => billsApi.list({ supplierId: id }) });
-  const reorder = useQuery({ queryKey: ['reports', 'reorder'], queryFn: reportsApi.reorderSuggestions });
-  const usual = useQuery({ queryKey: ['orders', 'usual-suppliers'], queryFn: ordersApi.usualSuppliers });
+  const reorder = useQuery({ queryKey: ['reports', 'reorder'], queryFn: reportsApi.reorderSuggestions, enabled: canOversee(role) });
+  const usual = useQuery({ queryKey: ['orders', 'usual-suppliers'], queryFn: ordersApi.usualSuppliers, enabled: canOversee(role) });
   const [paying, setPaying] = useNewSheet('pay');
   const [source, setSource] = useState<RecordSource>();
 

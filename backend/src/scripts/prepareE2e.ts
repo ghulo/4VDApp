@@ -51,6 +51,19 @@ async function main(): Promise<void> {
         email_verified_at: new Date(),
       })
       .execute();
+    // 4VD's own developer: adds a brand-new business for the new-business checks (newBusiness.spec.ts).
+    await db
+      .insertInto('users')
+      .values({
+        email: 'e2e-developer@4vd.local',
+        name: 'E2E Developer',
+        role: 'admin',
+        password_hash: await hashPassword('e2e-developer-4vd'),
+        business_id: await defaultBusinessId(db),
+        email_verified_at: new Date(),
+        is_platform_developer: true,
+      })
+      .execute();
     logger.info('Browser test database ready', { database: name });
   } finally {
     await db.destroy();

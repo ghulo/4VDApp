@@ -29,8 +29,8 @@ const apiEnv = {
   NODE_ENV: 'development',
   PORT: String(API_PORT),
   DATABASE_URL: databaseUrl(),
-  // backend/.env's local DATABASE_ROLE has no grants on the e2e database: the e2e API signs in as DATABASE_URL's user.
-  DATABASE_ROLE: '',
+  // The API acts as a limited role, so row security keeps businesses apart as it does live (granted on the fresh database below).
+  DATABASE_ROLE: 'fourvd_app_local',
   JWT_SECRET: 'e2e-only-secret-that-is-long-enough-to-pass',
   CORS_ORIGINS: WEB_URL,
   DASHBOARD_URL: WEB_URL,
@@ -75,7 +75,7 @@ export default defineConfig({
   webServer: [
     {
       // Fresh database first, then the API.
-      command: 'npx tsx src/scripts/prepareE2e.ts && npx tsx src/server.ts',
+      command: 'npx tsx src/scripts/prepareE2e.ts && npx tsx src/scripts/localAppRole.ts && npx tsx src/server.ts',
       cwd: '../backend',
       url: `${API_URL}/health`,
       env: apiEnv,

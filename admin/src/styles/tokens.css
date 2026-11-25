@@ -81,8 +81,9 @@
   /* People's initials: six deep steps of 4VD's own colours, white words on all. */
   --avatar-1: var(--neutral-900);
   --avatar-2: var(--neutral-700);
-  --avatar-3: var(--amber-700);
-  --avatar-4: var(--amber-800);
+  /* No amber: a face in the top bar would be a second amber thing beside the screen's key. */
+  --avatar-3: var(--green-800);
+  --avatar-4: var(--blue-800);
   --avatar-5: var(--green-700);
   --avatar-6: var(--blue-700);
   --avatar-ink: #ffffff;

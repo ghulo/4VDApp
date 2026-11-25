@@ -539,7 +539,9 @@ on screen; higher layers are lighter steps because shadows barely show on dark.
 ### Amber (brand)
 4VD's own colour (chosen 2026-10-19), a warm yellow-orange a touch yellower than the firm's circle.
 - **Amber** `#f5b71a` (both themes): the logo, the sunrise, **the one primary key
-  per screen**, the selected row's edge and progress toward a goal. Where you
+  per screen**, the selected row's edge and progress toward a goal (but not
+  the setup strip, which shares the Overview with Open Counter). Avatars take
+  no amber. Where you
   are (the menu, the phone tab bar, section tabs) is never amber: a grey step
   and full ink, or a raised paper key on phones (2026-11-25). One strong amber
   per screen: the key that acts, or the one figure that matters.

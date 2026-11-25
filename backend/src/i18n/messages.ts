@@ -451,7 +451,7 @@ export const en: ServerMessages = {
     duplicatesTitle: (count) => `${count} ${count === 1 ? 'product may be' : 'products may be'} listed twice`,
     duplicatesDetail: 'Merge each pair or keep both, so stock and sales add up in one place.',
     shortfallTitle: (product) => `Count ${product}`,
-    shortfallDetail: (shortBy) => `Sold ${shortBy} more than 4VD had in stock, so stock was set to 0. Count the shelf.`,
+    shortfallDetail: (shortBy) => `Sold ${shortBy} more than the stock showed, so stock was set to 0. Count the shelf.`,
     vatDueTitle: (month) => `${EN_MONTH[Number(month.slice(5, 7)) - 1]} VAT is due by 20 ${EN_MONTH[Number(month.slice(5, 7)) % 12]}`,
     vatDueDetail: (late) => (late ? 'The day to file has passed. File it with ATK, then mark the month as filed.' : 'Check the figures, file them with ATK, then mark the month as filed.'),
     payrollAtkTitle: ({ month, amount }) => `${EN_MONTH[Number(month.slice(5, 7)) - 1]} wage tax and pension: ${new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' }).format(amount)} to ATK by 15 ${EN_MONTH[Number(month.slice(5, 7)) % 12]}`,
@@ -471,7 +471,7 @@ export const en: ServerMessages = {
     answeredTitle: (on) => `Your question on ${EN_ON_TODO[on.kind]} ${on.label} has an answer`,
   },
 
-  testAlertTitle: 'Test alert from 4VD',
+  testAlertTitle: 'Test alert',
   testAlertMessage: 'Alerts are working on this device.',
 
   insight: {
@@ -800,7 +800,7 @@ export const sq: ServerMessages = {
     duplicatesTitle: (count) => `${count === 1 ? 'Një produkt mund të jetë' : `${count} produkte mund të jenë`} dy herë në listë`,
     duplicatesDetail: 'Bashkoji ose mbaji të dyja, që stoku dhe shitjet të mblidhen në një vend.',
     shortfallTitle: (product) => `Numëro ${product}`,
-    shortfallDetail: (shortBy) => `U shitën ${shortBy} më shumë se sa kishte 4VD në stok, prandaj stoku u vu 0. Numëro raftin.`,
+    shortfallDetail: (shortBy) => `U shitën ${shortBy} më shumë se sa tregonte stoku, prandaj stoku u vu 0. Numëro raftin.`,
     vatDueTitle: (month) => `TVSH-ja e ${SQ_MONTH[Number(month.slice(5, 7)) - 1]} duhet deklaruar deri më 20 ${SQ_MONTH_DAY[Number(month.slice(5, 7)) % 12]}`,
     vatDueDetail: (late) => (late ? 'Afati ka kaluar. Deklaroje në ATK, pastaj shëno muajin si të deklaruar.' : 'Kontrollo shifrat, deklaroji në ATK, pastaj shëno muajin si të deklaruar.'),
     payrollAtkTitle: ({ month, amount }) => `Tatimi në paga dhe kontributet e ${SQ_MONTH[Number(month.slice(5, 7)) - 1]}: ${new Intl.NumberFormat('sq-AL', { style: 'currency', currency: 'EUR' }).format(amount)} në ATK deri më 15 ${SQ_MONTH_DAY[Number(month.slice(5, 7)) % 12]}`,
@@ -820,7 +820,7 @@ export const sq: ServerMessages = {
     answeredTitle: (on) => `Pyetja jote për ${SQ_ON_TODO[on.kind]} ${on.label} ka përgjigje`,
   },
 
-  testAlertTitle: 'Njoftim provë nga 4VD',
+  testAlertTitle: 'Njoftim provë',
   testAlertMessage: 'Njoftimet po funksionojnë në këtë pajisje.',
 
   insight: {

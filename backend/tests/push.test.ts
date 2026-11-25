@@ -152,7 +152,7 @@ describe('push alerts', () => {
     expect(response.status).toBe(200);
     expect(response.body.data).toEqual([{ kind: 'expo', service: 'Expo', delivered: true, problem: null, removed: false }]);
     // Sent straight away, and not again with the next batch.
-    expect(expo.sent).toEqual([expect.objectContaining({ title: 'Test alert from 4VD' })]);
+    expect(expo.sent).toEqual([expect.objectContaining({ title: 'Test alert' })]);
   });
 
   it('should say which device the test alert could not reach, and why', async () => {

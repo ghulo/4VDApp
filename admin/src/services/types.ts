@@ -601,7 +601,8 @@ export interface OrderLine {
 
 export interface PurchaseOrder {
   id: number;
-  supplier: { id: number; name: string; phone: string | null; email: string | null };
+  /** abroad: its deliveries are imports (no Kosovo VAT on the bill, customs on their own paper). */
+  supplier: { id: number; name: string; phone: string | null; email: string | null; abroad: boolean };
   status: 'open' | 'received' | 'cancelled';
   note: string | null;
   createdBy: string | null;
@@ -611,7 +612,8 @@ export interface PurchaseOrder {
   lines: OrderLine[];
   total: number;
   /** The supplier's bill for it, if one was added. */
-  bill: { id: number; number: string | null; amount: number; left: number; dueOn: string | null } | null;
+  /** customsMissing: an import whose customs paper isn't on the bill yet. */
+  bill: { id: number; number: string | null; amount: number; left: number; dueOn: string | null; customsMissing: boolean } | null;
 }
 
 /** history: a bill from TREFIN, only to look at. */

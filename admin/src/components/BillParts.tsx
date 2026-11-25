@@ -18,17 +18,20 @@ export function DueBadge({ bill }: { bill: SupplierBill }) {
  * Number, dates, amount and note: the fields a bill has, for adding one or fixing a typo.
  * `lockAmount`: a bill worked out from its lines keeps the amount its lines give.
  * `hideDue`: a credit or a bill paid on the spot has nothing to pay later, so no due date.
+ * `abroad`: an import's paper has no Kosovo VAT, so no VAT box (its VAT is on the customs paper).
  */
 export function BillFields({
   draft,
   onChange,
   lockAmount,
   hideDue,
+  abroad,
 }: {
   draft: BillDraft;
   onChange: (draft: BillDraft) => void;
   lockAmount?: boolean;
   hideDue?: boolean;
+  abroad?: boolean;
 }) {
   const t = useT();
   const set = (patch: Partial<BillDraft>) => onChange({ ...draft, ...patch });
@@ -53,7 +56,8 @@ export function BillFields({
           </Field>
         )}
       </div>
-      {!lockAmount && (
+      {!lockAmount && abroad && <p className="field-hint">{t.orderDetail.abroadBill}</p>}
+      {!lockAmount && !abroad && (
         <>
           <Field label={t.bills.vat} hint={t.bills.vatHint} error={isVatValid(draft) ? undefined : t.bills.vatTooBig}>
             <input

@@ -277,7 +277,7 @@ function ReceiveCard({ order, onClose }: { order: PurchaseOrder; onClose: () => 
             />
             {t.orderDetail.billCame}
           </label>
-          {withBill && <BillFields draft={bill} onChange={setBill} />}
+          {withBill && <BillFields draft={bill} onChange={setBill} abroad={order.supplier.abroad} />}
           {receive.isError && (
             <p className="form-error" role="alert">
               {errorMessage(receive.error)}
@@ -363,6 +363,14 @@ function OrderBillCard({ order }: { order: PurchaseOrder }) {
           </span>
           <Badge tone={bill.left > 0 ? 'warn' : 'ok'}>{bill.left > 0 ? t.orderDetail.leftToPay(formatMoney(bill.left)) : t.bills.statuses.paid}</Badge>
         </div>
+        {bill.customsMissing && (
+          <div className="buy-bill-line">
+            <Badge tone="warn">{t.orderDetail.customsMissing}</Badge>
+            <ButtonLink to={`/bills/${bill.id}`} size="sm" variant="ghost">
+              {t.orderDetail.addCustoms}
+            </ButtonLink>
+          </div>
+        )}
       </Card>
     );
   }
@@ -376,7 +384,7 @@ function OrderBillCard({ order }: { order: PurchaseOrder }) {
   return (
     <Card title={t.orderDetail.addBill} description={t.orderDetail.noBill} id="bill">
       <form className="settings-form" onSubmit={handleSubmit}>
-        <BillFields draft={draft} onChange={setDraft} />
+        <BillFields draft={draft} onChange={setDraft} abroad={order.supplier.abroad} />
         {create.isError && (
           <p className="form-error" role="alert">
             {errorMessage(create.error)}

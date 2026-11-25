@@ -2026,6 +2026,9 @@ export const en = {
     noBill: 'No bill added for this delivery yet. Add it to keep track of paying it.',
     addBill: 'Add the bill',
     billCame: 'A bill came with the delivery',
+    abroadBill: 'From abroad, so the bill has no VAT. The customs paper goes on the bill when it comes: open the bill and add it there.',
+    customsMissing: 'No customs paper yet',
+    addCustoms: 'Add the customs paper',
   },
   fullReport: {
     title: { daily: 'Daily report', weekly: 'Weekly report' } as Record<'daily' | 'weekly', string>,

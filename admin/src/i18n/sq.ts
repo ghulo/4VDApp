@@ -2002,6 +2002,9 @@ export const sq: Catalogue = {
     noBill: 'Ende pa faturë për këtë dorëzim. Shtoje që të ndjekësh pagesën.',
     addBill: 'Shto faturën',
     billCame: 'Me dorëzimin erdhi një faturë',
+    abroadBill: 'Nga jashtë vendit, prandaj fatura nuk ka TVSH. Dokumenti doganor shtohet te fatura kur të vijë: hape faturën dhe shtoje atje.',
+    customsMissing: 'Ende pa dokument doganor',
+    addCustoms: 'Shto dokumentin doganor',
   },
   fullReport: {
     title: { daily: 'Raporti ditor', weekly: 'Raporti javor' },

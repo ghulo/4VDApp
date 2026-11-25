@@ -15,7 +15,6 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { type ReactNode, useState } from 'react';
 import { Link } from 'react-router';
-import { useCurrentUser } from '../../auth/useAuth';
 import { ErrorNotice } from '../../components/Feedback';
 import { TodoList } from '../../components/TodoList';
 import { Badge, ShopSunrise } from '../../components/ui';
@@ -39,7 +38,6 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  */
 export function StaffHomePage() {
   const t = useT();
-  const user = useCurrentUser();
   // Fixed for the visit, so the ranges (and the queries keyed on them) stay put while it is open.
   const [now] = useState(() => new Date());
   const day = dayRange(now);
@@ -75,15 +73,13 @@ export function StaffHomePage() {
       request.status === 'submitted' ||
       (request.decidedAt !== null && now.getTime() - new Date(request.decidedAt).getTime() < DECIDED_SHOWN_DAYS * DAY_MS),
   );
-  const hour = now.getHours();
-  const hello = hour < 12 ? t.staff.home.morning : hour < 18 ? t.staff.home.afternoon : t.staff.home.evening;
   const target = thisMonth.data?.monthlyTarget ?? null;
 
   return (
     <div className="staff-home">
       <header className="staff-home__hero">
-        <p className="overview-hero__kicker">{formatDateWith(now, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-        <h1 className="overview-hero__title">{t.staff.home.greeting(hello, user.name.split(' ')[0] ?? user.name)}</h1>
+        {/* The day is the title: no greeting, the page says what it is about. */}
+        <h1 className="overview-hero__title">{formatDateWith(now, { weekday: 'long', day: 'numeric', month: 'long' })}</h1>
       </header>
 
       {/* The day in one strip; selling itself is the Sell tab. */}

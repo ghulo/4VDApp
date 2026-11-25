@@ -388,6 +388,10 @@ action, a full-width primary key at the bottom of forms.
 - Buttons are 1–4 words, start with a verb or name the destination.
 - Errors say what happened and how to fix it. Empty states say what will show
   up here and how to make it happen.
+- No full stop on a one-line status or empty line ("Saved", "No sales yet
+  today", "Updated 15:45"); help sentences and errors keep theirs. No "…" in
+  placeholders. No greeting as a title: a page is named by what it shows (the
+  staff home is titled with the day).
 - Don't tell the four-brothers story in the interface.
 - English is **British English** (favourite, colour, catalogue). Every string
   exists in English and Albanian; no hard-coded text (tests enforce it).

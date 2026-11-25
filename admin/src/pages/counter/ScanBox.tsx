@@ -60,7 +60,7 @@ export function ScanBox({
         inputMode="numeric"
         autoComplete="off"
         spellCheck={false}
-        placeholder={priceCheck ? `${t.counter.priceCheck}…` : `${t.counter.scan}…`}
+        placeholder={priceCheck ? t.counter.priceCheck : t.counter.scan}
         aria-describedby="counter-scan-hint"
         value={scan}
         onChange={(event) => {

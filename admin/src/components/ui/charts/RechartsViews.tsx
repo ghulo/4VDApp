@@ -41,7 +41,19 @@ function Tip({ active, payload }: { active?: boolean; payload?: ReadonlyArray<{ 
 /** 1,240 → "1.2k": short labels on the value axis, so they never crowd. */
 const compact = new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 });
 
-export function AreaView({ points, height, formatValue }: { points: ChartColumn[]; height: number; formatValue?: (value: number) => string }) {
+export function AreaView({
+  points,
+  height,
+  formatValue,
+  highlight,
+  average,
+}: {
+  points: ChartColumn[];
+  height: number;
+  formatValue?: (value: number) => string;
+  highlight?: ChartColumn['key'];
+  average?: number;
+}) {
   const fillId = useId();
   const { top, outlier } = scaleTop(points.map((point) => point.value));
   return (
@@ -49,7 +61,7 @@ export function AreaView({ points, height, formatValue }: { points: ChartColumn[
       <RAreaChart accessibilityLayer={false} data={points} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
         <defs>
           <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" style={{ stopColor: 'var(--data-line)', stopOpacity: 0.28 }} />
+            <stop offset="0%" style={{ stopColor: 'var(--data-line)', stopOpacity: 0.14 }} />
             <stop offset="100%" style={{ stopColor: 'var(--data-line)', stopOpacity: 0 }} />
           </linearGradient>
         </defs>
@@ -67,11 +79,21 @@ export function AreaView({ points, height, formatValue }: { points: ChartColumn[
           tickFormatter={(value: number) => (formatValue ? formatValue(value) : compact.format(value))}
         />
         <Tooltip content={<Tip />} cursor={{ style: { stroke: 'var(--line-strong)' } }} isAnimationActive={false} />
+        {/* A hairline at the average, so a day reads as above or below the usual. */}
+        {average !== undefined && average > 0 && <ReferenceLine y={average} ifOverflow="discard" style={{ stroke: 'var(--ink-muted)', strokeDasharray: '3 3', strokeWidth: 1 }} />}
         <Area
           type="monotone"
           dataKey="value"
           style={{ stroke: 'var(--data-line)', fill: `url(#${fillId})` }}
           strokeWidth={2}
+          // Only the point asked for (e.g. today) gets a dot; the others stay a plain line.
+          dot={(props: { cx?: number; cy?: number; index?: number; payload?: ChartColumn }) =>
+            highlight !== undefined && props.payload?.key === highlight && props.cx !== undefined && props.cy !== undefined ? (
+              <circle key={props.index} cx={props.cx} cy={props.cy} r={4} style={{ fill: 'var(--chart-strong)', stroke: 'var(--surface)', strokeWidth: 2 }} />
+            ) : (
+              <g key={props.index} />
+            )
+          }
           activeDot={{ r: 5, style: { fill: 'var(--data-line)', stroke: 'var(--surface)', strokeWidth: 2 } }}
           {...animate()}
         />

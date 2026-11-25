@@ -12,7 +12,7 @@ import { analyticsApi, billsApi, inventoryApi, reportsApi } from '../services/ap
 import { TodoList } from '../components/TodoList';
 import { useAttention } from '../utils/useAttention';
 import { formatDateWith, formatHeadlineMoney, formatMoney, formatPercent, formatTime, formatTimes, MUCH_MORE } from '../utils/format';
-import { Badge, ButtonLink, Card, ColumnChart, MenuButton, type MenuItem, PageHeader, RollingNumber, StatGrid, StatTile } from '../components/ui';
+import { Badge, AreaChart, ButtonLink, Card, MenuButton, type MenuItem, PageHeader, RollingNumber, StatGrid, StatTile } from '../components/ui';
 import { useSetUp } from '../auth/useSetUp';
 import { useT } from '../i18n/useT';
 import { useCarwashes } from '../utils/useCarwashes';
@@ -323,7 +323,7 @@ function DayFigures({ books }: { books: boolean }) {
   );
 }
 
-/** Takings day by day for 30 days, dated, today in the strong amber, a hairline at the usual day. */
+/** Takings day by day for 30 days as one line, today a strong amber dot, a dashed hairline at the usual day. */
 function TakingsChart() {
   const t = useT();
   const midnight = startOfDay(useNow());
@@ -367,7 +367,7 @@ function TakingsChart() {
     >
       {days.isPending && <Loading />}
       {days.isError && <ErrorNotice error={days.error} onRetry={() => days.refetch()} />}
-      {days.data && <ColumnChart columns={columns} label={t.overview.takings30} highlight={todayKey} average={average} />}
+      {days.data && <AreaChart points={columns} label={t.overview.takings30} highlight={todayKey} average={average} />}
     </Card>
   );
 }

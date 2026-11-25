@@ -552,6 +552,8 @@ const ACCESS: Record<keyof typeof WHO, string[]> = {
     'GET /api/bin/',
     'POST /api/bin/:kind/:id/restore',
     'GET /api/invites/',
+    // Overview's Get ready strip: the counts behind it, for those who set the business up.
+    'GET /api/setup-progress/',
     'POST /api/invites/',
     'POST /api/invites/:id/resend',
     'DELETE /api/invites/:id',

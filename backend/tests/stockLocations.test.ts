@@ -95,6 +95,8 @@ describe('stock locations', () => {
   it('moves stock in one step, numbered LV-, without changing the total or the books', async () => {
     const depo = await addDepo();
     const soap = await createTestProduct(context, adminToken, { name: 'Sapun', price: 2, costPrice: 1, stock: 10 });
+    // The soap's starting stock posts on its own (Dr stock, Cr owner capital); count from after it.
+    await new BooksPoster(context.db, shopTimeZone()).rebuild();
     const entriesBefore = (await context.db.selectFrom('ledger_entries').select('id').execute()).length;
 
     const moved = await moveStock({ fromId: floorId, toId: depo, note: 'Në depo', lines: [{ productId: soap, quantity: 6 }] });
@@ -117,7 +119,7 @@ describe('stock locations', () => {
     expect((await api().post(`/api/stock-moves/${moved.body.data.id}/void`).set(auth(ownerToken))).status).toBe(409);
     await new BooksPoster(context.db, shopTimeZone()).rebuild();
     expect((await context.db.selectFrom('ledger_entries').select('id').execute()).length).toBe(entriesBefore);
-    const posted = await context.db.selectFrom('ledger_entries').select('source_key').where('source_key', 'like', 'adjustment:%').execute();
+    const posted = await context.db.selectFrom('ledger_entries').select('source_key').where('source_key', 'like', 'adjustment:%').where('description', 'not like', 'Starting stock:%').execute();
     expect(posted).toEqual([]);
 
     const list = await api().get('/api/stock-moves').set(auth(employeeToken)).query({ startDate: today(), endDate: today() });

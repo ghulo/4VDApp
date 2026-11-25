@@ -13,7 +13,8 @@ import { ensurePlaces } from '../database/places.js';
 import { BOOKS_START_KEY, insertLines, reverseEntry } from './books/BooksPoster.js';
 import { assertMonthsOpen } from './vat/periodLock.js';
 
-export const OPENING_POSTED_KEY = 'opening_posted';
+export { OPENING_POSTED_KEY } from './books/postingRules.js';
+import { OPENING_POSTED_KEY } from './books/postingRules.js';
 export const OPENING_TREFIN_KEY = 'opening_trefin_loaded';
 
 /** Which kinds of line a person types; the others are worked out from stock, bills and tabs. */
@@ -63,6 +64,8 @@ interface Posted {
   by: number;
   /** What each place's opening balance was before, to put back on a take-back. */
   places: Array<{ id: number; balance: number; day: string | null }>;
+  /** Starting stock typed on or after the start day posts by itself, so this opening left it out. Missing on openings posted before that rule. */
+  initialStockApart?: boolean;
 }
 
 interface TrefinLoaded {
@@ -216,13 +219,25 @@ export class OpeningService {
     return written;
   }
 
-  /** The figures worked out from the rest of 4VD: stock at cost (without VAT), and each partner's brought-over bills and charges. */
+  /**
+   * The figures worked out from the rest of the app: stock at cost (without VAT), and each partner's brought-over bills and charges.
+   * Starting stock typed on or after the start day is left out: it posts by itself (PostingRules.startingStock).
+   */
   private async workedOut(db: DatabaseClient) {
+    const startDay = await this.setting<string>(BOOKS_START_KEY, db);
+    const from = startDay ? startOfDay(startDay, this.timeZone) : null;
     const stock = await sql<{ value: string; products: string; no_cost: string }>`
-      select coalesce(sum(i.quantity_on_hand * coalesce(p.cost_price, 0) / (1 + p.vat_rate / 100.0)), 0) as value,
-        count(*) filter (where i.quantity_on_hand > 0) as products,
-        count(*) filter (where i.quantity_on_hand > 0 and coalesce(p.cost_price, 0) <= 0) as no_cost
-      from inventory i join products p on p.id = i.product_id
+      with own as (
+        select i.product_id, greatest(i.quantity_on_hand - coalesce((
+          select sum(a.adjustment_quantity) from stock_adjustments a
+          where a.product_id = i.product_id and a.reason = 'Initial stock' and ${from}::timestamptz is not null and a.adjustment_date >= ${from}::timestamptz
+        ), 0), 0) as quantity
+        from inventory i
+      )
+      select coalesce(sum(o.quantity * coalesce(p.cost_price, 0) / (1 + p.vat_rate / 100.0)), 0) as value,
+        count(*) filter (where o.quantity > 0) as products,
+        count(*) filter (where o.quantity > 0 and coalesce(p.cost_price, 0) <= 0) as no_cost
+      from own o join products p on p.id = o.product_id
       where p.deleted_at is null
     `.execute(db);
     const bills = await sql<{ supplier_id: number; owed: string; documents: string }>`
@@ -484,7 +499,7 @@ export class OpeningService {
           memo: 'What the shop has minus what it owes',
         });
       }
-      const entryId = await new BooksRepository(trx).addManualEntry({ date: view.startDay, description: 'Opening balances: what the shop had and owed when 4VD took over from TREFIN', createdBy: actorId });
+      const entryId = await new BooksRepository(trx).addManualEntry({ date: view.startDay, description: 'Opening balances: what the shop had and owed when the books started', createdBy: actorId });
       await insertLines(trx, entryId, draft, draft.map((line) => line.memo));
 
       const places: Posted['places'] = [];
@@ -493,7 +508,7 @@ export class OpeningService {
         places.push({ id: line.place!.id, balance: Number(before.opening_balance), day: before.opening_day });
         await trx.updateTable('money_places').set({ opening_balance: line.amount, opening_day: view.startDay }).where('id', '=', line.place!.id).execute();
       }
-      await this.putSetting(trx, OPENING_POSTED_KEY, { entryId, at: new Date().toISOString(), by: actorId, places } satisfies Posted, actorId);
+      await this.putSetting(trx, OPENING_POSTED_KEY, { entryId, at: new Date().toISOString(), by: actorId, places, initialStockApart: true } satisfies Posted, actorId);
       await new ActivityLogRepository(trx).create({
         userId: actorId,
         action: 'books.opening_posted',
@@ -522,6 +537,8 @@ export class OpeningService {
         await trx.updateTable('money_places').set({ opening_balance: place.balance, opening_day: place.day }).where('id', '=', place.id).execute();
       }
       await trx.deleteFrom('settings').where('key', '=', OPENING_POSTED_KEY).execute();
+      // Starting stock the opening had counted now posts by itself again (PostingRules.startingStock).
+      await sql`insert into ledger_queue (source_table, row_id) select 'stock_adjustments', id from stock_adjustments where reason = 'Initial stock' on conflict do nothing`.execute(trx);
       await new ActivityLogRepository(trx).create({
         userId: actorId,
         action: 'books.opening_taken_back',

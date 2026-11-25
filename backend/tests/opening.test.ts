@@ -27,6 +27,9 @@ beforeEach(async () => {
   employeeToken = await loginAs(context, 'employee');
   // 10 at €11.80 with 18% VAT: €100 of stock at cost without VAT.
   await createTestProduct(context, adminToken, { price: 20, costPrice: 11.8, stock: 10, vatRate: 18 });
+  // The fixture stock was on the shelf before the books started: the opening counts it, so it posts nothing by itself.
+  await sql`update stock_adjustments set adjustment_date = '1999-12-31T12:00:00Z' where reason = 'Initial stock'`.execute(context.db);
+  await sql`insert into ledger_queue (source_table, row_id) select 'stock_adjustments', id from stock_adjustments on conflict do nothing`.execute(context.db);
   supplierId = (await api().post('/api/suppliers').set(auth()).send({ name: 'Viva Fresh Sh.p.k.', nui: '811234567' })).body.data.id;
   customerId = (await api().post('/api/customers').set(auth()).send({ name: 'Hotel Dukagjini', phone: '044 123 456' })).body.data.id;
   await sql`update suppliers set external_code = '700034' where id = ${supplierId}`.execute(context.db);
@@ -252,5 +255,52 @@ describe('bringing TREFIN over', () => {
     const month = await api().get('/api/vat/2026-10').set(auth());
     expect(month.status).toBe(200);
     expect(JSON.stringify(month.body.data)).not.toContain('Viva Fresh');
+  });
+});
+
+describe('starting stock typed with a new product', () => {
+  /** The live (not reversed) entry lines a product's starting stock wrote, as "1340 59" strings; the books catch up first. */
+  async function startingStockLines(productId: number): Promise<string[]> {
+    await api().get('/api/books/trial-balance?from=2000-01-01&to=2100-12-31').set(auth());
+    const rows = await sql<{ number: string; amount: string }>`
+      select a.number, (l.debit - l.credit)::text as amount
+      from ledger_entries e join ledger_lines l on l.entry_id = e.id join ledger_accounts a on a.id = l.account_id
+      where e.reversed_at is null and e.kind = 'auto'
+        and e.source_key in (select 'adjustment:' || id from stock_adjustments where product_id = ${productId} and reason = 'Initial stock')
+    `.execute(context.db);
+    return rows.rows.map((row) => `${row.number} ${Number(row.amount)}`).sort();
+  }
+
+  it('posts by itself against owner capital when added after the books start, and the opening leaves it out', async () => {
+    // 5 at €11.80: €59 of stock at cost as kept.
+    const productId = await createTestProduct(context, adminToken, { price: 20, costPrice: 11.8, stock: 5, vatRate: 18 });
+    expect(await startingStockLines(productId)).toEqual(['1340 59', '3000 -59']);
+    // The opening still counts only the stock from before the books started.
+    expect(line(await view(), (candidate) => candidate.kind === 'stock').amount).toBe(100);
+
+    await confirmAll();
+    const posted = await api().post('/api/books/opening/post').set(auth()).send({});
+    expect(posted.status).toBe(201);
+    expect(await startingStockLines(productId)).toEqual(['1340 59', '3000 -59']);
+  });
+
+  it('posts nothing for a product with no cost or no stock', async () => {
+    const noCost = await createTestProduct(context, adminToken, { price: 20, costPrice: null, stock: 5 });
+    const noStock = await createTestProduct(context, adminToken, { price: 20, costPrice: 10, stock: 0 });
+    expect(await startingStockLines(noCost)).toEqual([]);
+    expect(await startingStockLines(noStock)).toEqual([]);
+  });
+
+  it('leaves alone stock that an opening posted before this rule already counted, until that opening is taken back', async () => {
+    const productId = await createTestProduct(context, adminToken, { price: 20, costPrice: 11.8, stock: 5, vatRate: 18 });
+    // An opening posted (the old way) after the product was added took its stock in.
+    const later = new Date(Date.now() + 60_000).toISOString();
+    await sql`insert into settings (key, value) values ('opening_posted', ${JSON.stringify({ entryId: 0, at: later, by: 1, places: [] })}::jsonb)`.execute(context.db);
+    await sql`insert into ledger_queue (source_table, row_id) select 'stock_adjustments', id from stock_adjustments on conflict do nothing`.execute(context.db);
+    expect(await startingStockLines(productId)).toEqual([]);
+
+    await sql`delete from settings where key = 'opening_posted'`.execute(context.db);
+    await sql`insert into ledger_queue (source_table, row_id) select 'stock_adjustments', id from stock_adjustments on conflict do nothing`.execute(context.db);
+    expect(await startingStockLines(productId)).toEqual(['1340 59', '3000 -59']);
   });
 });

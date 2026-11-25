@@ -31,7 +31,9 @@ interface Entry {
 }
 const readLines = (entry: Entry) => entry.lines.map((line) => `${line.accountNumber} ${line.debit > 0 ? `Dr ${line.debit}` : `Cr ${line.credit}`}`).sort();
 const entriesFor = async (id: number): Promise<Entry[]> => (await api().get(`/api/books/entries?source=stock_doc&id=${id}`).set(auth())).body.data;
-const adjustmentEntries = async () => (await context.db.selectFrom('ledger_entries').select('id').where('source_key', 'like', 'adjustment:%').execute()).length;
+// Stock changes posted on their own, leaving out each product's starting stock (that posts by design).
+const adjustmentEntries = async () =>
+  (await context.db.selectFrom('ledger_entries').select('id').where('source_key', 'like', 'adjustment:%').where('description', 'not like', 'Starting stock:%').execute()).length;
 
 describe('stock in and out documents', () => {
   it('moves stock, numbers itself and posts one entry at cost for all its lines', async () => {

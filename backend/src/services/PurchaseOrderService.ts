@@ -34,7 +34,8 @@ export interface OrderLineDto {
 
 export interface OrderDto {
   id: number;
-  supplier: { id: number; name: string; phone: string | null; email: string | null };
+  /** abroad: its deliveries are imports (no Kosovo VAT on the bill; customs on their own paper). */
+  supplier: { id: number; name: string; phone: string | null; email: string | null; abroad: boolean };
   status: OrderStatus;
   note: string | null;
   createdBy: string | null;
@@ -43,7 +44,8 @@ export interface OrderDto {
   closedBy: string | null;
   closedAt: string | null;
   /** The supplier's bill for it, if one was added: what is left to pay. */
-  bill: { id: number; number: string | null; amount: number; left: number; dueOn: string | null } | null;
+  /** customsMissing: an import whose customs paper isn't on the bill yet. */
+  bill: { id: number; number: string | null; amount: number; left: number; dueOn: string | null; customsMissing: boolean } | null;
   lines: OrderLineDto[];
   /** Sum of quantity × cost over lines with a known cost. */
   total: number;
@@ -103,7 +105,7 @@ function toOrderDto(order: OrderRecord, lines: OrderLineRecord[], bills: OrderBi
   const bill = bills.find((row) => row.order_id === order.id);
   return {
     id: order.id,
-    supplier: { id: order.supplier_id, name: order.supplier_name, phone: order.supplier_phone, email: order.supplier_email },
+    supplier: { id: order.supplier_id, name: order.supplier_name, phone: order.supplier_phone, email: order.supplier_email, abroad: order.supplier_abroad },
     status: order.status,
     note: order.note,
     createdBy: order.created_by_name,
@@ -117,6 +119,7 @@ function toOrderDto(order: OrderRecord, lines: OrderLineRecord[], bills: OrderBi
           amount: Number(bill.amount),
           left: roundMoney(Math.max(0, Number(bill.amount) - Number(bill.paid))),
           dueOn: bill.due_on,
+          customsMissing: bill.customs_missing,
         }
       : null,
     lines: dtoLines,

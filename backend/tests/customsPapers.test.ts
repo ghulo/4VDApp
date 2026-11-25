@@ -92,6 +92,22 @@ describe('customs put on a saved import bill', () => {
     expect([boxes[31], boxes[35], boxes[36]]).toEqual([0, 128, 23.04]);
   });
 
+  it("tells the order page the supplier is abroad and its bill's customs paper is missing, until it is added or waved off", async () => {
+    const billId = await importByOrder();
+    const { order_id: orderId } = await context.db.selectFrom('supplier_bills').select('order_id').where('id', '=', billId).executeTakeFirstOrThrow();
+    const order = async () => (await api().get(`/api/orders/${orderId}`).set(auth())).body.data;
+    expect((await order()).supplier.abroad).toBe(true);
+    expect((await order()).bill.customsMissing).toBe(true);
+
+    await api().put(`/api/bills/${billId}/no-customs`).set(auth()).send({ value: true });
+    expect((await order()).bill.customsMissing).toBe(false);
+    await api().put(`/api/bills/${billId}/no-customs`).set(auth()).send({ value: false });
+    expect((await order()).bill.customsMissing).toBe(true);
+
+    expect((await putCustoms(billId, {})).status).toBe(200);
+    expect((await order()).bill.customsMissing).toBe(false);
+  });
+
   it('puts duty that comes after some units were sold onto the units still in stock', async () => {
     const billId = await importByOrder();
     const before = await costOf();

@@ -76,6 +76,8 @@ export interface OrderRecord {
   supplier_name: string;
   supplier_phone: string | null;
   supplier_email: string | null;
+  /** The supplier is abroad: its deliveries are imports. */
+  supplier_abroad: boolean;
   status: OrderStatus;
   note: string | null;
   created_by_name: string | null;
@@ -94,6 +96,8 @@ export interface OrderBillRecord {
   amount: string;
   paid: string;
   due_on: string | null;
+  /** An import with no customs paper yet, and nobody said it had none. */
+  customs_missing: boolean;
 }
 
 export interface OrderLineRecord {
@@ -155,6 +159,7 @@ export class PurchaseOrderRepository {
         's.name as supplier_name',
         's.phone as supplier_phone',
         's.email as supplier_email',
+        's.abroad as supplier_abroad',
         'o.status',
         'o.note',
         'u.name as created_by_name',
@@ -213,6 +218,7 @@ export class PurchaseOrderRepository {
         'b.amount',
         sql<string>`coalesce((select sum(p.amount) from supplier_payments p where p.bill_id = b.id and p.voided_at is null), 0)`.as('paid'),
         sql<string | null>`to_char(b.due_on, 'YYYY-MM-DD')`.as('due_on'),
+        sql<boolean>`b.abroad and not b.no_customs and not exists (select 1 from customs_papers p where p.bill_id = b.id and p.voided_at is null)`.as('customs_missing'),
       ])
       .where('b.order_id', 'in', orderIds)
       .where('b.voided_at', 'is', null)

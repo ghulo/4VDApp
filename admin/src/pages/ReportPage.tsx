@@ -1,10 +1,10 @@
 import { SendReportResult, useSendReport } from '../push/SendReport';
 import { CaretLeft, CaretRight, PaperPlaneTilt } from '@phosphor-icons/react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
+import { isValidElement, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
-import { Badge, Button, ButtonLink, Card, ColumnChart, DataTable, DateField, EmptyState, MetricCard, MetricGrid, PageHeader, Section, StatGrid, StatTile } from '../components/ui';
+import { Badge, Button, ButtonLink, Card, ColumnChart, DataTable, DateField, EmptyState, MetricCard, MetricGrid, PageHeader, StatGrid, StatTile } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { useSetUp } from '../auth/useSetUp';
 import { fullReportsApi } from '../services/api';
@@ -104,8 +104,12 @@ function ReportSections({ report }: { report: FullReport }) {
   const setUp = useSetUp();
   const s = report.sections;
   const none = (text: string) => <p className="field-hint">{text}</p>;
-  // A table stands on the page under its heading; other parts sit in a card.
-  const section = (key: keyof typeof t.report.sections, children: ReactNode) => <Section title={t.report.sections[key]}>{children}</Section>;
+  // Every part sits in a card, so the two columns' headings line up; a table fills its card edge to edge.
+  const section = (key: keyof typeof t.report.sections, children: ReactNode) => (
+    <Card title={t.report.sections[key]} flush={!(isValidElement(children) && children.type === 'p')}>
+      {children}
+    </Card>
+  );
   const card = (key: keyof typeof t.report.sections, children: ReactNode, actions?: ReactNode) => (
     <Card title={t.report.sections[key]} actions={actions}>
       {children}

@@ -63,7 +63,7 @@ export class InsightsService {
   /** Written in the reader's language (`t`), English by default. */
   async list(now = new Date(), t: ServerMessages = en, timings?: Timings): Promise<Insight[]> {
     const daysAgo = (days: number) => new Date(now.getTime() - days * MS_PER_DAY);
-    // Only the products a To do can be about, loaded once: an imported shop has thousands, and the API has half a CPU.
+    // Only the products a To do can be about, loaded once: an imported shop has thousands, and the live database has a tenth of a CPU.
     const activeProducts = this.reportsRepository.productsForInsights(daysAgo(FORECAST_HISTORY_DAYS), daysAgo(DEAD_STOCK_DAYS));
     const [forecasts, products, belowCost, unusual, missing, overdueTabs, expiring] = await Promise.all([
       timed(timings, 'i.forecast', this.reportsService.sellingForecasts(activeProducts, now)),

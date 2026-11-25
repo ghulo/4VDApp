@@ -256,7 +256,7 @@ export class ReportsService {
    * loads. Only products sold in the forecast window: one with no sales there
    * forecasts no demand, so it can be neither "sold out" nor "running out".
    * On a shop with thousands of products this skips nearly all the work
-   * (the API has half a CPU; the full list took over a second).
+   * (the live database has a tenth of a CPU; the full list took over a second).
    */
   async sellingForecasts(products: Promise<VelocityRow[]>, now = new Date()) {
     const [rows, sales] = await Promise.all([

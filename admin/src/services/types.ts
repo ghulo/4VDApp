@@ -1475,6 +1475,8 @@ export interface Business {
   hasCarwash: boolean;
   /** It came from TREFIN (or is 4VD's own shop): TREFIN filters and pages show only then. */
   hasTrefin: boolean;
+  /** When the business was added (ISO): nothing from before it is shown. */
+  createdAt: string;
 }
 
 export type BrandGreys = 'plain' | 'tinted';

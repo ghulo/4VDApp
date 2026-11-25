@@ -50,6 +50,8 @@ export interface BusinessDto {
   hasCarwash: boolean;
   /** It came from TREFIN (its history was brought over, or it is 4VD's own shop): TREFIN filters and pages show only then. */
   hasTrefin: boolean;
+  /** When the business was added, so screens show nothing from before it existed. */
+  createdAt: string;
 }
 
 export interface BusinessChanges {
@@ -99,6 +101,7 @@ const toDto = (business: BusinessRow, setUp: { carwash: boolean; trefin: boolean
   brand: brandOf(business),
   hasCarwash: setUp.carwash,
   hasTrefin: setUp.trefin || brandOf(business).house,
+  createdAt: business.created_at.toISOString(),
 });
 
 const THEME_FIELDS: string[] = ['brandColour', 'brandAccent', 'brandGradient', 'brandGreys'];

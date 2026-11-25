@@ -13,6 +13,7 @@ import { TodoList } from '../components/TodoList';
 import { useAttention } from '../utils/useAttention';
 import { formatDateWith, formatHeadlineMoney, formatMoney, formatPercent, formatTime, formatTimes, MUCH_MORE } from '../utils/format';
 import { Badge, ButtonLink, Card, ColumnChart, MenuButton, type MenuItem, PageHeader, RollingNumber, StatGrid, StatTile } from '../components/ui';
+import { useSetUp } from '../auth/useSetUp';
 import { useT } from '../i18n/useT';
 import { useCarwashes } from '../utils/useCarwashes';
 import { shownTo } from '../navigation/sections';
@@ -110,13 +111,16 @@ function useTodaySummary() {
 function TodayStrip() {
   const t = useT();
   const { midnight, today } = useTodaySummary();
+  const { since } = useSetUp();
+  // A business younger than a week had no last week to compare with.
+  const newerThanAWeek = since !== null && since > addDays(midnight, -7);
   const weekday = formatDateWith(midnight, { weekday: 'long' });
   const current = today.data?.current;
   const previous = today.data?.previous;
   const change = today.data?.change.revenue ?? null;
 
   function compare(): string | null {
-    if (!current || !previous) return null;
+    if (!current || !previous || newerThanAWeek) return null;
     if (change === null) return t.overview.nothingLastWeek(weekday);
     const amount = formatMoney(previous.revenue);
     if (current.revenue === 0) return t.overview.lastWeekHad({ weekday, amount });
@@ -193,6 +197,7 @@ function AttentionPanel() {
 /** Did yesterday go well and close properly, and how far today's end-of-day checks are: the morning's second question. */
 function YesterdayCard() {
   const t = useT();
+  const { since } = useSetUp();
   const now = useNow();
   const yesterday = addDays(startOfDay(now), -1);
   const yesterdayKey = isoDay(yesterday);
@@ -206,6 +211,8 @@ function YesterdayCard() {
   // Checked on each refetch (every minute), not on every render.
   const closingDue = Boolean(today.data && !today.data.allDone) && new Date(today.dataUpdatedAt).getHours() >= CLOSING_HOUR;
   const current = sales.data?.current;
+  // Added today: there was no yesterday to show.
+  if (since !== null && since >= startOfDay(now)) return null;
 
   return (
     <Card title={t.overview.yesterday} className="overview-desk__side">
@@ -320,6 +327,9 @@ function DayFigures({ books }: { books: boolean }) {
 function TakingsChart() {
   const t = useT();
   const midnight = startOfDay(useNow());
+  const { since } = useSetUp();
+  // Only the days the business existed: none before it was added.
+  const firstKey = since ? isoDay(startOfDay(since)) : null;
   const from = addDays(midnight, -(CHART_DAYS - 1));
   const days = useQuery({
     queryKey: ['analytics', 'revenue', 'daily', CHART_DAYS, isoDay(midnight)],
@@ -328,7 +338,7 @@ function TakingsChart() {
     refetchInterval: 5 * 60_000,
   });
   const todayKey = isoDay(midnight);
-  const points = days.data?.points ?? [];
+  const points = (days.data?.points ?? []).filter((point) => firstKey === null || point.periodStart >= firstKey);
   const before = points.filter((point) => point.periodStart !== todayKey);
   const average = before.length > 0 ? before.reduce((sum, point) => sum + point.revenue, 0) / before.length : undefined;
   const columns = points.map((point) => {
@@ -341,6 +351,9 @@ function TakingsChart() {
       value: point.revenue,
     };
   });
+
+  // A business added today or yesterday has no days to chart yet.
+  if (days.data && firstKey !== null && points.length < 2) return null;
 
   return (
     <Card

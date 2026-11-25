@@ -39,7 +39,7 @@ export function createApp(config: AppConfig, db: DatabaseClient, options: AppOpt
   // Browsers hide Content-Disposition from cross-origin JS unless it is exposed,
   // and the admin dashboard needs it to name downloaded CSV files.
   // credentials: the portal and the dashboard both sign in with httpOnly cookies.
-  app.use(cors({ origin: config.corsOrigins, credentials: true, exposedHeaders: ['Content-Disposition'] }));
+  app.use(cors({ origin: config.corsOrigins, credentials: true, exposedHeaders: ['Content-Disposition', 'Server-Timing'] }));
   app.use(compression());
   const ownOrigins = allowedOriginsOf(config);
   const identify = identifyRequester(config.jwtSecret, ownOrigins);

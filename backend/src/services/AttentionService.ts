@@ -45,6 +45,19 @@ export interface TodoItem {
   cashCountId?: number;
 }
 
+/** How long each part of the list took, in ms, for the Server-Timing header. */
+export type Timings = Array<[name: string, ms: number]>;
+
+/** Times one part; parts run side by side, so each is wall-clock from when it started. */
+function timed<T>(timings: Timings | undefined, name: string, work: Promise<T>): Promise<T> {
+  if (!timings) return work;
+  const start = performance.now();
+  return work.then((value) => {
+    timings.push([name, performance.now() - start]);
+    return value;
+  });
+}
+
 export interface Attention {
   todo: TodoItem[];
   /** What every badge and "waiting" number shows: Urgent and Check items. Ideas never nag. */
@@ -121,16 +134,20 @@ export class AttentionService {
     } | null = null,
   ) {}
 
-  async forUser(role: UserRole, t: ServerMessages = en, now = new Date()): Promise<Attention> {
+  async forUser(role: UserRole, t: ServerMessages = en, now = new Date(), timings?: Timings): Promise<Attention> {
     const todo = canOversee(role)
-      ? [...(await this.overseer(role, t, now)), ...(await this.books(t, now)), ...(await this.questions(t))]
+      ? [
+          ...(await timed(timings, 'overseer', this.overseer(role, t, now, timings))),
+          ...(await timed(timings, 'books', this.books(t, now, timings))),
+          ...(await timed(timings, 'questions', this.questions(t))),
+        ]
       : canReadBooks(role)
-        ? [...(await this.books(t, now)), ...(await this.arrivalBills(t))]
+        ? [...(await timed(timings, 'books', this.books(t, now, timings))), ...(await this.arrivalBills(t))]
         : canSell(role)
           ? await this.counter(role, t, now)
           : [];
-    if (hasPower(role, 'payroll')) todo.push(...(await this.payrollItems(t, now)));
-    if (canManage(role)) todo.push(...(await this.lockedPins(t)));
+    if (hasPower(role, 'payroll')) todo.push(...(await timed(timings, 'payroll', this.payrollItems(t, now))));
+    if (canManage(role)) todo.push(...(await timed(timings, 'pins', this.lockedPins(t))));
     todo.sort((a, b) => ORDER[a.severity] - ORDER[b.severity]);
     return { todo, count: todo.filter((item) => item.severity !== 'idea').length };
   }
@@ -141,16 +158,16 @@ export class AttentionService {
   }
 
   /** Overseers: requests, the shop's state, unchecked cash and, from closing time, the day. */
-  private async overseer(role: UserRole, t: ServerMessages, now: Date): Promise<TodoItem[]> {
+  private async overseer(role: UserRole, t: ServerMessages, now: Date, timings?: Timings): Promise<TodoItem[]> {
     const [approvals, insights, cash, day, scans, duplicates, shortfalls, emailed] = await Promise.all([
-      this.approvalService.summary(),
-      this.insightsService.list(now, t),
-      this.cashCountService.unchecked(CASH_CHECK_DAYS, now),
-      this.closingDay(role, now),
-      this.billScans.findWaiting(),
-      this.duplicates.countOpen(),
-      this.shortfalls.open(),
-      this.billEmails.open(),
+      timed(timings, 'approvals', this.approvalService.summary()),
+      timed(timings, 'insights', this.insightsService.list(now, t, timings)),
+      timed(timings, 'cash', this.cashCountService.unchecked(CASH_CHECK_DAYS, now)),
+      timed(timings, 'day', this.closingDay(role, now)),
+      timed(timings, 'scans', this.billScans.findWaiting()),
+      timed(timings, 'duplicates', this.duplicates.countOpen()),
+      timed(timings, 'shortfalls', this.shortfalls.open()),
+      timed(timings, 'emails', this.billEmails.open()),
     ]);
     const items: TodoItem[] = [];
     if (approvals.total > 0) {
@@ -166,7 +183,7 @@ export class AttentionService {
     }
     for (const scan of scans) items.push(scanTodo(scan, t));
     // A finished import, until someone has looked at a few of its products (Settings → Import).
-    for (const done of hasPower(role, 'import') && this.imports ? await this.imports.toCheck() : []) {
+    for (const done of hasPower(role, 'import') && this.imports ? await timed(timings, 'imports', this.imports.toCheck()) : []) {
       items.push({
         key: `import_done:${done.id}`,
         kind: 'import_done',
@@ -178,7 +195,7 @@ export class AttentionService {
       });
     }
     // Orders business customers sent from the portal, until someone accepts or declines them.
-    for (const order of this.portalOrders ? await this.portalOrders.openOrders() : []) {
+    for (const order of this.portalOrders ? await timed(timings, 'portal', this.portalOrders.openOrders()) : []) {
       items.push({
         key: `portal_order:${order.id}`,
         kind: 'portal_order',
@@ -204,7 +221,11 @@ export class AttentionService {
     }
     // Imports from abroad: the customs paper, until it is on the bill or someone says there is none.
     if (this.customs) {
-      const [missing, waiting] = await Promise.all([this.customs.missing(zonedDay(now, this.timeZone)), this.customs.waiting()]);
+      const [missing, waiting] = await timed(
+        timings,
+        'customs',
+        Promise.all([this.customs.missing(zonedDay(now, this.timeZone)), this.customs.waiting()]),
+      );
       for (const bill of missing) {
         items.push({
           key: `customs_missing:${bill.id}`,
@@ -302,9 +323,13 @@ export class AttentionService {
    * "Profit tax for Q3 is due by 15 October" for a quarter over with tax to pay
    * and no instalment marked as paid.
    */
-  private async books(t: ServerMessages, now: Date): Promise<TodoItem[]> {
+  private async books(t: ServerMessages, now: Date, timings?: Timings): Promise<TodoItem[]> {
     const today = zonedDay(now, this.timeZone);
-    const [months, instalments, declaration] = await Promise.all([this.vat.unfiled(now), this.years.dueInstalments(now), this.declarations?.due(now) ?? null]);
+    const [months, instalments, declaration] = await Promise.all([
+      timed(timings, 'vat', this.vat.unfiled(now)),
+      timed(timings, 'tm', this.years.dueInstalments(now)),
+      timed(timings, 'declaration', this.declarations?.due(now) ?? Promise.resolve(null)),
+    ]);
     const tm = instalments.map(
       (item): TodoItem => ({
         key: `tm_due:${item.year}-${item.quarter}`,

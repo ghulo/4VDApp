@@ -7,6 +7,17 @@ import type { ReportsService } from './ReportsService.js';
 import type { TabService } from './TabService.js';
 import { EXPIRY_URGENT_DAYS, type ExpiryService } from './ExpiryService.js';
 import { BILL_DUE_SOON_DAYS, type SupplierBillService } from './SupplierBillService.js';
+import type { Timings } from './AttentionService.js';
+
+/** Times one part; parts run side by side, so each is wall-clock from when it started. */
+function timed<T>(timings: Timings | undefined, name: string, work: Promise<T>): Promise<T> {
+  if (!timings) return work;
+  const start = performance.now();
+  return work.then((value) => {
+    timings.push([name, performance.now() - start]);
+    return value;
+  });
+}
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 /** A product selling out within this many days is worth a warning. */
@@ -49,24 +60,24 @@ export class InsightsService {
   ) {}
 
   /** Written in the reader's language (`t`), English by default. */
-  async list(now = new Date(), t: ServerMessages = en): Promise<Insight[]> {
+  async list(now = new Date(), t: ServerMessages = en, timings?: Timings): Promise<Insight[]> {
     const daysAgo = (days: number) => new Date(now.getTime() - days * MS_PER_DAY);
     const [forecasts, products, belowCost, unusual, missing, overdueTabs, expiring] = await Promise.all([
-      this.reportsService.reorderSuggestions(now),
-      this.reportsRepository.activeProducts(),
-      this.insightsRepository.salesBelowCost(daysAgo(RECENT_SALES_DAYS)),
-      this.insightsRepository.unusualSales({
+      timed(timings, 'i.forecast', this.reportsService.reorderSuggestions(now)),
+      timed(timings, 'i.products', this.reportsRepository.activeProducts()),
+      timed(timings, 'i.belowCost', this.insightsRepository.salesBelowCost(daysAgo(RECENT_SALES_DAYS))),
+      timed(timings, 'i.unusual', this.insightsRepository.unusualSales({
         since: daysAgo(RECENT_SALES_DAYS),
         baselineSince: daysAgo(UNUSUAL_SALE.baselineDays),
         minQuantity: UNUSUAL_SALE.minQuantity,
         factor: UNUSUAL_SALE.factor,
         minHistory: UNUSUAL_SALE.minHistory,
-      }),
-      this.insightsRepository.missingStock(daysAgo(MISSING_STOCK_DAYS)),
-      this.tabService.overdue(now),
-      this.expiryService.upcoming(undefined, now),
+      })),
+      timed(timings, 'i.missing', this.insightsRepository.missingStock(daysAgo(MISSING_STOCK_DAYS))),
+      timed(timings, 'i.tabs', this.tabService.overdue(now)),
+      timed(timings, 'i.expiry', this.expiryService.upcoming(undefined, now)),
     ]);
-    const bills = await this.billService.list({ status: 'open' }, now);
+    const bills = await timed(timings, 'i.bills', this.billService.list({ status: 'open' }, now));
     const insights: Insight[] = [];
 
     for (const row of forecasts) {

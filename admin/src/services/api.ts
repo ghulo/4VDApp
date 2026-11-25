@@ -678,6 +678,17 @@ export const usersApi = {
   },
 };
 
+/** The counts behind Overview's Get ready strip (managers). */
+export interface SetupProgress {
+  productCount: number;
+  peopleCount: number;
+  openInvites: number;
+}
+
+export const setupApi = {
+  progress: async () => (await apiRequest<SetupProgress>('/setup-progress')).data,
+};
+
 export const attentionApi = {
   get: async () => (await apiRequest<Attention>('/attention')).data,
 };

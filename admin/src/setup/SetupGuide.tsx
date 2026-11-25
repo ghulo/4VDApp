@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Check } from '@phosphor-icons/react';
 import { useId, useState } from 'react';
-import { businessApi, invitesApi, productsApi, pushApi, usersApi } from '../services/api';
+import { businessApi, pushApi, setupApi } from '../services/api';
 import { Button, ButtonLink } from '../components/ui';
 import { setupSteps } from './steps';
 import { useCurrentUser } from '../auth/useAuth';
@@ -30,23 +30,18 @@ export function SetupGuide() {
   const [open, setOpen] = useState(false);
   const listId = useId();
   const business = useQuery({ queryKey: ['business'], queryFn: businessApi.get, enabled: !hidden });
-  const products = useQuery({
-    queryKey: ['products', { page: 1, limit: 1, purpose: 'count' }],
-    queryFn: () => productsApi.list({ page: 1, limit: 1 }),
-    enabled: !hidden,
-  });
-  const people = useQuery({ queryKey: ['users'], queryFn: () => usersApi.list(1), enabled: !hidden });
-  const invites = useQuery({ queryKey: ['invites'], queryFn: invitesApi.list, enabled: !hidden });
+  // One small answer with the three counts, fresh on every visit (it used to load three whole lists).
+  const progress = useQuery({ queryKey: ['setup-progress'], queryFn: setupApi.progress, enabled: !hidden, staleTime: 0 });
   const alerts = useQuery({ queryKey: ['push-settings'], queryFn: pushApi.settings, enabled: !hidden });
 
-  const loaded = business.data && products.data && people.data && invites.data && alerts.data;
+  const loaded = business.data && progress.data && alerts.data;
   if (hidden || !loaded) return null;
 
   const steps = setupSteps({
     business: business.data,
-    productCount: products.data.meta.total,
-    peopleCount: people.data.meta.total,
-    openInvites: invites.data.length,
+    productCount: progress.data.productCount,
+    peopleCount: progress.data.peopleCount,
+    openInvites: progress.data.openInvites,
     alertDevices: alerts.data.deviceCount,
     canImport: hasPower(role, 'import'),
   }, t);

@@ -539,12 +539,15 @@ on screen; higher layers are lighter steps because shadows barely show on dark.
 ### Amber (brand)
 4VD's own colour (chosen 2026-10-19), a warm yellow-orange a touch yellower than the firm's circle.
 - **Amber** `#f5b71a` (both themes): the logo, the sunrise, **the one primary key
-  per screen**, the menu tick, the selected row's edge and progress toward a goal.
+  per screen**, the selected row's edge and progress toward a goal. Where you
+  are (the menu, the phone tab bar, section tabs) is never amber: a grey step
+  and full ink, or a raised paper key on phones (2026-11-25). One strong amber
+  per screen: the key that acts, or the one figure that matters.
 - **Amber Mark** `#a66f02` (amber 600, light only): small marks on paper that
   must reach 3:1 (rings, dots).
-- **Amber Text** `#7f5101` / `#f5b71a` on **Amber Tint** (16%): the current
-  menu item's label (a warm gold-brown: amber's dark steps turn toward orange,
-  hue 83 → 72, so they never go olive), selected rows, and any amber words. Bright amber is never
+- **Amber Text** `#7f5101` / `#f5b71a` on **Amber Tint** (16%): selected rows and any amber words
+  (a warm gold-brown: amber's dark steps turn toward orange, hue 83 → 72, so
+  they never go olive). Bright amber is never
   text on paper.
 - Text on amber is **Pillar Ink** `#0d1012` (white fails contrast: 1.9:1).
 
@@ -1010,7 +1013,7 @@ when it is short (768px monitors, zoom, the QR setup step).
     `--dur-medium` (`playArrival`, on a path change, never on first load);
     the menu and top bar never move. Sections inside a page show at once.
   - Selection glides: the chosen segment of every segmented track and the
-    current sidebar item (with its orange tick) are one highlight that slides
+    current sidebar item are one grey highlight that slides
     to the next choice (`selectionPills.ts`); its size changes at once, only
     its place glides.
   - A flow of steps on one card (Settings → Import: drop, found, check,

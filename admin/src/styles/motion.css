@@ -82,26 +82,6 @@
   box-shadow: none;
 }
 
-/* The orange tick slides with it. */
-.sidebar__nav[data-pill] .sidebar__link.active::before {
-  display: none;
-}
-
-/* The menu scrolls in its own box, so the tick sits on that box's left edge. */
-.sidebar__nav[data-pill]::before {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 3px;
-  height: max(0px, calc(var(--pill-h, 0px) - 16px));
-  transform: translateY(calc(var(--pill-y, 0px) + 8px));
-  border-radius: 0 2px 2px 0;
-  background: var(--nav-tick, var(--cta));
-  box-shadow: inset -1px 0 0 var(--amber-mark);
-  pointer-events: none;
-  content: '';
-}
-
 /* ---------- Swiping a panel away (useSwipeToDismiss) ---------- */
 
 /* Sideways drags on the phone drawer are ours; up and down still scroll it.
@@ -187,13 +167,6 @@
   transition:
     transform var(--dur-medium) var(--spring),
     opacity var(--dur-small) var(--ease);
-}
-
-/* In the menu the orange tick follows the pill a beat behind, so the move
-   reads as the mark travelling to the new page. */
-
-:root[data-motion='full'] .sidebar__nav[data-pill='live']::before {
-  transition-delay: calc(var(--dur-small) / 3);
 }
 
 /* ---------- The form card: grows out of the key that opened it ----------

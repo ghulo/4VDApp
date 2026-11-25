@@ -339,11 +339,11 @@ export function InventoryPage() {
   );
 }
 
-/** Low and out say so in a stamp; fine stock stays quiet (the bar already shows it). */
+/** Only out of stock gets a stamp: low is already the number and the bar (the filter says Low). */
 function LevelBadge({ level }: { level: Level }) {
   const t = useT();
-  if (level === 'ok') return null;
-  return <Badge tone={level === 'out' ? 'danger' : 'warn'}>{t.stockTag[level]}</Badge>;
+  if (level !== 'out') return null;
+  return <Badge tone="danger">{t.stockTag.out}</Badge>;
 }
 
 /** The new-order form on Orders, opened with this product and amount (and its usual supplier). */

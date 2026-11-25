@@ -19,6 +19,10 @@ beforeEach(async () => {
   employeeToken = await loginAs(context, 'employee');
   // €100 with 18% VAT inside: €84.75 revenue and €15.25 VAT. Costs €60.
   productId = await createTestProduct(context, adminToken, { price: 100, costPrice: 60, stock: 50, vatRate: 18 });
+  await sql`insert into settings (key, value) values ('books_start', to_jsonb('2000-01-01'::text)) on conflict do nothing`.execute(context.db);
+  // The fixture stock was on the shelf before the books started: the opening counts it, so it posts nothing by itself.
+  await sql`update stock_adjustments set adjustment_date = '1999-12-31T12:00:00Z' where reason = 'Initial stock'`.execute(context.db);
+  await sql`insert into ledger_queue (source_table, row_id) select 'stock_adjustments', id from stock_adjustments on conflict do nothing`.execute(context.db);
 });
 afterAll(() => context.db.destroy());
 

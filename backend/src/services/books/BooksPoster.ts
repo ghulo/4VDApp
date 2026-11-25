@@ -111,7 +111,7 @@ export class BooksPoster {
         union all select 'returns', id from returns where decided_at is not null
         union all select 'write_offs', id from write_offs where decided_at is not null
         union all select 'stock_count_lines', id from stock_count_lines where decided_at is not null
-        union all select 'stock_adjustments', id from stock_adjustments where reason = 'Manual adjustment'
+        union all select 'stock_adjustments', id from stock_adjustments where reason in ('Manual adjustment', 'Initial stock')
         union all select 'stock_documents', id from stock_documents
         union all select 'fixed_assets', id from fixed_assets where disposed_on is not null
         union all select 'depreciation_months', id from depreciation_months

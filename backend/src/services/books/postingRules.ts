@@ -87,6 +87,15 @@ export const checkoutKeySql = (timeZone: string) => sql<string>`coalesce(
 
 export const zonedDaySql = (column: ReturnType<typeof sql.ref>, timeZone: string) => sql<string>`(${column} at time zone ${timeZone})::date::text`;
 
+/** The setting that says the opening balances are posted (OpeningService writes it). */
+export const OPENING_POSTED_KEY = 'opening_posted';
+
+/** What the posted opening says about starting stock: `initialStockApart` when it left out stock that posts by itself. */
+interface OpeningPosted {
+  at: string;
+  initialStockApart?: boolean;
+}
+
 const n = (value: string | number | null | undefined) => (value === null || value === undefined ? null : Number(value));
 
 export class PostingRules {
@@ -348,13 +357,31 @@ export class PostingRules {
     const row = await this.db
       .selectFrom('stock_adjustments as a')
       .innerJoin('products as p', 'p.id', 'a.product_id')
-      .select(['a.adjustment_quantity', 'p.cost_price', 'p.name', zonedDaySql(sql.ref('a.adjustment_date'), this.timeZone).as('day')])
+      .select(['a.adjustment_quantity', 'a.reason', 'a.adjustment_date', 'p.cost_price', 'p.name', zonedDaySql(sql.ref('a.adjustment_date'), this.timeZone).as('day')])
       .where('a.id', '=', id)
-      .where('a.reason', '=', 'Manual adjustment')
+      .where('a.reason', 'in', ['Manual adjustment', 'Initial stock'])
       .executeTakeFirst();
     if (!row) return null;
     const quantity = row.adjustment_quantity;
+    if (row.reason === 'Initial stock') return this.startingStock(row.day, new Date(row.adjustment_date), quantity, n(row.cost_price), row.name);
     return this.stockChange(row.day, quantity, n(row.cost_price), `${quantity > 0 ? '+' : ''}${quantity} × ${row.name}`);
+  }
+
+  /**
+   * Stock typed in when a product is added came from outside the books: the
+   * owner brought it in (stock, against owner capital). Default until the
+   * accountant confirms (handoff.md). An opening posted before this rule took
+   * every product's stock as it stood then, so starting stock from before
+   * that opening is already in it and posts nothing here.
+   */
+  private async startingStock(day: string, at: Date, quantity: number, unitCost: number | null, name: string): Promise<DraftEntry | null> {
+    if (quantity <= 0 || unitCost === null || this.tooEarly(day)) return null;
+    const row = await this.db.selectFrom('settings').select('value').where('key', '=', OPENING_POSTED_KEY).executeTakeFirst();
+    const opening = (row?.value ?? null) as OpeningPosted | null;
+    if (opening && !opening.initialStockApart && at <= new Date(opening.at)) return null;
+    const value = roundMoney(quantity * unitCost);
+    if (value === 0) return null;
+    return this.builder().debit('stock', value).credit('owner_in', value).build(day, `Starting stock: ${quantity} × ${name}`);
   }
 
   /**

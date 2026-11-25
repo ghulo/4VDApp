@@ -62,9 +62,11 @@ export class InsightsService {
   /** Written in the reader's language (`t`), English by default. */
   async list(now = new Date(), t: ServerMessages = en, timings?: Timings): Promise<Insight[]> {
     const daysAgo = (days: number) => new Date(now.getTime() - days * MS_PER_DAY);
+    // Loaded once: thousands of rows on an imported shop, and the API has half a CPU.
+    const activeProducts = this.reportsRepository.activeProducts();
     const [forecasts, products, belowCost, unusual, missing, overdueTabs, expiring] = await Promise.all([
-      timed(timings, 'i.forecast', this.reportsService.reorderSuggestions(now)),
-      timed(timings, 'i.products', this.reportsRepository.activeProducts()),
+      timed(timings, 'i.forecast', this.reportsService.sellingForecasts(activeProducts, now)),
+      timed(timings, 'i.products', activeProducts),
       timed(timings, 'i.belowCost', this.insightsRepository.salesBelowCost(daysAgo(RECENT_SALES_DAYS))),
       timed(timings, 'i.unusual', this.insightsRepository.unusualSales({
         since: daysAgo(RECENT_SALES_DAYS),

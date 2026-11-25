@@ -1,4 +1,4 @@
-import type { ReportsRepository, StockLossRow, TotalsRow, PatternRow } from '../repositories/ReportsRepository.js';
+import type { ReportsRepository, StockLossRow, TotalsRow, PatternRow, VelocityRow } from '../repositories/ReportsRepository.js';
 import { roundMoney } from '../utils/money.js';
 import { zonedDays } from '../utils/zonedDates.js';
 import type { CarwashService } from './CarwashService.js';
@@ -251,6 +251,47 @@ export class ReportsService {
   }
 
   /** Every active product: when it runs out at the current pace, and how many to order. Soonest first. */
+  /**
+   * Run-out forecasts for the To do list, from products the caller already
+   * loads. Only products sold in the forecast window: one with no sales there
+   * forecasts no demand, so it can be neither "sold out" nor "running out".
+   * On a shop with thousands of products this skips nearly all the work
+   * (the API has half a CPU; the full list took over a second).
+   */
+  async sellingForecasts(products: Promise<VelocityRow[]>, now = new Date()) {
+    const [rows, sales] = await Promise.all([
+      products,
+      this.reportsRepository.salesSince(new Date(now.getTime() - FORECAST_HISTORY_DAYS * MS_PER_DAY)),
+    ]);
+    const salesByProduct = new Map<number, Array<{ at: Date; units: number }>>();
+    for (const sale of sales) {
+      const list = salesByProduct.get(sale.product_id) ?? [];
+      list.push({ at: sale.sale_date, units: sale.quantity_sold });
+      salesByProduct.set(sale.product_id, list);
+    }
+    return rows
+      .flatMap((row) => {
+        const sold = salesByProduct.get(row.product_id);
+        if (!sold) return [];
+        return [{
+          productId: row.product_id,
+          productName: row.product_name,
+          quantity: row.quantity_on_hand,
+          lastSoldAt: row.last_sold_at?.toISOString() ?? null,
+          ...forecast({
+            sales: sold,
+            now,
+            availableSince: row.created_at,
+            stock: row.quantity_on_hand,
+            reorderLevel: row.reorder_level,
+            timeZone: this.timeZone,
+          }),
+        }];
+      })
+      // Soonest to run out first, like reorderSuggestions.
+      .sort((a, b) => (a.daysLeft ?? Infinity) - (b.daysLeft ?? Infinity) || a.productName.localeCompare(b.productName));
+  }
+
   async reorderSuggestions(now = new Date()): Promise<ReorderRow[]> {
     const [products, sales, located] = await Promise.all([
       this.reportsRepository.activeProducts(),

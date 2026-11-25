@@ -56,9 +56,19 @@ export function AreaView({
 }) {
   const fillId = useId();
   const { top, outlier } = scaleTop(points.map((point) => point.value));
+  // A highlighted last point is a period still running (today): the line stops at the one
+  // before, so a half-finished day never reads as a drop, and it stands alone as a dot.
+  const lone = highlight !== undefined && points.at(-1)?.key === highlight;
+  const data = points.map((point) => {
+    const alone = lone && point.key === highlight;
+    return { ...point, line: alone ? null : point.value, alone: alone ? point.value : null };
+  });
+  const strongDot = (props: { cx?: number; cy?: number; index?: number }) => (
+    <circle key={props.index} cx={props.cx} cy={props.cy} r={4} style={{ fill: 'var(--chart-strong)', stroke: 'var(--surface)', strokeWidth: 2 }} />
+  );
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <RAreaChart accessibilityLayer={false} data={points} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
+      <RAreaChart accessibilityLayer={false} data={data} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
         <defs>
           <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" style={{ stopColor: 'var(--data-line)', stopOpacity: 0.14 }} />
@@ -83,13 +93,13 @@ export function AreaView({
         {average !== undefined && average > 0 && <ReferenceLine y={average} ifOverflow="discard" style={{ stroke: 'var(--ink-muted)', strokeDasharray: '3 3', strokeWidth: 1 }} />}
         <Area
           type="monotone"
-          dataKey="value"
+          dataKey="line"
           style={{ stroke: 'var(--data-line)', fill: `url(#${fillId})` }}
           strokeWidth={2}
           // Only the point asked for (e.g. today) gets a dot; the others stay a plain line.
           dot={(props: { cx?: number; cy?: number; index?: number; payload?: ChartColumn }) =>
-            highlight !== undefined && props.payload?.key === highlight && props.cx !== undefined && props.cy !== undefined ? (
-              <circle key={props.index} cx={props.cx} cy={props.cy} r={4} style={{ fill: 'var(--chart-strong)', stroke: 'var(--surface)', strokeWidth: 2 }} />
+            !lone && highlight !== undefined && props.payload?.key === highlight && props.cx !== undefined && props.cy !== undefined ? (
+              strongDot(props)
             ) : (
               <g key={props.index} />
             )
@@ -97,6 +107,17 @@ export function AreaView({
           activeDot={{ r: 5, style: { fill: 'var(--data-line)', stroke: 'var(--surface)', strokeWidth: 2 } }}
           {...animate()}
         />
+        {lone && (
+          <Area
+            dataKey="alone"
+            style={{ stroke: 'none', fill: 'none' }}
+            dot={(props: { cx?: number; cy?: number; index?: number; value?: number | null }) =>
+              props.value != null && props.cx !== undefined && props.cy !== undefined ? strongDot(props) : <g key={props.index} />
+            }
+            activeDot={false}
+            isAnimationActive={false}
+          />
+        )}
       </RAreaChart>
     </ResponsiveContainer>
   );

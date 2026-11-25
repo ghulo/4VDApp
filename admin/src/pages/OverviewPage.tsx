@@ -323,7 +323,7 @@ function DayFigures({ books }: { books: boolean }) {
   );
 }
 
-/** Takings day by day for 30 days as one line, today a strong amber dot, a dashed hairline at the usual day. */
+/** Takings day by day for 30 days as one line up to yesterday, today a lone amber dot, a dashed hairline at the usual day. */
 function TakingsChart() {
   const t = useT();
   const midnight = startOfDay(useNow());

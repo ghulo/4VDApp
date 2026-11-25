@@ -614,7 +614,7 @@ The canvas weave is faint (1.2% light, 1% dark).
   newer charts (area, donut, heatmap, funnel) draw in the amber scale through
   `--data-1`…`--data-5`, `--data-heat` and `--data-line`, strongest step for
   the biggest value. The older charts (DayBars, ColumnChart, BarList,
-  mini graphs, the revenue chart) follow through `--chart-series` (step 3)
+  the revenue chart) follow through `--chart-series` (step 3)
   and `--chart-strong` (step 1) for the bar or point picked out. Up/down changes
   use OK/Danger words, not just colour.
 - **No second accent.** Status colours are for status only.
@@ -634,9 +634,14 @@ The canvas weave is faint (1.2% light, 1% dark).
 - **Page subtitles**: none by default. A page keeps one only when it says
   something you would otherwise ask (a period, a record's number and date, "These
   came from TREFIN"); generic "this page shows..." lines are gone.
-- **Figures**: Hanken 600, 28px (36px on a large metric card), tabular. A figure
-  tile with nothing to report ("None low") sits back in grey (`stat--quiet`);
-  tiles have no icons.
+- **Figures**: one tile everywhere (2026-11-25, after the unslop review): label
+  13px muted, figure Hanken 500 28px tabular, then a change line ("↗ 12% vs the
+  period before", the arrow and number in OK/Danger) or a hint. `StatTile` and
+  `MetricCard` draw the same cell on the same hairline panel (`StatGrid`,
+  `MetricGrid`); a slim strip over a ledger is `StatGrid compact`. No mini
+  graphs, icons or coloured figures in tiles: a tile that needs a look gets a
+  small warn/danger dot by its label. A tile with nothing to report ("None
+  low") sits back in grey (`stat--quiet`).
 - **Lists**: a product with no photo shows just its name (no empty box); long
   cell sentences become short values ("189 days ↓") with the sentence on hover
   and for screen readers.
@@ -835,11 +840,11 @@ phones a stamp sits **above** its text, not in a side column (`Badge`).
 - **One outlier must not flatten the rest**: when the top value is more than 4×
   the next highest, cap the axis, draw the capped bar to the top with a break
   mark and label its real value. Every chart scales through the same
-  `scaleTop` (daily bars, column charts, bar lists and mini graphs).
-- `DayBars` is only the 30-day strip (Today, metric cards). A week or a day's
+  `scaleTop` (daily bars, column charts and bar lists).
+- `DayBars` is only the 30-day strip (Today). A week or a day's
   hours is a `ColumnChart`, which keeps chart height whatever the width.
-- Metric cards sit on an even grid: every card in a row has the same parts (all
-  with a mini graph or none). No half-empty last rows: let the last card span.
+- Figure tiles never carry a chart: a trend is the page's one main chart. Up to
+  six tiles sit in one row; more wrap into rows of 3, 4 or 5 so rows fill.
 
 ### 10.8 Stock tag
 The shelf count over the app's progress bar (the same inset track as sales

@@ -223,8 +223,8 @@ export function KitBasics() {
           <StatTile label="Shop till" named value={formatMoney(312.5)} />
         </StatGrid>
         <MetricGrid title="This month">
-          <MetricCard label="Sales" value={formatMoney(38420)} change={0.12} series={WEEK} large />
-          <MetricCard label="Profit" value={formatMoney(6120)} change={-0.04} series={WEEK.map((value) => value / 5)} />
+          <MetricCard label="Sales" value={formatMoney(38420)} change={0.12} />
+          <MetricCard label="Profit" value={formatMoney(6120)} change={-0.04} />
           <MetricCard label="Customers" value="412" change={null} hint="Who paid by name or card" />
         </MetricGrid>
       </Section>

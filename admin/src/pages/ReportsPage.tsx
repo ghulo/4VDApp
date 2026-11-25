@@ -242,18 +242,14 @@ function PersonReport({ userId, range, previous }: { userId: number; range: Rang
           </h2>
           <MetricGrid>
             <MetricCard
-              large
               label={t.analysis.revenue}
               value={formatHeadlineMoney(person.revenue)}
               change={changeOf(person.revenue, earlier?.revenue)}
-              series={patterns.data?.days.map((day) => day.revenue)}
             />
             <MetricCard
-              large
               label={t.analysis.sales}
               value={person.salesCount}
               change={changeOf(person.salesCount, earlier?.salesCount)}
-              series={patterns.data?.days.map((day) => day.salesCount)}
             />
             <MetricCard label={t.analysis.averageSale} value={formatHeadlineMoney(person.averageSale)} change={changeOf(person.averageSale, earlier?.averageSale)} />
             <MetricCard label={t.analysis.profit} value={formatHeadlineMoney(person.profit)} change={changeOf(person.profit, earlier?.profit)} />

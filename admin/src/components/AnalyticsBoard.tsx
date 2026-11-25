@@ -3,10 +3,9 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { useT } from '../i18n/useT';
 import { type ComparedRange, reportsApi } from '../services/api';
-import type { RevenuePoint, ReportSummary } from '../services/types';
+import type { ReportSummary } from '../services/types';
 import { formatHeadlineMoney } from '../utils/format';
 import { ErrorNotice, Loading } from './Feedback';
-import { useSalesSeries } from './useSalesSeries';
 import { Button, MetricCard, MetricGrid } from './ui';
 
 interface AnalyticsBoardProps {
@@ -21,9 +20,8 @@ interface AnalyticsBoardProps {
 
 /**
  * The figures for a period as cards: revenue, profit, sales and items sold,
- * each with its change on the period before and a mini graph per day. Extra
- * cards (children) come without graphs, ideally four at a time, so every row
- * has the same parts.
+ * each with its change on the period before. Extra tiles (children) follow on
+ * the same panel; the trend per day is the page's own chart, not mini graphs.
  */
 export function AnalyticsBoard({ range, controls, children, footer }: AnalyticsBoardProps) {
   const t = useT();
@@ -32,17 +30,12 @@ export function AnalyticsBoard({ range, controls, children, footer }: AnalyticsB
     queryFn: () => reportsApi.summary(range),
     placeholderData: keepPreviousData,
   });
-  const series = useSalesSeries(range);
-  const isRefreshing = summary.isFetching || series.isFetching;
+  const isRefreshing = summary.isFetching;
 
   function refresh() {
     void summary.refetch();
-    void series.refetch();
   }
 
-  // The graphs are extra: if only they fail, the figures still show, with "No data" graphs.
-  const points = series.data?.points ?? [];
-  const graph = (pick: (point: RevenuePoint) => number) => points.map(pick);
   const current = summary.data?.current;
   const change = summary.data?.change;
 
@@ -70,36 +63,27 @@ export function AnalyticsBoard({ range, controls, children, footer }: AnalyticsB
         <>
           <MetricGrid>
             <MetricCard
-              large
               label={t.analytics.revenue}
               value={formatHeadlineMoney(current.revenue)}
               change={change.revenue}
-              series={graph((point) => point.revenue)}
               to="/sales"
             />
             <MetricCard
-              large
               label={t.analytics.profit}
               value={formatHeadlineMoney(current.profit)}
               change={change.profit}
-              series={graph((point) => point.profit)}
               to="/reports"
             />
-            {/* The four cards with graphs fill two even rows; the plain figures follow in rows of their own. */}
             <MetricCard
-              large
               label={t.analytics.sales}
               value={current.salesCount}
               change={change.salesCount}
-              series={graph((point) => point.salesCount)}
               to="/sales"
             />
             <MetricCard
-              large
               label={t.analytics.itemsSold}
               value={current.unitsSold}
               change={change.unitsSold}
-              series={graph((point) => point.unitsSold)}
               to="/products"
             />
             {children?.(summary.data)}

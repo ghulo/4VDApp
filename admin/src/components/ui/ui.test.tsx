@@ -223,7 +223,7 @@ describe('MetricCard', () => {
   it('should leave the badge off when a figure dropped to nothing', () => {
     const html = render(<MetricCard label="Revenue" value="€0.00" change={-1} />);
 
-    expect(html).not.toContain('metric__change');
+    expect(html).not.toContain('stat__change');
     expect(html).not.toContain('%');
   });
 });

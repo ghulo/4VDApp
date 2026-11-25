@@ -9,7 +9,6 @@ import { Pagination } from '../components/Pagination';
 import { PeriodPicker } from '../components/PeriodPicker';
 import { SearchInput } from '../components/SearchInput';
 import { SourceFilter, sourceFrom, TrefinTag } from '../components/TrefinParts';
-import { useSalesSeries } from '../components/useSalesSeries';
 import { reportsApi, salesApi, usersApi } from '../services/api';
 import { ProductPicker } from '../components/ProductPicker';
 import { formatDateWith, formatHeadlineMoney, formatMoney } from '../utils/format';
@@ -66,9 +65,6 @@ export function SalesPage() {
 function PeriodSummary({ range }: { range: Parameters<typeof reportsApi.summary>[0] }) {
   const t = useT();
   const summary = useQuery({ queryKey: ['reports', 'summary', range], queryFn: () => reportsApi.summary(range), placeholderData: keepPreviousData });
-  // The chart needs the oversee power; the accountant gets the figures without it.
-  const series = useSalesSeries(range, canOversee(useCurrentUser().role));
-  const points = series.data?.points ?? [];
 
   if (summary.isPending) return <Loading />;
   if (summary.isError) return <ErrorNotice error={summary.error} onRetry={() => summary.refetch()} />;
@@ -83,15 +79,13 @@ function PeriodSummary({ range }: { range: Parameters<typeof reportsApi.summary>
           label={t.sales.revenue}
           value={formatHeadlineMoney(current.revenue)}
           change={change.revenue}
-          series={points.map((point) => point.revenue)}
         />
-        <MetricCard label={t.sales.profit} value={formatHeadlineMoney(current.profit)} change={change.profit} series={points.map((point) => point.profit)} />
-        <MetricCard label={t.sales.salesCount} value={current.salesCount} change={change.salesCount} series={points.map((point) => point.salesCount)} />
+        <MetricCard label={t.sales.profit} value={formatHeadlineMoney(current.profit)} change={change.profit} />
+        <MetricCard label={t.sales.salesCount} value={current.salesCount} change={change.salesCount} />
         <MetricCard
           label={t.sales.average}
           value={formatHeadlineMoney(average(current))}
           change={averageChange}
-          series={points.map((point) => (point.salesCount > 0 ? point.revenue / point.salesCount : 0))}
         />
       </MetricGrid>
     </section>

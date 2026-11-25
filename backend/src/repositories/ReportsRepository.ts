@@ -267,6 +267,44 @@ export class ReportsRepository {
     return result.rows;
   }
 
+  /**
+   * The active products the To do list can say something about: sold since
+   * `soldSince` (forecasts, sold out), or with stock, older than `unsoldSince`
+   * and not sold after it (dead stock). On a shop with thousands of products
+   * this leaves out nearly all rows before Node has to read them.
+   */
+  async productsForInsights(soldSince: Date, unsoldSince: Date): Promise<VelocityRow[]> {
+    const result = await sql<VelocityRow>`
+      select
+        p.id as product_id,
+        p.name as product_name,
+        p.sku,
+        p.category_id,
+        c.name as category_name,
+        i.quantity_on_hand,
+        i.reorder_level,
+        p.base_price,
+        p.cost_price,
+        p.created_at,
+        p.image_url,
+        i.last_restocked_at,
+        (select max(s.sale_date) from sales s where s.product_id = p.id and s.undone_at is null) as last_sold_at
+      from products p
+      join inventory i on i.product_id = p.id
+      join categories c on c.id = p.category_id
+      where p.deleted_at is null and p.is_active
+        and (
+          exists (select 1 from sales s where s.product_id = p.id and s.undone_at is null and s.sale_date >= ${soldSince})
+          or (
+            i.quantity_on_hand > 0 and p.created_at <= ${unsoldSince}
+            and not exists (select 1 from sales s where s.product_id = p.id and s.undone_at is null and s.sale_date > ${unsoldSince})
+          )
+        )
+      order by p.name
+    `.execute(this.db);
+    return result.rows;
+  }
+
   /** Every active product with its stock, price, cost, and when it last sold. */
   async activeProducts(): Promise<VelocityRow[]> {
     const result = await sql<VelocityRow>`

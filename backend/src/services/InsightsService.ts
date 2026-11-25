@@ -6,6 +6,7 @@ import { dayMonth } from '../i18n/language.js';
 import type { ReportsService } from './ReportsService.js';
 import type { TabService } from './TabService.js';
 import { EXPIRY_URGENT_DAYS, type ExpiryService } from './ExpiryService.js';
+import { FORECAST_HISTORY_DAYS } from './reports/forecast.js';
 import { BILL_DUE_SOON_DAYS, type SupplierBillService } from './SupplierBillService.js';
 import type { Timings } from './AttentionService.js';
 
@@ -62,8 +63,8 @@ export class InsightsService {
   /** Written in the reader's language (`t`), English by default. */
   async list(now = new Date(), t: ServerMessages = en, timings?: Timings): Promise<Insight[]> {
     const daysAgo = (days: number) => new Date(now.getTime() - days * MS_PER_DAY);
-    // Loaded once: thousands of rows on an imported shop, and the API has half a CPU.
-    const activeProducts = this.reportsRepository.activeProducts();
+    // Only the products a To do can be about, loaded once: an imported shop has thousands, and the API has half a CPU.
+    const activeProducts = this.reportsRepository.productsForInsights(daysAgo(FORECAST_HISTORY_DAYS), daysAgo(DEAD_STOCK_DAYS));
     const [forecasts, products, belowCost, unusual, missing, overdueTabs, expiring] = await Promise.all([
       timed(timings, 'i.forecast', this.reportsService.sellingForecasts(activeProducts, now)),
       timed(timings, 'i.products', activeProducts),

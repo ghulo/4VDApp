@@ -753,7 +753,8 @@
   border: 0;
   border-radius: var(--radius-small);
   background: var(--chevron), var(--light-raise), var(--surface);
-  font-size: var(--text-sm);
+  /* The field's own size, like the search box beside it: one text size per toolbar. */
+  font-size: var(--text-field);
   font-weight: 400;
   box-shadow: inset 0 0 0 1px var(--line), var(--key-shine-paper), var(--key-drop);
   transition:

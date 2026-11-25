@@ -190,11 +190,13 @@ textarea {
 }
 
 /* Our own small chevron instead of each system's arrow (Windows draws a
-   grey box in dark mode). Two half-squares of ink make the V. */
+   grey box in dark mode): a thin V of two diagonal strokes, the same shape as
+   the caret on the product picker (Combobox), so every dropdown shows one arrow. */
 :root {
+  --chevron-stroke: transparent calc(50% - 0.8px), var(--ink-muted) calc(50% - 0.8px) calc(50% + 0.8px), transparent calc(50% + 0.8px);
   --chevron:
-    linear-gradient(45deg, transparent 50%, var(--ink-muted) 50%) calc(100% - var(--space-3) - 10px) 50% / 5px 5px no-repeat,
-    linear-gradient(135deg, var(--ink-muted) 50%, transparent 50%) calc(100% - var(--space-3) - 5px) 50% / 5px 5px no-repeat;
+    linear-gradient(45deg, var(--chevron-stroke)) calc(100% - var(--space-3) - 10px) 50% / 5px 5px no-repeat,
+    linear-gradient(-45deg, var(--chevron-stroke)) calc(100% - var(--space-3) - 5px) 50% / 5px 5px no-repeat;
 }
 
 select:not([multiple], [size]) {

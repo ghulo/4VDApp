@@ -214,7 +214,7 @@ export function Combobox({
             setQuery(resetAfterPick ? '' : (chosen?.label ?? ''));
           }}
         />
-        <CaretDown className="combobox__caret" size={14} weight="bold" aria-hidden="true" />
+        <CaretDown className="combobox__caret" size={14} weight="regular" aria-hidden="true" />
       </div>
       <ul ref={listRef} id={listId} role="listbox" aria-label={label} popover="manual" className="combobox__list">
         {matches.length === 0 ? (

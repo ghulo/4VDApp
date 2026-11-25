@@ -80,7 +80,6 @@
 
 .combobox--toolbar .combobox__input {
   block-size: var(--control-h);
-  font-size: var(--text-sm);
 }
 
 .combobox__input {

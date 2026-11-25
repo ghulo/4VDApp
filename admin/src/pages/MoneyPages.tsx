@@ -273,7 +273,7 @@ function PlaceHeader({ place, places, view }: { place: MoneyPlace; places: Money
   const [moving, setMoving] = useState(false);
   const [editing, setEditing] = useState(false);
   const writes = canOversee(role) && !place.archived;
-  const description = [t.money.kinds[place.kind], place.bankName, place.account && `${place.account.number} ${place.account.name}`, place.iban && formatIban(place.iban)]
+  const description = [t.money.kinds[place.kind], place.bankName, place.account && `${place.account.number} ${t.books.accountName(place.account)}`, place.iban && formatIban(place.iban)]
     .filter(Boolean)
     .join(' · ');
   return (

@@ -105,7 +105,7 @@ function BooksSettingsForm({ initial, accounts }: { initial: BooksSettings; acco
                     <optgroup key={group.accountClass} label={t.books.classes[group.accountClass]}>
                       {group.accounts.map((account) => (
                         <option key={account.id} value={account.id}>
-                          {account.number} {account.name}
+                          {account.number} {t.books.accountName(account)}
                         </option>
                       ))}
                     </optgroup>

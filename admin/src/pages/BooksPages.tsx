@@ -188,7 +188,7 @@ export function BooksBalancesPage() {
                 title: true,
                 cell: (row) => (
                   <Link className="table__primary-link" to={cardPath(row.accountId, search)}>
-                    <span className="books-number">{row.number}</span> {row.name}
+                    <span className="books-number">{row.number}</span> {t.books.accountName(row)}
                   </Link>
                 ),
               },
@@ -507,7 +507,7 @@ function ManualEntryForm({ startDay, onSaved }: { startDay: string | null; onSav
                 <optgroup key={group.accountClass} label={t.books.classes[group.accountClass]}>
                   {group.accounts.map((account) => (
                     <option key={account.id} value={account.id}>
-                      {account.number} {account.name}
+                      {account.number} {t.books.accountName(account)}
                     </option>
                   ))}
                 </optgroup>
@@ -631,9 +631,9 @@ export function BooksAccountsPage() {
     const words = search.toLocaleLowerCase();
     return (accounts.data ?? [])
       .filter((account) => showArchived || !account.archived)
-      .filter((account) => !words || account.number.startsWith(words) || account.name.toLocaleLowerCase().includes(words))
+      .filter((account) => !words || account.number.startsWith(words) || account.name.toLocaleLowerCase().includes(words) || t.books.accountName(account).toLocaleLowerCase().includes(words))
       .sort((a, b) => CLASS_ORDER(a.accountClass) - CLASS_ORDER(b.accountClass) || a.number.localeCompare(b.number));
-  }, [accounts.data, search, showArchived]);
+  }, [accounts.data, search, showArchived, t]);
 
   return (
     <>
@@ -678,7 +678,7 @@ export function BooksAccountsPage() {
               cell: (account) => (
                 <>
                   <Link className="table__primary-link" to={cardPath(account.id, query.includes('period') ? query : '')}>
-                    <span className="books-number">{account.number}</span> {account.name}
+                    <span className="books-number">{account.number}</span> {t.books.accountName(account)}
                   </Link>
                   <span className="table__secondary">{account.group}</span>
                 </>
@@ -930,7 +930,7 @@ export function AccountCardPage() {
   return (
     <>
       <PageHeader
-        title={`${account.number} ${account.name}`}
+        title={`${account.number} ${t.books.accountName(account)}`}
         description={`${t.books.classes[account.accountClass]} · ${account.group}`}
         crumbs={[
           { label: t.nav.items.books, to: `/books${keptSearch}` },
@@ -963,7 +963,7 @@ export function AccountCardPage() {
       <InspectorLayout open={openId !== null}>
         <div className="inspector-layout__list">
           <DataTable<CardRow>
-            caption={t.books.card.caption(`${account.number} ${account.name}`)}
+            caption={t.books.card.caption(`${account.number} ${t.books.accountName(account)}`)}
             rows={rows}
             rowKey={(row) => (row.opening ? 'opening' : `${row.entryId}-${row.debit}-${row.credit}-${row.party?.id ?? row.memo ?? ''}`)}
             density="compact"
@@ -1059,7 +1059,7 @@ export function AccountCardPage() {
         </div>
         {inspector}
       </InspectorLayout>
-      <Sheet open={editing} onClose={() => setEditing(false)} title={`${account.number} ${account.name}`}>
+      <Sheet open={editing} onClose={() => setEditing(false)} title={`${account.number} ${t.books.accountName(account)}`}>
         <AccountForm accounts={accounts.data ?? []} account={account} onSaved={() => setEditing(false)} />
       </Sheet>
     </>

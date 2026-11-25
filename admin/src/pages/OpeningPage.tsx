@@ -30,7 +30,7 @@ function lineName(t: Catalogue, line: OpeningLine): string {
   if (line.place) return placeName(t, line.place);
   if (line.kind === 'stock') return t.opening.stock;
   if (line.party) return line.party.name;
-  return `${line.account.number} ${line.account.name}`;
+  return `${line.account.number} ${t.books.accountName(line.account)}`;
 }
 
 /**
@@ -283,7 +283,7 @@ function WhatCell({ t, row }: { t: Catalogue; row: Row }) {
     return (
       <span className="opening-what">
         <span>
-          <span className="books-number">{row.account.number}</span> {row.account.name}
+          <span className="books-number">{row.account.number}</span> {t.books.accountName(row.account)}
         </span>
         <span className="opening-what__hint">{o.capitalLine}</span>
       </span>
@@ -309,7 +309,7 @@ function WhatCell({ t, row }: { t: Catalogue; row: Row }) {
   } else if (row.kind === 'account') {
     name = (
       <Link to={`/books/accounts/${row.account.id}`}>
-        <span className="books-number">{row.account.number}</span> {row.account.name}
+        <span className="books-number">{row.account.number}</span> {t.books.accountName(row.account)}
       </Link>
     );
     hint = o.explain[row.account.number] ?? row.note;
@@ -446,7 +446,7 @@ function AddBalanceForm({ t, taken, onSaved }: { t: Catalogue; taken: Set<number
             <optgroup key={group.accountClass} label={t.books.classes[group.accountClass]}>
               {group.accounts.map((account) => (
                 <option key={account.id} value={account.id}>
-                  {account.number} {account.name}
+                  {account.number} {t.books.accountName(account)}
                 </option>
               ))}
             </optgroup>

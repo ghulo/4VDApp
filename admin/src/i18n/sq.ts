@@ -3501,6 +3501,7 @@ export const sq: Catalogue = {
     otherHome: (name) => `Llogaria e ${name} i përket një biznesi tjetër: këtu ndryshon vetëm rolin dhe qasjen. Emri, fjalëkalimi dhe hyrja ndryshohen atje.`,
   },
   books: {
+    accountName: (account) => account.name,
     title: 'Librat',
     description: (period) => `Çfarë mbante çdo llogari në ${period}. Regjistrimet shkruhen vetë nga shitjet, faturat, pagesat dhe shpenzimet.`,
     journalDescription: (period) => `Çdo regjistrim në ${period}, më i riu i pari. Në secilin debia është e barabartë me kreditë.`,

@@ -1,4 +1,5 @@
 import type { TodoVerb } from '../services/types';
+import { englishAccountName } from './accountNames';
 
 /**
  * Every word the dashboard shows, in English. Albanian (sq.ts) is typed
@@ -3527,6 +3528,8 @@ export const en = {
     otherHome: (name: string) => `${name}’s account belongs to another business: here you change only their role and access. Their name, password and sign-in are changed there.`,
   },
   books: {
+    /** An account as shown: English while it keeps its starting Albanian name (display only, never saved). */
+    accountName: (account: { number: string; name: string }): string => englishAccountName(account.number, account.name) ?? account.name,
     title: 'Books',
     description: (period: string) => `What each account held in ${period}. The entries are written by themselves from sales, bills, payments and expenses.`,
     journalDescription: (period: string) => `Every entry in ${period}, newest first. In each one the debits equal the credits.`,

@@ -116,7 +116,7 @@ export function EntryLines({ entry }: { entry: LedgerEntry }) {
           cell: (line) => (
             <>
               <Link className="table__primary-link" to={cardPath(line.accountId)}>
-                <span className="books-number">{line.accountNumber}</span> {line.accountName}
+                <span className="books-number">{line.accountNumber}</span> {t.books.accountName({ number: line.accountNumber, name: line.accountName })}
               </Link>
               {(line.party || line.memo) && <span className="table__secondary">{line.party?.name ?? line.memo}</span>}
             </>

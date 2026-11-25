@@ -168,7 +168,7 @@ function Figures({ data }: { data: Declaration }) {
         {list.map((account) => (
           <li key={account.accountId}>
             <Link to={cardPath(account.accountId, search)}>
-              <span className="declaration__no">{account.number}</span> {account.name}
+              <span className="declaration__no">{account.number}</span> {t.books.accountName(account)}
             </Link>
             <span className="declaration__amount">{formatMoney(account.amount)}</span>
           </li>

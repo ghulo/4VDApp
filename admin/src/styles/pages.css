@@ -30,7 +30,7 @@
 .subheading {
   margin: var(--space-5) 0 var(--space-2);
   font-size: var(--text-base);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .toggle {
@@ -187,7 +187,7 @@
 .overview-hero__kicker {
   color: var(--ink-muted);
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .overview-hero__title {
@@ -232,12 +232,12 @@
   grid-column: 1 / -1;
   color: var(--ink-muted);
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .overview-strip__label {
   font-size: var(--text-base);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .overview-strip__figure {
@@ -361,7 +361,7 @@
 
 .overview-day--due .overview-day__figure span {
   color: var(--warn);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 /* Restock beside Bills due on wide screens. */
@@ -404,12 +404,12 @@
 
 .bills-due__when--late {
   color: var(--danger);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .bills-due__amount {
   font-variant-numeric: tabular-nums;
-  font-weight: 600;
+  font-weight: 500;
   text-align: end;
 }
 
@@ -506,7 +506,7 @@
   background: var(--info-soft);
   color: var(--info);
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: 500;
   line-height: 20px;
 }
 
@@ -713,7 +713,7 @@ form.product-form > .form-actions {
 }
 
 .category-list__name {
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .category-list__description {
@@ -858,7 +858,7 @@ form.product-form > .form-actions {
   margin: 0;
   color: var(--ink-muted);
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 /* Under the password: the way back in when it's forgotten, after the field in Tab order. */
@@ -1058,7 +1058,7 @@ form.product-form > .form-actions {
   background: var(--line-strong);
   color: var(--ink);
   font-size: var(--text-xs);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .peek__side {
@@ -1073,7 +1073,7 @@ form.product-form > .form-actions {
   padding: 0 var(--space-2);
   color: var(--ink-muted);
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .peek__item {
@@ -1089,7 +1089,7 @@ form.product-form > .form-actions {
   background: var(--surface);
   box-shadow: var(--shadow-raise);
   color: var(--ink);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .peek__count {
@@ -1102,7 +1102,7 @@ form.product-form > .form-actions {
   background: var(--ink);
   color: var(--bg);
   font-size: var(--text-xs);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .peek__main {
@@ -1138,7 +1138,7 @@ form.product-form > .form-actions {
   border-radius: var(--radius-small);
   background: var(--surface);
   box-shadow: var(--key-shine-paper), var(--key-drop);
-  font-weight: 600;
+  font-weight: 500;
   white-space: nowrap;
 }
 
@@ -1162,12 +1162,12 @@ form.product-form > .form-actions {
 
 .peek__label {
   color: var(--ink-muted);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .peek__figure {
   font-size: var(--text-lg);
-  font-weight: 700;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
 }
@@ -1194,7 +1194,7 @@ form.product-form > .form-actions {
 
 .peek .peek__section {
   margin-bottom: var(--space-2);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .peek__task {
@@ -1323,7 +1323,7 @@ form.product-form > .form-actions {
   box-shadow: var(--shadow-inset);
   color: var(--ink);
   font-size: var(--text-figure);
-  font-weight: 600;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
   transition:
     border-color var(--dur-small) var(--ease),
@@ -1458,7 +1458,7 @@ form.product-form > .form-actions {
 }
 
 .chart__title {
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .chart__plot {
@@ -1492,7 +1492,7 @@ form.product-form > .form-actions {
 /* The real value of a bar that runs off the capped axis. */
 .chart__tick--value {
   fill: var(--ink);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 /* Two slanted cuts across a capped bar, in the card's paper colour. */
@@ -1542,7 +1542,7 @@ form.product-form > .form-actions {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  font-weight: 600;
+  font-weight: 500;
   font-size: var(--text-sm);
 }
 
@@ -1553,7 +1553,7 @@ form.product-form > .form-actions {
 
 .toolbar__summary {
   margin-left: auto;
-  font-weight: 600;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1650,7 +1650,7 @@ form.product-form > .form-actions {
 }
 
 .approval-row__title {
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .approval-row__meta {
@@ -1814,7 +1814,7 @@ form.product-form > .form-actions {
 .ask-chat__title {
   overflow: hidden;
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2042,7 +2042,7 @@ form.product-form > .form-actions {
   margin: 0;
   color: var(--ink-muted);
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .answer-chart {
@@ -2296,7 +2296,7 @@ form.product-form > .form-actions {
   color: var(--avatar-ink);
   /* Inside a button the browser would draw the initials in its own font. */
   font-family: var(--font-body);
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1;
 }
 
@@ -2347,7 +2347,7 @@ form.product-form > .form-actions {
 
 .device-list__name {
   display: block;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .device-list__meta {
@@ -2364,7 +2364,7 @@ form.product-form > .form-actions {
 
 .fallback summary {
   color: var(--ink);
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
 }
 
@@ -2475,7 +2475,7 @@ form.product-form > .form-actions {
 
 .setup-strip__title {
   margin: 0;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .setup-strip__title span {
@@ -2557,7 +2557,7 @@ form.product-form > .form-actions {
   border-radius: 50%;
   color: var(--surface);
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .setup-step--done .setup-step__check {
@@ -2569,7 +2569,7 @@ form.product-form > .form-actions {
 
 .setup-step__title {
   display: block;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .setup-step--done .setup-step__title {
@@ -2663,7 +2663,7 @@ form.product-form > .form-actions {
 .brand-mini__caption {
   color: var(--ink-muted);
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .brand-mini__screen {
@@ -2699,7 +2699,7 @@ form.product-form > .form-actions {
   background: var(--p-mark);
   color: var(--p-mark-ink);
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 600;
   box-shadow: var(--key-shine), inset 0 -1px 0 var(--p-key-edge);
 }
 
@@ -2710,7 +2710,7 @@ form.product-form > .form-actions {
 
 .brand-mini__name {
   overflow: hidden;
-  font-weight: 600;
+  font-weight: 500;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
@@ -2726,7 +2726,7 @@ form.product-form > .form-actions {
   padding: var(--space-1) var(--space-2);
   border-radius: 6px;
   background: var(--p-sunk);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .brand-mini__tick {
@@ -2775,7 +2775,7 @@ form.product-form > .form-actions {
   border-radius: 6px;
   background: var(--p-key);
   color: var(--p-key-ink);
-  font-weight: 600;
+  font-weight: 500;
   box-shadow: var(--key-shine), inset 0 -2px 0 var(--p-key-edge);
 }
 
@@ -2956,7 +2956,7 @@ form.product-form > .form-actions {
   grid-column: 1 / -1;
   color: var(--ink-muted);
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .brand-card__link-url {
@@ -2981,7 +2981,7 @@ form.product-form > .form-actions {
 }
 
 .brand-preview__receipt-name {
-  font-weight: 700;
+  font-weight: 600;
 }
 
 :root:not([data-motion='full']) .brand-swatch {
@@ -3004,7 +3004,7 @@ form.product-form > .form-actions {
 }
 
 .category-list__name {
-  font-weight: 600;
+  font-weight: 500;
 }
 
 /* ---------- Setup guide, answers and suggestions ---------- */
@@ -3195,7 +3195,7 @@ form.product-form > .form-actions {
   min-width: 2ch;
   text-align: center;
   font-variant-numeric: tabular-nums;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 /* The basket as a till receipt: lines on paper, a dashed tear line, the total big. */
@@ -3245,14 +3245,14 @@ form.product-form > .form-actions {
 
 .basket__total-amount {
   font-size: var(--text-figure);
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
 
 .basket__change {
   margin: 0;
-  font-weight: 600;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
 
@@ -3300,7 +3300,7 @@ form.product-form > .form-actions {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  font-weight: 600;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
 
@@ -3748,7 +3748,7 @@ form.product-form > .form-actions {
 }
 
 .bill-line__name {
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .bill-search {
@@ -3839,7 +3839,7 @@ form.product-form > .form-actions {
   margin: 0;
   color: var(--warn);
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .price-alert {
@@ -3951,7 +3951,7 @@ form.product-form > .form-actions {
 }
 
 .report-list__total {
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .report-list li.report-list__total {
@@ -4167,7 +4167,7 @@ fieldset.report-sections {
 }
 
 .download-card__title {
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .download-card__what {
@@ -4242,7 +4242,7 @@ fieldset.report-sections {
 .buy-summary__total {
   padding-top: var(--space-2);
   border-top: 1px solid var(--line);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .buy-summary__total dt {
@@ -4398,7 +4398,7 @@ fieldset.report-sections {
 
 .scan-line__total {
   font-variant-numeric: tabular-nums;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .scan-line__body {
@@ -4934,7 +4934,7 @@ fieldset.report-sections {
 
 .count-card__waiting {
   color: var(--warn);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .count-card__action {
@@ -4942,7 +4942,7 @@ fieldset.report-sections {
   align-items: center;
   gap: var(--space-1);
   color: var(--ink);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .count-card:hover .count-card__action svg {
@@ -4963,7 +4963,7 @@ fieldset.report-sections {
 
 .count-result--missing {
   color: var(--danger);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 /* ---------- Close the day: tick marks ---------- */
@@ -5078,7 +5078,7 @@ fieldset.report-sections {
 }
 
 .duplicate-side__name {
-  font-weight: 600;
+  font-weight: 500;
   overflow-wrap: anywhere;
 }
 
@@ -5186,7 +5186,7 @@ fieldset.report-sections {
 
 .books-entry__kind {
   display: block;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .books-entry__head .books-entry__kind {
@@ -5217,7 +5217,7 @@ fieldset.report-sections {
 
 .table td.books-kind {
   white-space: nowrap;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .table td.books-description {
@@ -5304,7 +5304,7 @@ fieldset.report-sections {
   padding: 0 var(--space-1);
   color: var(--ink-muted);
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 /* The live check under the lines: grey while it doesn't add up, green once it balances. */
@@ -5393,7 +5393,7 @@ fieldset.report-sections {
 
 .opening-sentence strong {
   color: var(--warn);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .opening-trefin {
@@ -5544,7 +5544,7 @@ fieldset.report-sections {
   margin: 0;
   color: var(--ink-muted);
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .vat-outcome__sentence {
@@ -5611,7 +5611,7 @@ fieldset.report-sections {
 
 .vat-steps__name {
   margin: 0;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .vat-steps__hint {
@@ -5631,7 +5631,7 @@ fieldset.report-sections {
 /* The month and its exact amount, first in the filing confirm. */
 .vat-file__what {
   margin: 0;
-  font-weight: 600;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
 
@@ -5670,7 +5670,7 @@ fieldset.report-sections {
   border: 0;
   background: none;
   font: inherit;
-  font-weight: 600;
+  font-weight: 500;
   text-align: start;
   cursor: pointer;
 }
@@ -5693,11 +5693,11 @@ fieldset.report-sections {
 
 .vat-result__label {
   display: block;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .table tbody tr.vat-result-row td {
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .vat-checks {
@@ -5779,7 +5779,7 @@ fieldset.report-sections {
 }
 
 .vat-documents__name {
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .vat-documents__date {
@@ -5958,7 +5958,7 @@ fieldset.report-sections {
 
 .money-line__text {
   margin: 0;
-  font-weight: 600;
+  font-weight: 500;
   overflow-wrap: anywhere;
 }
 
@@ -5969,7 +5969,7 @@ fieldset.report-sections {
 .money-line__heading {
   margin: var(--space-2) 0 0;
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ink-muted);
 }
 
@@ -6167,13 +6167,13 @@ fieldset.report-sections {
 
 .statement-row--heading td {
   padding-top: var(--space-4);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .statement-row--group td {
   color: var(--ink-muted);
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .statement-row--line td:first-child {
@@ -6182,14 +6182,14 @@ fieldset.report-sections {
 
 .statement-row--subtotal td {
   border-top: 1px solid var(--line-strong);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .statement-row--total td {
   border-top: 1px solid var(--line-strong);
   border-bottom: 3px double var(--line-strong);
   background: var(--fill);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 /* Phones: a statement stays a statement, one line per row (name left, figure right), this period only. */
@@ -6355,7 +6355,7 @@ fieldset.report-sections {
 .year-close__strong {
   padding-top: var(--space-2);
   border-top: 1px solid var(--line);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .year-close__tax {
@@ -6385,7 +6385,7 @@ fieldset.report-sections {
 
 .year-close__confirm p {
   margin: 0;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 :root:not([data-motion='full']) .statements[aria-busy='true'],
@@ -6511,7 +6511,7 @@ fieldset.report-sections {
 }
 
 .firm-fill__title {
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .firm-fill__keys {
@@ -6788,7 +6788,7 @@ form.prices-form > .prices-form__actions {
 
 .prices-form__problem {
   color: var(--danger);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .prices-form__look {
@@ -6920,7 +6920,7 @@ form.prices-form > .prices-form__actions {
 .serial-intake__name {
   margin: 0;
   font-size: var(--text-base);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 /* ---------- Payroll ---------- */
@@ -6977,7 +6977,7 @@ fieldset.payroll-pick {
 
 .payroll-pick legend {
   padding: 0;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .payroll-pick .toggle {
@@ -7028,7 +7028,7 @@ fieldset.payroll-pick {
   color: var(--ink);
   font-family: var(--font-mono);
   font-size: var(--text-figure);
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1;
 }
 
@@ -7081,7 +7081,7 @@ fieldset.payroll-pick {
   padding-bottom: var(--space-1);
   border-bottom: 1px solid var(--line-strong);
   font-size: var(--text-base);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .declaration__head:first-child {
@@ -7117,14 +7117,14 @@ fieldset.payroll-pick {
   border-bottom: none;
   border-radius: var(--radius-segment);
   background: var(--surface-sunk);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .declaration__row--total {
   margin-top: var(--space-1);
   border-top: 1px solid var(--ink);
   border-bottom: 3px double var(--ink);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .declaration__more {
@@ -7362,7 +7362,7 @@ fieldset.payroll-pick {
 .import__title {
   font-family: var(--font-display);
   font-size: var(--text-figure);
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.15;
   letter-spacing: -0.015em;
   text-wrap: balance;
@@ -7689,7 +7689,7 @@ fieldset.payroll-pick {
 
 .import-sheet__name {
   overflow-wrap: anywhere;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .import-sheet__kind {
@@ -7850,7 +7850,7 @@ fieldset.payroll-pick {
 
 .import-spot--differs {
   color: var(--danger);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .import-done {
@@ -7998,7 +7998,7 @@ fieldset.payroll-pick {
 }
 
 .refund-money__number {
-  font-weight: 600;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
 
@@ -8054,12 +8054,12 @@ fieldset.payroll-pick {
 }
 
 .refund-money__done {
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .refund-pay__name {
   display: block;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .refund-pay__iban {

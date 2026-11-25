@@ -60,7 +60,7 @@ typography:
   figure:
     fontFamily: "Hanken Grotesk, system-ui, sans-serif"
     fontSize: "1.75rem"
-    fontWeight: 600
+    fontWeight: 500
     lineHeight: 1.15
     letterSpacing: "-0.02em"
     fontFeature: "tnum"
@@ -77,12 +77,12 @@ typography:
   label:
     fontFamily: "Hanken Grotesk, system-ui, sans-serif"
     fontSize: "0.8125rem"
-    fontWeight: 600
+    fontWeight: 500
     lineHeight: 1.4
   caption:
     fontFamily: "Hanken Grotesk, system-ui, sans-serif"
     fontSize: "0.75rem"
-    fontWeight: 600
+    fontWeight: 500
     lineHeight: 1.4
   spec:
     fontFamily: "ui-monospace, SF Mono, Cascadia Mono, Consolas, monospace"
@@ -634,6 +634,10 @@ The canvas weave is faint (1.2% light, 1% dark).
 - **Page subtitles**: none by default. A page keeps one only when it says
   something you would otherwise ask (a period, a record's number and date, "These
   came from TREFIN"); generic "this page shows..." lines are gone.
+- **Weights** (2026-11-25, unslop review): 400 body, 500 for labels, names,
+  buttons, table text and figures; 600 only for titles (17px and up: card,
+  section, sheet titles) and `strong`; never 700. Hierarchy comes from size and
+  colour, not weight.
 - **Figures**: one tile everywhere (2026-11-25, after the unslop review): label
   13px muted, figure Hanken 500 28px tabular, then a change line ("↗ 12% vs the
   period before", the arrow and number in OK/Danger) or a hint. `StatTile` and

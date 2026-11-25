@@ -142,7 +142,7 @@
   /* --key-face: a business's main → accent gradient (theme/brandTheme.ts), only when its words read all along it. */
   background: var(--key-face, linear-gradient(180deg, var(--cta-top), var(--cta) 45%, var(--cta-low)));
   color: var(--cta-ink);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 
@@ -578,7 +578,7 @@
 }
 
 .setting-row__title {
-  font-weight: 600;
+  font-weight: 500;
 }
 
 /* A title with its status badge right after it. */
@@ -775,7 +775,7 @@
 .table__primary-link {
   display: block;
   color: var(--ink);
-  font-weight: 600;
+  font-weight: 500;
   text-decoration: none;
 }
 
@@ -904,7 +904,7 @@
   .table--stack tr:not(:has(.table__title)) > td:first-child {
     order: -1;
     margin-bottom: var(--space-1);
-    font-weight: 600;
+    font-weight: 500;
   }
 
   .table--stack td.table__title::before,
@@ -1202,7 +1202,7 @@ div.stat__hint {
   box-shadow: var(--shadow-inset);
   color: var(--ink);
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1;
   white-space: nowrap;
 }
@@ -1258,7 +1258,7 @@ div.stat__hint {
 /* An amount that is late or short, in a table cell: red words, no stamp. */
 .amount--danger {
   color: var(--danger);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 /* Roles and promotions: ink words led by a tiny amber key, so the amber stays
@@ -1289,7 +1289,7 @@ div.stat__hint {
 
 .field__label {
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .field__hint,
@@ -1707,7 +1707,7 @@ input.switch:focus-visible {
   color: var(--ink);
   font-family: var(--font-body);
   font-size: var(--text-base);
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: normal;
   text-transform: none;
 }
@@ -2011,7 +2011,7 @@ input.switch:focus-visible {
   box-shadow: var(--shadow-inset);
   color: var(--ink-muted);
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
   transition:
     background-color var(--dur-small) var(--ease),
@@ -2142,7 +2142,7 @@ input.switch:focus-visible {
   background: none;
   color: var(--ink);
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 500;
   white-space: normal;
 }
 
@@ -2307,7 +2307,7 @@ input.switch:focus-visible {
   border-top: 1px solid var(--line-strong);
   background: var(--surface-sunk);
   box-shadow: 1px 0 0 var(--surface-sunk);
-  font-weight: 600;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
 

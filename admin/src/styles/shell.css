@@ -70,7 +70,7 @@
   display: grid;
   place-items: center;
   font-family: var(--font-display);
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1;
   font-size: calc(var(--mark-size) * 0.42);
   letter-spacing: -0.02em;
@@ -210,7 +210,7 @@
   padding: 0 10px var(--space-1);
   color: var(--ink-muted);
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .sidebar__link {
@@ -345,7 +345,7 @@
 
   .tab-bar__tab.active {
     color: var(--brand);
-    font-weight: 600;
+    font-weight: 500;
   }
 
   .tab-bar__tab.active .tab-bar__icon {
@@ -363,7 +363,7 @@
     background: var(--ink);
     color: var(--surface);
     font-size: var(--text-xs);
-    font-weight: 700;
+    font-weight: 600;
     line-height: 18px;
     text-align: center;
   }
@@ -387,7 +387,7 @@
   background: var(--ink);
   color: var(--surface);
   font-size: var(--text-xs);
-  font-weight: 700;
+  font-weight: 600;
   line-height: 20px;
   text-align: center;
 }
@@ -961,7 +961,7 @@
   padding: 10px 10px 4px;
   color: var(--ink-muted);
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .palette__item {
@@ -1131,7 +1131,7 @@
   margin: 0 0 var(--space-3);
   color: var(--ink-muted);
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .inbox__toolbar {
@@ -1181,7 +1181,7 @@
 .view-as__text strong {
   color: var(--ink);
   font-size: var(--text-base);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .view-as__keys {

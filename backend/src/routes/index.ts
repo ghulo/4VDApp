@@ -18,6 +18,7 @@ import { createPayrollRoutes } from './payrollRoutes.js';
 import { createCustomerRoutes } from './customerRoutes.js';
 import { createDayRoutes } from './dayRoutes.js';
 import { createAttentionRoutes } from './attentionRoutes.js';
+import { createSetupRoutes } from './setupRoutes.js';
 import { createDocumentRoutes } from './documentRoutes.js';
 import { createBillRoutes } from './billRoutes.js';
 import { createBooksRoutes } from './booksRoutes.js';
@@ -96,6 +97,7 @@ export function createApiRoutes(container: Container): Router {
   router.use('/payroll', createPayrollRoutes(container));
   router.use('/day', createDayRoutes(container));
   router.use('/attention', createAttentionRoutes(container));
+  router.use('/setup-progress', createSetupRoutes(container));
   router.use('/customers', createCustomerRoutes(container));
   router.use('/suppliers', createSupplierRoutes(container));
   router.use('/orders', createOrderRoutes(container));

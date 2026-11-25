@@ -16,6 +16,7 @@ import { createHealthRoutes } from './routes/healthRoutes.js';
 import { createApiRoutes } from './routes/index.js';
 import { createPortalRoutes } from './routes/portalRoutes.js';
 import { billEmailTokenGuard } from './routes/internalRoutes.js';
+import { forgetOnChange } from './utils/attentionCache.js';
 
 /**
  * Build the Express app without starting a server, so tests can exercise it
@@ -67,6 +68,8 @@ export function createApp(config: AppConfig, db: DatabaseClient, options: AppOpt
   app.use(express.json({ limit: '1mb' }));
   // Each request gets its own business context, after the body is read (stream callbacks would lose it).
   app.use(requestContext);
+  // A change through the API forgets the remembered To do lists.
+  app.use(forgetOnChange);
 
   // Health check stays outside /api and the rate limiter so uptime monitors
   // never get throttled.

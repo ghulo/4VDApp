@@ -286,7 +286,7 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                         autoFocus
                         autoComplete="off"
                         maxLength={64}
-                        pattern="[0-9A-Za-z.-]{4,64}"
+                        pattern="[0-9A-Za-z.\-]{4,64}"
                         value={draft.barcode}
                         onChange={(event) => update('barcode', event.target.value)}
                       />

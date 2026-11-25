@@ -59,7 +59,7 @@ export class AddBusinessService {
           });
           return businessId;
         },
-        { shortName: input.shortName, nui: input.nui ?? null, legalForm: input.legalForm },
+        { shortName: input.shortName, nui: input.nui ?? null, legalForm: input.legalForm, language: input.language },
       )
       .catch((error: unknown) => {
         if (isUniqueViolation(error, 'businesses_short_name_key')) throw new ConflictError(`${address} is already used by another business. Pick another short name.`);

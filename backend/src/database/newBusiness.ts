@@ -5,13 +5,18 @@ import type { DatabaseClient } from './connection.js';
 import { ensurePlaces } from './places.js';
 import { toShortName } from '../utils/shortName.js';
 import type { Database, LegalForm } from './types.js';
+import type { Language } from '../i18n/language.js';
+
+/** The one category a new business starts with, so its first product can be added at once; renamed or joined by others later. */
+export const STARTER_CATEGORY: Record<Language, string> = { sq: 'Të ndryshme', en: 'Other' };
 
 /**
  * Everything a business needs before its first screen works, put into the
  * current business: the chart of accounts and its default links, the shop's
  * usual settings, a stock location that sells and receives, and the till, safe
- * and bank with their accounts. The catalogue starts empty and there is no
- * carwash (switched on later when a business has one).
+ * and bank with their accounts. The catalogue starts with one category (a
+ * product needs one) and no products, and there is no carwash (switched on
+ * later when a business has one).
  *
  * The migrations gave the first business the same things; newBusiness.test.ts
  * fails when a migration seeds something new for it that this doesn't.
@@ -20,7 +25,7 @@ import type { Database, LegalForm } from './types.js';
  * security: a script or an owner connection (which row security doesn't
  * limit) must never copy or link another business's rows.
  */
-export async function seedBusiness(db: Kysely<unknown>, businessId: number): Promise<void> {
+export async function seedBusiness(db: Kysely<unknown>, businessId: number, language: Language = 'sq'): Promise<void> {
   await insertChart(db, businessId);
   await sql`
     INSERT INTO settings (business_id, key, value) VALUES
@@ -30,6 +35,7 @@ export async function seedBusiness(db: Kysely<unknown>, businessId: number): Pro
       (${businessId}, 'books_start', to_jsonb(current_date::text))
   `.execute(db);
   await sql`INSERT INTO stock_locations (business_id, name, sells_here, receives_here) VALUES (${businessId}, 'Shop floor', true, true)`.execute(db);
+  await sql`INSERT INTO categories (business_id, name) VALUES (${businessId}, ${STARTER_CATEGORY[language]})`.execute(db);
   await ensurePlaces(db, businessId);
 }
 
@@ -44,6 +50,8 @@ export interface NewBusinessDetails {
   shortName?: string;
   nui?: string | null;
   legalForm?: LegalForm;
+  /** Names what the business starts with (its first category); Albanian when left out. */
+  language?: Language;
 }
 
 /** A short name made from the business name that no business uses yet: market, market-2, … */
@@ -79,7 +87,7 @@ export async function createBusiness<T>(
           ...(details.legalForm && { legal_form: details.legalForm }),
         })
         .execute();
-      await seedBusiness(trx as unknown as Kysely<unknown>, businessId);
+      await seedBusiness(trx as unknown as Kysely<unknown>, businessId, details.language);
       return work(trx, businessId);
     }),
   );

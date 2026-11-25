@@ -80,6 +80,14 @@ describe('add business', () => {
     expect(floors.map((row) => row.name)).toEqual(['Shop floor']);
   });
 
+  it('should start the business with one category in its language, so its first product can be added at once', async () => {
+    const albanian = (await add({ name: 'Dyqani A', shortName: 'dyqani-a', legalForm: 'company' })).body.data.id;
+    const english = (await add({ name: 'Shop B', shortName: 'shop-b', legalForm: 'company', language: 'en' })).body.data.id;
+    const names = (id: number) => inBusiness(id, () => live.selectFrom('categories').select('name').execute()).then((rows) => rows.map((row) => row.name));
+    expect(await names(albanian)).toEqual(['Të ndryshme']);
+    expect(await names(english)).toEqual(['Other']);
+  });
+
   it('should refuse a short name another business uses, and a badly formed one', async () => {
     expect((await add({ name: 'One', shortName: 'corner', legalForm: 'company' })).status).toBe(201);
 

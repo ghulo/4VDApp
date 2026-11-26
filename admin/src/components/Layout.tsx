@@ -5,6 +5,7 @@ import { useAuth, useCurrentUser } from '../auth/useAuth';
 import { useBusinessPicker } from '../auth/useBusinessPicker';
 import { CommandPalette } from '../command/CommandPalette';
 import { useShortcuts } from '../command/useShortcuts';
+import { useDesktopCommand } from '../desktop/desktopCommands';
 import { useAttention } from '../utils/useAttention';
 import { ThemeSwitch } from '../theme/ThemeSwitch';
 import { useThemeItems } from '../theme/useThemeItems';
@@ -56,6 +57,8 @@ function FullLayout() {
   useShortcuts(togglePalette);
   const user = useCurrentUser();
   const { logout } = useAuth();
+  useDesktopCommand('search', () => setPaletteOpen(true));
+  useDesktopCommand('signOut', () => void logout());
   const location = useLocation();
   useFocusOnRouteChange();
   const navigate = useNavigate();

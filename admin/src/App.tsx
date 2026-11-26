@@ -28,6 +28,7 @@ import { useT } from './i18n/useT';
 import { useCurrentUser } from './auth/useAuth';
 import { browseOnly, staffLayout } from './auth/roles';
 import { ViewAsBar } from './components/ViewAsBar';
+import { listenForDesktopCommands } from './desktop/desktopCommands';
 
 /** Pages load their code only when someone first opens them, so the first visit stays light. */
 const lazyPage = lazyNamed;
@@ -369,6 +370,9 @@ const router = createBrowserRouter(
     </Route>,
   ),
 );
+
+// The Windows app's ☰ menu: Go moves through the router, so a form with typed work asks first.
+listenForDesktopCommands((path) => void router.navigate(path));
 
 function App() {
   return (

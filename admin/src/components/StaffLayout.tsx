@@ -14,6 +14,7 @@ import { BrandMark } from './BrandMark';
 import { useBrand } from '../theme/useBrand';
 import { MenuButton } from './ui';
 import { MAIN_ID, SkipLink, useFocusOnRouteChange } from './SkipLink';
+import { useDesktopCommand } from '../desktop/desktopCommands';
 
 /**
  * The staff frame: what the team app was, inside the dashboard. A slim top
@@ -23,6 +24,7 @@ import { MAIN_ID, SkipLink, useFocusOnRouteChange } from './SkipLink';
 export function StaffLayout() {
   const user = useCurrentUser();
   const { logout } = useAuth();
+  useDesktopCommand('signOut', () => void logout());
   const brand = useBrand();
   const location = useLocation();
   const navigate = useNavigate();

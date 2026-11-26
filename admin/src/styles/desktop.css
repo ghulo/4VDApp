@@ -1,12 +1,14 @@
 /* ---------- The Windows app (desktop/) ----------
-   index.html sets data-shell="desktop" when the page runs inside it. The
-   window has no frame of its own: the top bar is the title bar, Windows draws
-   the caption buttons over its right end, and Mica shows through the top bar
-   and sidebar while the page itself stays on the warm canvas. */
+   public/boot.js sets data-shell="desktop" when the page runs inside it. The
+   window has no frame of its own. Before 0.6.0 the top bar is the title bar and
+   Windows draws the caption buttons over its right end; from 0.6.0 the app draws
+   its own slim title strip above the page. Mica shows through the top bar and
+   sidebar while the page itself stays on the warm canvas. */
 
-/* The top 56px drags the window on every screen, signed in or not. Anything
-   you can click inside it stays clickable. */
-[data-shell='desktop'] body::before {
+/* Windows apps before 0.6.0: the top 56px drags the window on every screen, signed in or not.
+   Anything you can click inside it stays clickable. From 0.6.0 the app draws its own title strip
+   above the page (data-strip, set in public/boot.js), which drags the window instead. */
+[data-shell='desktop']:not([data-strip]) body::before {
   content: '';
   position: fixed;
   inset: 0 0 auto;
@@ -20,7 +22,7 @@
 }
 
 /* Room for the minimise, maximise and close buttons Windows draws on the right (sign-in and welcome too). */
-[data-shell='desktop'] :is(.topbar, .counter__bar, .auth__top) {
+[data-shell='desktop']:not([data-strip]) :is(.topbar, .counter__bar, .auth__top) {
   padding-right: calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw) + var(--space-3));
 }
 

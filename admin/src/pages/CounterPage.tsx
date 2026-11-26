@@ -92,6 +92,7 @@ import {
 } from './counter/settledSales';
 import { useWaitingSales } from './counter/useWaitingSales';
 import { touchPhone } from '../utils/touchPhone';
+import { useDesktopCommand } from '../desktop/desktopCommands';
 
 type Panel =
   | 'find'
@@ -1570,6 +1571,11 @@ export function CounterPage() {
     setRefundNumber(null);
     startPanel('refund');
   };
+  // The Windows app's ☰ menu: Search is the till's product search (F3); Log out asks first, as the till's own key does.
+  useDesktopCommand('search', () => {
+    if (!payOpen && keysEnabled && !document.querySelector('dialog[open]')) openFinder();
+  });
+  useDesktopCommand('signOut', () => setAskLogOut(true));
 
   // The scanner types like a keyboard: any key pressed outside a field goes to the scan box.
   const keyHandler = useRef<(event: KeyboardEvent) => void>(() => undefined);

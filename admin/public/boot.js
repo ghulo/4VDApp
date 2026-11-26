@@ -6,6 +6,8 @@
   // Inside the Windows app the window frame follows the same choice (src/styles/desktop.css).
   if (window.fourvdDesktop) {
     document.documentElement.dataset.shell = 'desktop';
+    // 0.6.0 and later draw their own title strip above the page: no caption buttons over it (src/styles/desktop.css).
+    if (window.fourvdDesktop.titleStrip === true) document.documentElement.dataset.strip = 'on';
     window.fourvdDesktop.setTheme(choice === 'light' || choice === 'dark' ? choice : 'system');
   }
   if (choice !== 'light' && choice !== 'dark') {

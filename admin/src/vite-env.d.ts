@@ -53,5 +53,9 @@ interface Window {
     getSetup?(): Promise<DesktopSetup>;
     saveSetup?(change: Partial<Pick<DesktopSetup, 'done' | 'role' | 'openAtLogin'>>): Promise<DesktopSetup>;
     setLanguage?(language: 'en' | 'sq'): void;
+    /** 0.6.0 and later: the app draws its own title strip above the page (no caption buttons over the page). */
+    titleStrip?: boolean;
+    /** 0.6.0 and later: the strip's ☰ menu (Go, Search, Log out): src/desktop/desktopCommands.ts. */
+    onCommand?(callback: (command: import('./desktop/desktopCommands').DesktopCommand) => void): void;
   };
 }

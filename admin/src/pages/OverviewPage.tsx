@@ -10,6 +10,7 @@ import { StockTag } from '../components/StockTag';
 import { SetupGuide } from '../setup/SetupGuide';
 import { analyticsApi, billsApi, inventoryApi, reportsApi } from '../services/api';
 import { TodoList } from '../components/TodoList';
+import { roundMoney } from '../components/BasketForm';
 import { useAttention } from '../utils/useAttention';
 import { formatDateWith, formatHeadlineMoney, formatMoney, formatPercent, formatTime, formatTimes, MUCH_MORE } from '../utils/format';
 import { Badge, AreaChart, ButtonLink, Card, MenuButton, type MenuItem, PageHeader, RollingNumber, StatGrid, StatTile } from '../components/ui';
@@ -265,7 +266,8 @@ function DayFigures({ books }: { books: boolean }) {
   const seesPrices = shownTo(useCurrentUser().role, { to: '/prices', overseersOnly: true });
   // Same query as the strip, so this costs no extra request.
   const { today } = useTodaySummary();
-  const bills = useQuery({ queryKey: ['bills', 'summary'], queryFn: billsApi.summary, enabled: books });
+  // The open bills the Bills due card lists: one request for both.
+  const bills = useOpenBillsDue(books);
   if (!today.data) return null;
   const { current, carwash } = today.data;
   const carwashEntered = carwash.current.days > 0;
@@ -277,8 +279,10 @@ function DayFigures({ books }: { books: boolean }) {
   const marginKnown = current.salesCount > 0 && current.margin !== null && noCostShare <= NO_COST_LIMIT;
   const withoutCost = current.productsWithoutCost ?? 0;
 
-  const due = bills.data ? bills.data.overdue.amount + bills.data.dueSoon.amount : null;
-  const dueCount = bills.data ? bills.data.overdue.count + bills.data.dueSoon.count : 0;
+  const due = bills.data ? roundMoney(bills.data.reduce((sum, bill) => sum + bill.left, 0)) : null;
+  const dueCount = bills.data?.length ?? 0;
+  const late = (bills.data ?? []).filter((bill) => (bill.daysLeft ?? 0) < 0);
+  const lateAmount = roundMoney(late.reduce((sum, bill) => sum + bill.left, 0));
 
   return (
     <StatGrid>
@@ -311,11 +315,11 @@ function DayFigures({ books }: { books: boolean }) {
           hint={
             dueCount === 0
               ? undefined
-              : bills.data.overdue.count > 0
-                ? t.overview.billsLate(bills.data.overdue.count, formatMoney(bills.data.overdue.amount))
+              : late.length > 0
+                ? t.overview.billsLate(late.length, formatMoney(lateAmount))
                 : t.overview.billsThisWeek(dueCount)
           }
-          tone={bills.data.overdue.count > 0 ? 'warn' : 'default'}
+          tone={late.length > 0 ? 'warn' : 'default'}
           to="/bills"
         />
       )}
@@ -413,12 +417,22 @@ function RestockCard() {
 }
 
 /** Supplier bills late or due in the next 7 days, the most pressing first. Only for those who read the books. */
+function useOpenBillsDue(enabled = true) {
+  return useQuery({
+    queryKey: ['bills', { status: 'open' }],
+    queryFn: () => billsApi.list({ status: 'open' }),
+    enabled,
+    select: (bills) =>
+      bills
+        .filter((bill) => bill.kind === 'bill' && bill.left > 0 && bill.daysLeft !== null && bill.daysLeft <= DUE_WITHIN_DAYS)
+        .sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0)),
+  });
+}
+
 function BillsDueCard() {
   const t = useT();
-  const open = useQuery({ queryKey: ['bills', { status: 'open' }], queryFn: () => billsApi.list({ status: 'open' }) });
-  const due = (open.data ?? [])
-    .filter((bill) => bill.kind === 'bill' && bill.left > 0 && bill.daysLeft !== null && bill.daysLeft <= DUE_WITHIN_DAYS)
-    .sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
+  const open = useOpenBillsDue();
+  const due = open.data ?? [];
   const shown = due.slice(0, ROWS_ON_OVERVIEW);
 
   function when(daysLeft: number): string {

@@ -98,6 +98,7 @@ import * as refundMethods from './096_refund_methods.js';
 import * as counterEventIds from './097_counter_event_ids.js';
 import * as saleKeyClosures from './098_sale_key_closures.js';
 import * as deliveryWithoutOrder from './099_delivery_without_order.js';
+import * as counterQuickKeys from './100_counter_quick_keys.js';
 
 /**
  * Every migration, keyed by name. Kysely runs them in key order, so always
@@ -205,4 +206,5 @@ export const migrations: Record<string, Migration> = {
   '097_counter_event_ids': counterEventIds,
   '098_sale_key_closures': saleKeyClosures,
   '099_delivery_without_order': deliveryWithoutOrder,
+  '100_counter_quick_keys': counterQuickKeys,
 };

@@ -160,6 +160,7 @@ export const ACTIVITY_ACTIONS = [
   'bank.rule_saved',
   'bank.rule_removed',
   'counter.settings_changed',
+  'counter.quick_keys_changed',
   'counter.drawer_opened',
   'counter.x_report',
   'counter.z_report',

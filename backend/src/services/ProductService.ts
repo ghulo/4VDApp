@@ -54,6 +54,8 @@ export interface ProductDto {
   hasBestBefore: boolean;
   /** Its own short-dated window in days; null: its category's, else the shop's. */
   shortDatedDays: number | null;
+  /** Its place among the Counter's quick keys (1-24); null when it has none. */
+  quickKey: number | null;
   stock: { quantity: number; reorderLevel: number; isInStock: boolean; isLowStock: boolean };
   bulkPricingTiers: PricingTier[];
   /** The running promotion for this product, with the price it gives for one unit. */
@@ -488,6 +490,7 @@ export class ProductService {
       scalePlu: product.scale_plu,
       hasBestBefore: product.has_best_before,
       shortDatedDays: product.short_dated_days,
+      quickKey: product.quick_key,
       ...(includeCost && { costPrice: toMoneyOrNull(product.cost_price) }),
       stock: {
         quantity,

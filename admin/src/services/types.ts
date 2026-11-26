@@ -110,6 +110,8 @@ export interface Product {
   hasBestBefore?: boolean;
   /** Its own short-dated window in days; null: its category's, else the shop's. */
   shortDatedDays?: number | null;
+  /** Its place among the Counter's quick keys (1-24); null when it has none. */
+  quickKey?: number | null;
   stock: { quantity: number; reorderLevel: number; isInStock: boolean; isLowStock: boolean };
   bulkPricingTiers: PricingTier[];
   /** The running promotion, with the price it gives for one unit. */

@@ -6,6 +6,7 @@ import type { CounterSettings } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { ErrorNotice, Loading, SavedToast } from './Feedback';
 import { Button, Card, SettingRow } from './ui';
+import { QuickKeysCard } from './QuickKeysCard';
 
 const RATES = ['18', '8', '16', '0'] as const;
 
@@ -14,7 +15,12 @@ export function CounterSettingsPanel() {
   const settings = useQuery({ queryKey: ['counter', 'settings'], queryFn: counterApi.settings });
   if (settings.isPending) return <Loading />;
   if (settings.isError) return <ErrorNotice error={settings.error} onRetry={() => settings.refetch()} />;
-  return <CounterSettingsForm initial={settings.data} />;
+  return (
+    <div className="quick-keys-stack">
+      <CounterSettingsForm initial={settings.data} />
+      <QuickKeysCard />
+    </div>
+  );
 }
 
 function CounterSettingsForm({ initial }: { initial: CounterSettings }) {

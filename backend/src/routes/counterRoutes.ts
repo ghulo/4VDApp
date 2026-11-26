@@ -11,6 +11,8 @@ export function createCounterRoutes({ counterService, counterPinService, product
 
   router.get('/settings', ...guards.staff, controller.settings);
   router.put('/settings', ...guards.manage, controller.updateSettings);
+  // The tiles on an empty basket; the till reads them on its shelf.
+  router.put('/quick-keys', ...guards.manage, controller.setQuickKeys);
   router.post('/events', ...guards.staff, controller.record);
   // The whole shelf in one answer, so the till starts at once.
   router.get('/shelf', ...guards.staff, controller.shelf);

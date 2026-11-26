@@ -295,6 +295,8 @@ export function CounterPage() {
   heldKeys.current = () => [...waiting.heldKeys(), ...baskets.flatMap((basket) => (basket.pending?.businessId === businessId ? [basket.pending.key] : []))];
   // The shelf as this till sees it: 4VD's, less what the sales held on this PC took that it doesn't count yet.
   const shelf = useMemo(() => shelfAfterSale(products.data?.products, heldOff(waiting.held, products.data)), [products.data, waiting.held]);
+  // The owner's quick keys (Settings, Counter), in their order; they come with the shelf, so they work offline too.
+  const quickKeys = useMemo(() => (shelf ?? []).filter((product) => product.quickKey != null).sort((a, b) => a.quickKey! - b.quickKey!), [shelf]);
 
   const discountLimit = canOversee(user.role) ? 100 : (shopSettings.data?.employeeDiscountLimit ?? 0);
   const byId = useMemo(() => new Map((shelf ?? []).map((product) => [product.id, product])), [shelf]);
@@ -1917,13 +1919,44 @@ export function CounterPage() {
                 }}
               />
             ) : (
-              !checked && (
+              !checked &&
+              quickKeys.length === 0 && (
                 <div className="counter-empty">
                   <Barcode size={32} aria-hidden="true" className="counter-empty__icon" />
                   <p className="counter-empty__title">{t.counter.empty}</p>
                   <p className="counter-hint">{t.counter.emptyHint}</p>
                 </div>
               )
+            )}
+            {/* The owner's quick keys on an empty basket (and under the paid screen), for goods without a barcode. */}
+            {!hasLines && !checked && quickKeys.length > 0 && (
+              <section className="counter-quick" aria-label={t.counter.quickKeys}>
+                <p className="counter-quick__title">
+                  {t.counter.quickKeys}
+                  <span className="counter-hint">{t.counter.quickKeysHint}</span>
+                </p>
+                <div className="counter-quick__grid">
+                  {quickKeys.map((product) => (
+                    <Button
+                      key={product.id}
+                      variant="secondary"
+                      className={product.stock.quantity <= 0 ? 'counter-quick__tile counter-quick__tile--out' : 'counter-quick__tile'}
+                      disabled={!keysEnabled}
+                      onClick={() => {
+                        if (priceCheck) showCheck(product);
+                        else add(product);
+                        focusScan();
+                      }}
+                    >
+                      <span className="counter-quick__name">{product.name}</span>
+                      <span className="counter-quick__price">
+                        {formatMoney(unitPriceFor(product, 1, wholesale))}
+                        {allowsParts(product.unit) && ` / ${unitSymbol(product.unit)}`}
+                      </span>
+                    </Button>
+                  ))}
+                </div>
+              </section>
             )}
             {hasLines && (
               <p className="counter-tape__keys">

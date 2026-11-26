@@ -331,6 +331,8 @@ export interface ProductsTable {
   has_serials: Generated<boolean>;
   /** Months of warranty the shop gives; null when none. */
   warranty_months: ColumnType<number | null, number | null | undefined, number | null>;
+  /** Its place among the Counter's quick keys (1-24); null when it has none. */
+  quick_key: ColumnType<number | null, number | null | undefined, number | null>;
 }
 
 export interface InventoryTable {

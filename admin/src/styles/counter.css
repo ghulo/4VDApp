@@ -2941,3 +2941,63 @@
   margin-top: 0.2em;
   color: var(--amber-mark);
 }
+
+/* ---------- Quick keys on an empty basket ---------- */
+
+/* The owner's tiles (Settings, Counter) for goods without a barcode: real keys, name over price. */
+.counter-quick {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.counter-quick__title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  align-items: baseline;
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--text-base);
+  font-weight: 500;
+}
+
+.counter-quick__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-2);
+}
+
+.counter-quick__tile.button {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-1);
+  height: auto;
+  min-height: 72px;
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  white-space: normal;
+}
+
+.counter-quick__name {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: var(--text-base);
+  font-weight: 500;
+  line-height: 1.25;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.counter-quick__price {
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+/* None on the shelf: still a key (the shop may sell past stock), the price says it in grey. */
+.counter-quick__tile--out .counter-quick__name {
+  color: var(--ink-muted);
+}

@@ -92,6 +92,8 @@ export interface ProductRecord {
   scale_plu: number | null;
   has_best_before: boolean;
   short_dated_days: number | null;
+  /** Its place among the Counter's quick keys (1-24), or null. */
+  quick_key: number | null;
   quantity_on_hand: number | null;
   reorder_level: number | null;
   created_at: Date;
@@ -148,6 +150,7 @@ export class ProductRepository {
     'p.scale_plu',
     'p.has_best_before',
     'p.short_dated_days',
+    'p.quick_key',
     'i.quantity_on_hand',
     'i.reorder_level',
     'p.created_at',
@@ -205,6 +208,17 @@ export class ProductRepository {
   findByIds(ids: number[], includeInactive: boolean): Promise<ProductRecord[]> {
     if (ids.length === 0) return Promise.resolve([]);
     return this.baseQuery(includeInactive).select(this.columns).select(otherBarcodes).select(packs).where('p.id', 'in', ids).execute();
+  }
+
+  /**
+   * The Counter's quick keys, in this order: the first product is place 1. Every other product of this business
+   * loses its place first, so the unique place per business holds. Run it inside a transaction.
+   */
+  async setQuickKeys(productIds: number[]): Promise<void> {
+    await this.db.updateTable('products').set({ quick_key: null }).where('quick_key', 'is not', null).execute();
+    for (const [index, id] of productIds.entries()) {
+      await this.db.updateTable('products').set({ quick_key: index + 1 }).where('id', '=', id).execute();
+    }
   }
 
   async exists(id: number): Promise<boolean> {

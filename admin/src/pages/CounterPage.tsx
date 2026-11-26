@@ -1703,7 +1703,20 @@ export function CounterPage() {
             <p className="counter__title" aria-hidden="true">
               {t.counter.title}
             </p>
-            <p className="counter__who">{t.counter.signedInAs(user.name)}</p>
+            {/* Who is selling is also the key that hands the till over (Switch person). */}
+            <button
+              type="button"
+              className="counter__who"
+              disabled={!online || paying}
+              onClick={() => startPanel('switch')}
+              title={t.counter.switchKey}
+            >
+              <span>{t.counter.signedInAs(user.name)}</span>
+              <span className="counter__who-switch">
+                <UsersThree size={12} weight="bold" aria-hidden="true" />
+                {t.counter.switchKey}
+              </span>
+            </button>
           </div>
         </div>
         <div className="counter-baskets" role="group" aria-label={t.counter.baskets}>
@@ -1747,7 +1760,8 @@ export function CounterPage() {
           </Button>
         </div>
         <div className="counter__status">
-          {/* The two things the till depends on, side by side: the internet and the printer. */}
+          {/* The two things the till depends on, in one quiet pill: the internet and the printer. Trouble tints its half. */}
+          <div className="counter-health">
           <p
             className={online ? (waiting.waiting.length > 0 ? 'counter-printer counter-printer--warn' : 'counter-printer counter-printer--ok') : 'counter-printer counter-printer--danger'}
             role="status"
@@ -1771,14 +1785,15 @@ export function CounterPage() {
             )}
             <span>{printer.busy ? t.counter.printer.printing : reachText[printer.reach]}</span>
           </p>
+          </div>
           {unprintedHere.length > 0 && (
             <Button size="sm" variant="danger" icon={WarningCircle} disabled={paying} onClick={() => setPanel('unprinted')}>
               {t.counter.notPrinted(unprintedHere.length)}
             </Button>
           )}
-          <span className="counter__divider" aria-hidden="true" />
           {tillItems.length > 0 && <MenuButton label={t.counter.groups.till} icon={CashRegister} items={tillItems} />}
-          <Button size="sm" variant="ghost" icon={UsersThree} disabled={!online || paying} onClick={() => startPanel('switch')} aria-label={t.counter.switchKey} title={t.counter.switchKey}>
+          {/* On a phone the name is hidden, so the key comes back there. */}
+          <Button size="sm" variant="ghost" className="counter__switch" icon={UsersThree} disabled={!online || paying} onClick={() => startPanel('switch')} aria-label={t.counter.switchKey} title={t.counter.switchKey}>
             <span className="counter__bar-label">{t.counter.switchKey}</span>
           </Button>
           {counterOnly(user.role) ? (

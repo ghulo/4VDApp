@@ -38,10 +38,66 @@
   line-height: 1.2;
 }
 
+/* Who is selling, and the key that hands the till over: quiet words until pointed at. */
 .counter__who {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
   color: var(--ink-muted);
-  font-size: var(--text-xs);
+  font: inherit;
+  font-size: var(--text-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.counter__who-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity var(--dur-small) var(--ease);
+}
+
+.counter__who:hover:not(:disabled),
+.counter__who:focus-visible {
+  color: var(--ink);
+}
+
+.counter__who:hover:not(:disabled) .counter__who-switch,
+.counter__who:focus-visible .counter__who-switch {
+  opacity: 1;
+}
+
+.counter__who:focus-visible {
+  border-radius: var(--radius-stamp);
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.counter__who:disabled {
+  cursor: default;
+}
+
+/* The switch key is the name on wide screens; it comes back only where the name is hidden. */
+@media (min-width: 1000px) {
+  .counter__switch {
+    display: none;
+  }
+}
+
+/* The internet and the printer as one quiet pill; a problem tints only its own half. */
+.counter-health {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-small);
+  background: var(--surface-sunk);
+  box-shadow: var(--shadow-inset);
 }
 
 .counter__status {
@@ -104,15 +160,37 @@
   font-weight: 500;
 }
 
+/* The till is a full-screen tool: it takes the whole window, and the checkout grows with it. */
 .counter__main {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(340px, 400px);
+  grid-template-columns: minmax(0, 1fr) clamp(340px, 26vw, 520px);
   gap: var(--space-4);
   width: 100%;
-  max-width: var(--frame-wide);
   min-height: 0;
-  margin: 0 auto;
   padding: var(--space-4) var(--space-5);
+}
+
+/* A big monitor read from a step back: everything a size up (the till's words are in rem),
+   and Pay and the keys taller, so the screen is used instead of left empty. */
+@media (min-width: 1800px) and (min-height: 1000px) {
+  :root:has(.counter) {
+    font-size: 18px;
+  }
+
+  .counter .counter-pay {
+    height: 88px;
+  }
+
+  .counter .counter-key {
+    height: 60px;
+  }
+
+  .counter .counter-group--line .counter-key,
+  .counter .counter-keys--more .counter-key,
+  .counter-group__idle {
+    height: 80px;
+    min-height: 80px;
+  }
 }
 
 /* On the shop PC the whole till fits the screen: the lines scroll inside, nothing else moves. */

@@ -22,11 +22,12 @@ describe('setup progress', () => {
     await createTestProduct(context, adminToken, { name: 'Vase' });
     await request(context.app).post('/api/invites').set(auth()).send({ email: 'new.person@example.com', role: 'employee' });
 
-    const [progress, products, people, invites] = await Promise.all([
+    const [progress, products, people, invites, alerts] = await Promise.all([
       request(context.app).get('/api/setup-progress').set(auth()),
       request(context.app).get('/api/products?page=1&limit=1').set(auth()),
       request(context.app).get('/api/users?page=1&limit=1').set(auth()),
       request(context.app).get('/api/invites').set(auth()),
+      request(context.app).get('/api/notifications/push').set(auth()),
     ]);
 
     expect(progress.status).toBe(200);
@@ -34,6 +35,7 @@ describe('setup progress', () => {
       productCount: products.body.meta.total,
       peopleCount: people.body.meta.total,
       openInvites: invites.body.data.length,
+      alertDevices: alerts.body.data.deviceCount,
     });
     expect(progress.body.data.productCount).toBe(2);
     expect(progress.body.data.openInvites).toBe(1);

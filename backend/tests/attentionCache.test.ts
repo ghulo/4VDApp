@@ -6,9 +6,9 @@ import { forgetOnChange, remembered } from '../src/utils/attentionCache.js';
 const TTL = 30_000;
 
 /** Runs the middleware for one request and finishes it. */
-function finish(method: string): void {
+function finish(method: string, originalUrl = '/api/products'): void {
   const res = new EventEmitter();
-  forgetOnChange({ method } as Request, res as unknown as Response, (() => undefined) as NextFunction);
+  forgetOnChange({ method, originalUrl } as Request, res as unknown as Response, (() => undefined) as NextFunction);
   res.emit('finish');
 }
 
@@ -37,6 +37,17 @@ describe('remembered To do lists', () => {
     expect(remembered('b', work, 0, TTL).cached).toBe(true);
     finish('POST');
     expect(remembered('b', work, 0, TTL).cached).toBe(false);
+  });
+
+  it('should keep answers when the write is only a sign-in or the alerts device', async () => {
+    let runs = 0;
+    const work = async () => ++runs;
+    await remembered('e', work, 0, TTL).value;
+    finish('POST', '/api/notifications/push');
+    finish('POST', '/api/auth/refresh');
+    expect(remembered('e', work, 0, TTL).cached).toBe(true);
+    finish('POST', '/api/notifications/push-test');
+    expect(remembered('e', work, 0, TTL).cached).toBe(false);
   });
 
   it('should never share a failed answer', async () => {

@@ -134,6 +134,8 @@ export const saleQuerySchema = paginationSchema.extend({
   soldBy: idSchema.optional(),
   search: z.string().trim().max(100).optional(),
   source: recordSourceSchema.optional(),
+  /** Checkouts only: newest first unless asked otherwise. */
+  sort: z.enum(['newest', 'oldest', 'biggest', 'smallest']).optional(),
 });
 
 // ---------- Analytics ----------

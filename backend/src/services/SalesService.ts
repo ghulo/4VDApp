@@ -2,7 +2,7 @@ import { SYSTEM_STOCK_REASONS } from '../constants/stock.js';
 import { allowsParts } from '../constants/units.js';
 import { AppError, ConflictError, ForbiddenError, NotFoundError, SaleClosedError, ValidationError } from '../errors/httpErrors.js';
 import { receivePayment } from './TabService.js';
-import type { CheckoutDayTotal, SaleRecord, SalesRepository } from '../repositories/SalesRepository.js';
+import type { CheckoutDayTotal, CheckoutSort, SaleRecord, SalesRepository } from '../repositories/SalesRepository.js';
 import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
 import { formatEuro, roundMoney } from '../utils/money.js';
 import { addDays, zonedDay } from '../utils/zonedDates.js';
@@ -206,6 +206,7 @@ export interface SaleQuery extends PageRequest {
   soldBy?: number;
   search?: string;
   source?: RecordSource;
+  sort?: CheckoutSort;
 }
 
 export class SalesService {
@@ -241,6 +242,7 @@ export class SalesService {
         soldBy: query.soldBy,
         search: query.search,
         source: query.source,
+        sort: query.sort,
         limit: query.limit,
         offset: toOffset(query),
       },

@@ -12,9 +12,21 @@ export interface SaleFilters {
   search?: string;
   /** trefin: imported from the old till (they carry its receipt number); 4vd: rung up here. */
   source?: RecordSource;
+  /** Checkouts only: by time (newest is the default) or by the checkout's total. */
+  sort?: CheckoutSort;
   limit: number;
   offset: number;
 }
+
+export type CheckoutSort = 'newest' | 'oldest' | 'biggest' | 'smallest';
+
+// Fixed SQL for each order (never built from the request), ties broken by the newest sale.
+const CHECKOUT_ORDER: Record<CheckoutSort, string> = {
+  newest: 'max(sale_date) desc, max(id) desc',
+  oldest: 'min(sale_date) asc, min(id) asc',
+  biggest: 'sum(total_amount) desc, max(sale_date) desc, max(id) desc',
+  smallest: 'sum(total_amount) asc, max(sale_date) desc, max(id) desc',
+};
 
 export interface CheckoutDayTotal {
   day: string;
@@ -163,6 +175,7 @@ export class SalesRepository {
           where d.kind = 'invoice' and dl.sale_id is not null
           group by dl.sale_id
         ) inv on inv.sale_id = s.id`;
+    const order = sql.raw(CHECKOUT_ORDER[filters.sort ?? 'newest']);
     // Each sale with its checkout's key, worked out once for the page, the totals, the day totals and the page's sales.
     const { rows } = await sql<{ keys: string[]; total: string; revenue: string; days: Array<{ day: string; checkouts: number; revenue: string | number }>; ids: number[] }>`
       with k as materialized (
@@ -173,8 +186,8 @@ export class SalesRepository {
         where ${sql.join(conditions, sql` and `)}
       ),
       page as (
-        select key, row_number() over (order by max(sale_date) desc, max(id) desc) as n from k
-        group by key order by max(sale_date) desc, max(id) desc
+        select key, row_number() over (order by ${order}) as n from k
+        group by key order by ${order}
         limit ${filters.limit} offset ${filters.offset}
       )
       select

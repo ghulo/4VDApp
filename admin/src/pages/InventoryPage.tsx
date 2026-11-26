@@ -13,7 +13,7 @@ import { StockTag } from '../components/StockTag';
 import { ordersApi, reportsApi } from '../services/api';
 import type { ReorderSuggestion } from '../services/types';
 import { formatDate, formatHeadlineMoney, formatMoney } from '../utils/format';
-import { Badge, ButtonLink, DataTable, EmptyState, PageHeader, StatGrid, StatTile } from '../components/ui';
+import { Badge, ButtonLink, DataTable, EmptyState, MultiSelect, PageHeader, StatGrid, StatTile } from '../components/ui';
 import { useT } from '../i18n/useT';
 import type { Catalogue } from '../i18n/en';
 
@@ -66,7 +66,8 @@ export function InventoryPage() {
   const search = (params.get('search') ?? '').trim().toLowerCase();
   const filter: Filter = FILTERS.find((key) => key === params.get('status')) ?? 'all';
   const sort: Sort = SORTS.find((key) => key === params.get('sort')) ?? 'emptiest';
-  const category = params.get('category') ?? '';
+  // One or more categories, as ?category=3,7 (a single id from an older link still works).
+  const chosenCategories = (params.get('category') ?? '').split(',').filter(Boolean);
   const { several, locations } = useLocations();
   // With one location there is nothing to pick, and no refilling from storage.
   const place = several ? (locations.find((location) => String(location.id) === params.get('location'))?.id ?? null) : null;
@@ -98,7 +99,7 @@ export function InventoryPage() {
   const categories = [...new Map(rows.map((row) => [row.categoryId, row.categoryName])).entries()].sort((a, b) => a[1].localeCompare(b[1]));
   const shown = rows
     .filter(matches[filter])
-    .filter((row) => !category || String(row.categoryId) === category)
+    .filter((row) => chosenCategories.length === 0 || chosenCategories.includes(String(row.categoryId)))
     .filter((row) => !search || row.productName.toLowerCase().includes(search) || row.sku?.toLowerCase().includes(search))
     .sort(compare[sort]);
   const pageRows = shown.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -114,7 +115,7 @@ export function InventoryPage() {
     else next.set('status', key);
     return `/inventory?${next}`;
   };
-  const narrowed = filter !== 'all' || category !== '' || search !== '' || place !== null;
+  const narrowed = filter !== 'all' || chosenCategories.length > 0 || search !== '' || place !== null;
 
   return (
     <>
@@ -189,14 +190,13 @@ export function InventoryPage() {
                     ))}
                   </select>
                 )}
-                <select aria-label={t.inventory.category} value={category} onChange={(event) => updateParams({ category: event.target.value })}>
-                  <option value="">{t.inventory.anyCategory}</option>
-                  {categories.map(([id, name]) => (
-                    <option key={id} value={id}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
+                <MultiSelect
+                  label={t.inventory.category}
+                  anyLabel={t.inventory.anyCategory}
+                  options={categories.map(([id, name]) => ({ value: String(id), label: name ?? '' }))}
+                  values={chosenCategories}
+                  onChange={(next) => updateParams({ category: next.join(',') })}
+                />
                 <select aria-label={t.inventory.sortBy} value={sort} onChange={(event) => updateParams({ sort: event.target.value === 'emptiest' ? null : event.target.value })}>
                   {SORTS.map((key) => (
                     <option key={key} value={key}>

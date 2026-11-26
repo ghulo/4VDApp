@@ -12,6 +12,7 @@ export { DeveloperMark } from './DeveloperMark';
 export { EmptyState } from './EmptyState';
 export { Inspector, InspectorLayout, useDocked } from './Inspector';
 export { MenuButton, type MenuItem } from './MenuButton';
+export { MultiSelect } from './MultiSelect';
 export { MetricCard, MetricGrid } from './MetricCard';
 export { Field } from './Field';
 export { PageHeader, type Crumb } from './PageHeader';

@@ -5747,6 +5747,10 @@ export const en = {
     more: (n: number) => `+${n} more`,
     moveHandle: (name: string) => `Move ${name}: drag, or use the up and down arrows`,
     movedTo: (name: string, place: number, total: number) => `${name} moved to place ${place} of ${total}`,
+    chosenCount: (label: string, count: number) => `${label}: ${count}`,
+    narrowList: (label: string) => `Find a ${label.toLowerCase()}…`,
+    clearChoices: 'Clear all',
+    removeChoice: (name: string) => `Remove ${name}`,
   },
   desktop: {
     welcome: {

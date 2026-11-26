@@ -5716,6 +5716,10 @@ export const sq: Catalogue = {
     more: (n) => `+${n} të tjera`,
     moveHandle: (name) => `Lëvize ${name}: tërhiqe, ose përdor shigjetat lart e poshtë`,
     movedTo: (name, place, total) => `${name} u vendos në vendin ${place} nga ${total}`,
+    chosenCount: (label, count) => `${label}: ${count}`,
+    narrowList: (label) => `Gjej: ${label.toLowerCase()}…`,
+    clearChoices: 'Hiqi të gjitha',
+    removeChoice: (name) => `Hiqe ${name}`,
   },
   desktop: {
     welcome: {

@@ -1352,3 +1352,110 @@ kbd {
 .devmark__hammer { width: 15px; height: 15px; flex: none; }
 .devmark--glyph .devmark__hammer { width: 14px; height: 14px; }
 .devmark__label { font-weight: 600; font-variant-caps: all-small-caps; font-size: var(--text-sm); letter-spacing: 0.08em; color: var(--dev-mark-text); white-space: nowrap; }
+
+/* ---------- Multi select (a filter with several choices) ---------- */
+
+.multi-select {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.multi-select__panel {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.multi-select__search {
+  inline-size: 100%;
+}
+
+.multi-select__list {
+  display: grid;
+  max-block-size: 280px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.multi-select__option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--control-h);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-segment);
+  cursor: pointer;
+}
+
+.multi-select__option:hover {
+  background: var(--surface-sunk);
+}
+
+.multi-select__none {
+  padding: var(--space-2);
+  color: var(--ink-muted);
+}
+
+.multi-select__clear {
+  justify-self: start;
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  border-radius: var(--radius-small);
+  background: none;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.multi-select__clear:hover {
+  background: var(--surface-sunk);
+  color: var(--ink);
+}
+
+/* A chosen value beside the key: a small raised tag, its × drops it. */
+.multi-select__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  block-size: calc(var(--space-6) - var(--space-1));
+  padding: 0 var(--space-2) 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--line-strong), var(--key-drop-pressed);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: background-color var(--dur-small) var(--ease);
+}
+
+.multi-select__chip:hover {
+  background: var(--surface-sunk);
+}
+
+.multi-select__chip:focus-visible,
+.multi-select__clear:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.multi-select__chip svg {
+  color: var(--ink-muted);
+}
+
+/* A new chip settles in from slightly smaller (Full motion only). */
+:root[data-motion='full'] .multi-select__chip {
+  animation: chip-in var(--dur-small) var(--spring);
+}
+
+@keyframes chip-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}

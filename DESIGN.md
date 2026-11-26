@@ -834,6 +834,12 @@ themselves (`sort` + `onSortChange`). **Sticky labels** (`stickyHeader`,
 computers): the column labels stay under the top bar while a long list scrolls;
 only for tables no wider than the page.
 
+**Several choices in one filter** (`MultiSelect`, Stock's categories): a key
+like the toolbar's selects that says what is chosen ("Any category", one name,
+or "Category: 3"), opening a short list of ticks (a box to type in past 8);
+with two or more chosen, each shows beside the key as a small raised chip
+whose × drops it. Kept in the address (`?category=3,7`).
+
 ### 10.5 Stamps (badges)
 A small status word: 22px, Hanken 12px/600 in sentence case ("Finished", not
 "FINISHED"), the status colour on its soft tint, 6px corners, no outline.

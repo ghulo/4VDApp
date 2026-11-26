@@ -29,6 +29,16 @@ test('F10 (price check) and other keys are left to the page; F11 is full screen;
   assert.equal(keyAction({ type: 'keyUp', key: 'F5' }, '/'), null);
 });
 
+test('Alt+Left and Alt+Right go back and forward, but never off the Counter; plain arrows stay with the page', () => {
+  assert.equal(keyAction({ type: 'keyDown', key: 'ArrowLeft', alt: true }, '/sales'), 'back');
+  assert.equal(keyAction({ type: 'keyDown', key: 'ArrowLeft', alt: true }, '/counter'), null);
+  assert.equal(keyAction({ type: 'keyDown', key: 'ArrowRight', alt: true }, '/counter'), null);
+  assert.equal(keyAction({ type: 'keyDown', key: 'ArrowRight', alt: true }, '/'), 'forward');
+  assert.equal(keyAction({ type: 'keyDown', key: 'ArrowLeft' }, '/'), null);
+  assert.equal(keyAction({ type: 'keyDown', key: 'ArrowLeft', alt: true, shift: true }, '/'), null);
+  assert.equal(keyAction({ type: 'keyDown', key: 'ArrowLeft', alt: true, control: true }, '/'), null);
+});
+
 test('the path of a page address', () => {
   assert.equal(pathOf('https://4vd.app/counter?add=3'), '/counter');
   assert.equal(pathOf('file:///C:/app/loading.html'), '/C:/app/loading.html');

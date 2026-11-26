@@ -1,0 +1,70 @@
+/* The window's title strip: clear, so Windows' Mica shows through like the dashboard's frame below it.
+   Colours copied from DESIGN.md (ink, muted ink); Windows fonts, since the strip needs no internet. */
+:root {
+  color-scheme: light;
+  --ink: #141413;
+  --ink-muted: #5e5d59;
+  --hover: rgb(20 20 19 / 0.07);
+  --press: rgb(20 20 19 / 0.12);
+  --focus: #141413;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --ink: #f3f1ea;
+    --ink-muted: #b0ada4;
+    --hover: rgb(255 255 255 / 0.08);
+    --press: rgb(255 255 255 / 0.13);
+    --focus: #faf9f5;
+  }
+}
+
+html, body { height: 100%; margin: 0; overflow: hidden; background: transparent; }
+body {
+  color: var(--ink);
+  font: 400 12px/1 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: default;
+}
+
+.strip {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 100%;
+  /* Room for the minimise, maximise and close buttons Windows draws on the right. */
+  padding: 0 calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw)) 0 4px;
+  box-sizing: border-box;
+  app-region: drag;
+}
+
+.strip__key {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  app-region: no-drag;
+}
+.strip__key svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.strip__key:hover:not(:disabled) { background: var(--hover); }
+.strip__key:active:not(:disabled) { background: var(--press); }
+.strip__key:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.strip__key:disabled { color: var(--ink-muted); opacity: 0.45; }
+
+.strip__mark { width: 16px; height: 16px; margin: 0 8px 0 10px; }
+.strip__title {
+  overflow: hidden;
+  color: var(--ink-muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* The window isn't the one in front: Windows greys its title the same way. */
+body.is-blurred .strip__title, body.is-blurred .strip__key:not(:disabled) { opacity: 0.6; }

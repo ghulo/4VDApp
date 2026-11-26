@@ -26,4 +26,15 @@ contextBridge.exposeInMainWorld('fourvdDesktop', {
   saveSetup: (change) => ipcRenderer.invoke('setup:save', change),
   /** "en" or "sq", so the app's own loading and offline pages match. */
   setLanguage: (language) => ipcRenderer.send('language', language),
+  /** 0.6.0 and later: the app draws its own title strip above the page, so the page leaves no room for Windows' caption buttons. */
+  titleStrip: true,
+  /**
+   * The strip's ☰ menu asks the page to { type: 'go', path } | { type: 'search' } | { type: 'signOut' }.
+   * Calling this tells the app the page listens (an older saved copy of the dashboard doesn't, and the app works around it).
+   */
+  onCommand: (callback) => {
+    ipcRenderer.removeAllListeners('command');
+    ipcRenderer.on('command', (_event, command) => callback(command));
+    ipcRenderer.send('commands:ready');
+  },
 });

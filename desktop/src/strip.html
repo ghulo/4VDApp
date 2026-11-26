@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self'">
+<title>4VD</title>
+<link rel="stylesheet" href="strip.css">
+</head>
+<body>
+<!-- The window's own title strip (main.js puts the dashboard in a view below it). The words come from frame.js. -->
+<header class="strip">
+  <button type="button" class="strip__key" id="menu" aria-haspopup="menu" aria-label="Menu" title="Menu">
+    <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4h11M2.5 8h11M2.5 12h11"/></svg>
+  </button>
+  <button type="button" class="strip__key" id="back" aria-label="Back" title="Back (Alt+Left)" disabled>
+    <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5"/></svg>
+  </button>
+  <button type="button" class="strip__key" id="forward" aria-label="Forward" title="Forward (Alt+Right)" disabled>
+    <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3 5 5-5 5"/></svg>
+  </button>
+  <img class="strip__mark" src="mark.svg" alt="">
+  <span class="strip__title" id="title">4VD</span>
+</header>
+<script src="strip-page.js"></script>
+</body>
+</html>

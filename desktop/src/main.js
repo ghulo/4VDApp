@@ -1,6 +1,6 @@
 // The Windows app: a window onto the live dashboard, so every dashboard deploy
 // reaches it at once. Updates to the app itself come from GitHub Releases.
-const { app, BrowserWindow, Menu, dialog, ipcMain, nativeTheme, screen, shell } = require('electron');
+const { app, BrowserWindow, Menu, WebContentsView, dialog, ipcMain, nativeTheme, screen, shell } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
@@ -9,6 +9,7 @@ const fiscal = require('./fiscal.js');
 const journal = require('./journal.js');
 const setupStore = require('./setup.js');
 const { keyAction, pathOf } = require('./keys.js');
+const frame = require('./frame.js');
 
 // `npm start` can point at a local dashboard instead: DASHBOARD_URL=http://localhost:5173/
 const DASHBOARD_URL = (!app.isPackaged && process.env.DASHBOARD_URL) || 'https://4vd.app/';
@@ -32,6 +33,10 @@ app.setAppUserModelId('app.4vd.desktop');
 if (!app.requestSingleInstanceLock()) app.quit();
 
 let win = null;
+// The dashboard, in a view under the app's own title strip (strip.html is the window's own page).
+let view = null;
+// The page took the app's commands (Go, Search, Log out) since it last loaded; an older saved copy of the dashboard doesn't.
+let pageListens = false;
 let setup = null;
 
 // Update trouble goes to update.log next to setup.json (the last ~200 lines),
@@ -73,8 +78,6 @@ function applyRole() {
   if (setup.done) win?.setFullScreen(setup.role === 'counter');
 }
 
-// The top bar's height in the dashboard (shell.css), so the caption buttons line up with it.
-const TITLE_BAR_HEIGHT = 56;
 // The ink colour of each theme (DESIGN.md), for the minimise, maximise and close symbols.
 const CAPTION_INK = { light: '#141413', dark: '#f3f1ea' };
 
@@ -82,7 +85,7 @@ function captionStyle() {
   return {
     color: '#00000000',
     symbolColor: CAPTION_INK[nativeTheme.shouldUseDarkColors ? 'dark' : 'light'],
-    height: TITLE_BAR_HEIGHT,
+    height: frame.STRIP_HEIGHT,
   };
 }
 
@@ -140,17 +143,110 @@ function showEditMenu({ editFlags, isEditable, selectionText }) {
 
 // With no menu bar the browser's reload and zoom keys are gone, so they come back here.
 // The Counter keeps F5 for itself (it picks the customer there): see keys.js.
+// The strip's keys work the same, so a key never goes dead while the strip has the focus.
 function handleKeys(event, input) {
-  const contents = win.webContents;
+  const contents = livePage();
+  if (!contents) return;
   const action = keyAction(input, pathOf(contents.getURL()));
   if (!action) return;
-  const zoomBy = (step) => contents.setZoomLevel(Math.max(-3, Math.min(3, contents.getZoomLevel() + step)));
-  if (action === 'reload') contents.reload();
-  else if (action === 'fullscreen') win.setFullScreen(!win.isFullScreen());
-  else if (action === 'zoomIn') zoomBy(0.5);
-  else if (action === 'zoomOut') zoomBy(-0.5);
-  else contents.setZoomLevel(0);
+  runCommand(action);
   event.preventDefault();
+}
+
+/** The dashboard's page while it is there (it goes first when the window closes), else null. */
+function livePage() {
+  return view && !view.webContents.isDestroyed() ? view.webContents : null;
+}
+
+/** The Counter keeps the sale on screen: Back and Forward (keys, mouse side buttons, strip) don't take it away. */
+const onCounter = (contents) => /^\/counter(\/|$)/.test(pathOf(contents.getURL()));
+
+/** Where Back (-1) or Forward (+1) would land, or null. */
+function stepIndex(contents, offset) {
+  if (onCounter(contents)) return null;
+  return frame.stepTarget(historyOf(contents), offset, isDashboard);
+}
+
+/** Where the dashboard sits: under the strip, or the whole window in full screen. */
+function layoutPage() {
+  if (!win || win.isDestroyed() || !view) return;
+  const [width, height] = win.getContentSize();
+  view.setBounds(frame.pageBounds({ width, height }, win.isFullScreen()));
+}
+
+/** The dashboard's history as frame.stepTarget reads it. */
+function historyOf(contents) {
+  const history = contents.navigationHistory;
+  const urls = [];
+  for (let i = 0; i < history.length(); i++) urls.push(history.getEntryAtIndex(i)?.url ?? '');
+  return { index: history.getActiveIndex(), urls };
+}
+
+/** Back (-1) or forward (+1), only onto the dashboard: the page's own leave guards still ask first. */
+function step(offset) {
+  const contents = livePage();
+  const target = contents ? stepIndex(contents, offset) : null;
+  if (target !== null) contents.navigationHistory.goToIndex(target);
+}
+
+/** The strip shows the page's title and whether Back and Forward go anywhere. */
+function sendStripState() {
+  if (!win || win.isDestroyed() || !view || view.webContents.isDestroyed()) return;
+  const contents = view.webContents;
+  const words = frame.wordsFor(pageLanguage());
+  win.webContents.send('strip:state', {
+    title: isDashboard(contents.getURL()) ? contents.getTitle() : '4VD',
+    canBack: stepIndex(contents, -1) !== null,
+    canForward: stepIndex(contents, 1) !== null,
+    focused: win.isFocused(),
+    language: pageLanguage(),
+    words: { menu: words.menu, back: words.back, forward: words.forward },
+  });
+}
+
+/** One thing from the ☰ menu, a strip key or a shortcut, done on the dashboard. */
+function runCommand(command) {
+  if (!win || win.isDestroyed() || !view || view.webContents.isDestroyed()) return;
+  const contents = view.webContents;
+  // Zoom only the dashboard: the app's own pages share one zoom with the strip (all file://).
+  const zoomBy = (by) => isDashboard(contents.getURL()) && contents.setZoomLevel(Math.max(-3, Math.min(3, contents.getZoomLevel() + by)));
+  if (command.startsWith('go:')) {
+    const where = command.slice(3);
+    // The page moves itself, so a form with typed work asks first; an older saved copy just loads the address.
+    if (pageListens) contents.send('command', { type: 'go', path: where });
+    else contents.loadURL(new URL(where, DASHBOARD_URL).href);
+  } else if (command === 'search' || command === 'signOut') {
+    if (pageListens) contents.send('command', { type: command });
+  } else if (command === 'back') step(-1);
+  else if (command === 'forward') step(1);
+  else if (command === 'reload') contents.reload();
+  else if (command === 'fullscreen') win.setFullScreen(!win.isFullScreen());
+  else if (command === 'zoomIn') zoomBy(0.5);
+  else if (command === 'zoomOut') zoomBy(-0.5);
+  else if (command === 'zoomReset') zoomBy(-contents.getZoomLevel());
+  else if (['undo', 'redo', 'cut', 'copy', 'paste', 'selectAll'].includes(command)) contents[command]();
+  else if (command === 'devtools' && !app.isPackaged) contents.openDevTools({ mode: 'detach' });
+  else if (command === 'website') shell.openExternal(DASHBOARD_URL);
+  else if (command === 'checkUpdates') checkForUpdates();
+  else if (command === 'about') {
+    const words = frame.wordsFor(pageLanguage());
+    dialog.showMessageBox(win, { type: 'info', title: '4VD', message: '4VD', detail: words.aboutDetail(app.getVersion()), noLink: true });
+  } else if (command === 'quit') win.close();
+  contents.focus();
+}
+
+function showMenu(x, y) {
+  const contents = livePage();
+  if (!contents) return;
+  const state = {
+    canBack: stepIndex(contents, -1) !== null,
+    canForward: stepIndex(contents, 1) !== null,
+    fullScreen: win.isFullScreen(),
+    signedInPage: pageListens,
+    devTools: !app.isPackaged,
+  };
+  Menu.buildFromTemplate(frame.menuTemplate(pageLanguage(), state, runCommand))
+    .popup({ window: win, x, y, callback: () => livePage()?.focus() });
 }
 
 /** Google's sign-in window: its exact address, not one that only starts the same (accounts.google.com.evil.example). */
@@ -170,6 +266,68 @@ function isDashboard(url) {
   return DASHBOARD_ORIGINS.some((origin) => url.startsWith(origin + '/') || url === origin);
 }
 
+// Updates: checked on every start (downloaded quietly, put in when 4VD next closes), and by hand from
+// Help → Check for updates, which asks to restart as soon as the new version has downloaded.
+let askWhenReady = false;
+let restartForUpdate = false;
+let updateReady = null;
+
+function updateBox(type, message, detail, buttons) {
+  if (!win || win.isDestroyed()) return Promise.resolve({ response: -1 });
+  const choice = buttons ? { buttons, defaultId: 0, cancelId: buttons.length - 1 } : {};
+  return dialog.showMessageBox(win, { type, title: '4VD', message, detail, noLink: true, ...choice });
+}
+
+async function offerRestart(version) {
+  const words = frame.wordsFor(pageLanguage());
+  const { response } = await updateBox('question', words.ready, words.readyDetail(version), [words.restart, words.later]);
+  // The window closes as usual first, so typed work still asks "Leave without saving?"; the installer starts only
+  // once the page has gone (window-all-closed). Stay cancels the restart.
+  if (response === 0 && win && !win.isDestroyed()) {
+    restartForUpdate = true;
+    win.close();
+  }
+}
+
+function watchUpdates() {
+  autoUpdater.on('error', (err) => {
+    logUpdate(`error: ${err?.message ?? err}`);
+    if (!askWhenReady) return;
+    askWhenReady = false;
+    const words = frame.wordsFor(pageLanguage());
+    updateBox('warning', words.updateFailed, words.updateFailedDetail);
+  });
+  autoUpdater.on('update-available', (info) => {
+    logUpdate(`found ${info?.version}`);
+    if (!askWhenReady) return;
+    const words = frame.wordsFor(pageLanguage());
+    updateBox('info', words.downloading, words.downloadingDetail(info?.version ?? ''));
+  });
+  autoUpdater.on('update-not-available', () => {
+    if (!askWhenReady) return;
+    askWhenReady = false;
+    const words = frame.wordsFor(pageLanguage());
+    updateBox('info', words.upToDate, words.upToDateDetail(app.getVersion()));
+  });
+  autoUpdater.on('update-downloaded', (info) => {
+    logUpdate(`downloaded ${info?.version}`);
+    updateReady = info?.version ?? '';
+    if (!askWhenReady) return;
+    askWhenReady = false;
+    offerRestart(updateReady);
+  });
+}
+
+function checkForUpdates() {
+  const words = frame.wordsFor(pageLanguage());
+  if (!app.isPackaged) return updateBox('info', words.devCopy, words.aboutDetail(app.getVersion()));
+  // Already downloaded on start: offer the restart straight away.
+  if (updateReady !== null) return offerRestart(updateReady);
+  askWhenReady = true;
+  logUpdate('checking by hand');
+  autoUpdater.checkForUpdates().catch((err) => logUpdate(`check failed: ${err?.message ?? err}`));
+}
+
 function createWindow() {
   const state = readWindowState();
   win = new BrowserWindow({
@@ -178,24 +336,75 @@ function createWindow() {
     minHeight: 600,
     show: false,
     title: '4VD',
-    // The dashboard's top bar is the title bar; Windows still draws the caption buttons.
+    // The app's own strip (strip.html) is the title bar; Windows still draws the caption buttons over its right end.
     titleBarStyle: 'hidden',
     titleBarOverlay: captionStyle(),
-    // Mica shows through wherever the dashboard leaves the window clear (top bar, sidebar).
+    // Mica shows through wherever the strip and the dashboard leave the window clear (strip, top bar, sidebar).
     backgroundMaterial: 'mica',
     backgroundColor: '#00000000',
     icon: path.join(__dirname, 'icon.png'),
+    webPreferences: { contextIsolation: true, sandbox: true, preload: path.join(__dirname, 'strip-preload.js') },
+  });
+  // The strip is the app's own page: it never goes anywhere else or opens windows.
+  win.webContents.on('will-navigate', (event) => event.preventDefault());
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  win.webContents.on('before-input-event', handleKeys);
+  // Typing always goes to the dashboard (a barcode scanner types too): the strip hands the focus straight back.
+  win.webContents.on('focus', () => livePage()?.focus());
+
+  // The default session, as before: sign-in, the saved offline copy and the till's unsent sales stay where they were.
+  view = new WebContentsView({
     webPreferences: { contextIsolation: true, sandbox: true, preload: path.join(__dirname, 'preload.js') },
   });
+  view.setBackgroundColor('#00000000');
+  win.contentView.addChildView(view);
+  layoutPage();
+  const page = view.webContents;
+
   win.once('ready-to-show', () => {
     if (state.maximized) win.maximize();
     if (setup.done && setup.role === 'counter') win.setFullScreen(true);
     win.show();
+    page.focus();
   });
-  win.on('close', saveWindowState);
+  for (const change of ['resize', 'resized', 'maximize', 'unmaximize', 'restore', 'enter-full-screen', 'leave-full-screen']) win.on(change, layoutPage);
+  win.on('focus', () => {
+    livePage()?.focus();
+    sendStripState();
+  });
+  win.on('blur', sendStripState);
+  // The mouse's side buttons.
+  win.on('app-command', (_event, command) => {
+    if (command === 'browser-backward') step(-1);
+    else if (command === 'browser-forward') step(1);
+  });
+
+  // Closing the window doesn't ask the page by itself (it is a view inside it), so the page is closed first:
+  // over typed work it asks "Leave without saving?" (below), and Stay keeps both open.
+  let pageClosed = false;
+  win.on('close', (event) => {
+    saveWindowState();
+    if (pageClosed || page.isDestroyed()) return;
+    event.preventDefault();
+    page.close({ waitForBeforeUnload: true });
+  });
+  page.once('destroyed', () => {
+    pageClosed = true;
+    view = null;
+    // After the page has gone, not while it is still being taken down.
+    setImmediate(() => {
+      if (win && !win.isDestroyed()) win.close();
+    });
+  });
+  win.on('closed', () => {
+    if (!page.isDestroyed()) page.close();
+    win = null;
+    view = null;
+  });
+
   // The dashboard holds typed work (beforeunload): Windows' own question before the window closes or reloads.
   // preventDefault lets the page go; doing nothing keeps it.
-  win.webContents.on('will-prevent-unload', (event) => {
+  page.on('will-prevent-unload', (event) => {
     const words = LEAVE_WORDS[pageLanguage()] ?? LEAVE_WORDS.en;
     const choice = dialog.showMessageBoxSync(win, {
       type: 'question',
@@ -208,38 +417,46 @@ function createWindow() {
       detail: words.detail,
     });
     if (choice === 0) event.preventDefault();
+    // Stay: an update waiting for this restart waits for the next close instead.
+    else restartForUpdate = false;
   });
 
-  win.webContents.setVisualZoomLevelLimits(1, 1);
-  win.webContents.on('before-input-event', handleKeys);
-  win.webContents.on('context-menu', (_event, params) => showEditMenu(params));
+  page.setVisualZoomLevelLimits(1, 1);
+  page.on('before-input-event', handleKeys);
+  page.on('context-menu', (_event, params) => showEditMenu(params));
+  // A new document replaced the page: it says again whether it listens (a download or an empty answer replaces nothing).
+  page.on('did-navigate', () => {
+    pageListens = false;
+  });
+  for (const change of ['did-navigate', 'did-navigate-in-page', 'page-title-updated']) page.on(change, sendStripState);
 
-  win.webContents.setWindowOpenHandler(({ url }) => {
+  page.setWindowOpenHandler(({ url }) => {
     if (isGoogleSignIn(url)) return { action: 'allow' };
     if (isDashboard(url)) {
-      win.loadURL(url);
+      page.loadURL(url);
     } else if (/^https?:|^mailto:|^tel:/.test(url)) {
       shell.openExternal(url);
     }
     return { action: 'deny' };
   });
-  win.webContents.on('will-navigate', (event, url) => {
+  page.on('will-navigate', (event, url) => {
     if (isDashboard(url) || isGoogleSignIn(url) || isOwnFile(url)) return;
     event.preventDefault();
     if (/^https?:/.test(url)) shell.openExternal(url);
   });
   // No internet or the dashboard is down: show a calm page that retries.
-  win.webContents.on('did-fail-load', (_event, code, _description, url, isMainFrame) => {
+  page.on('did-fail-load', (_event, code, _description, url, isMainFrame) => {
     // -3 is a navigation that was replaced by another one, not a failure.
     if (!isMainFrame || code === -3) return;
-    win.loadFile(path.join(__dirname, 'offline.html'), {
+    page.loadFile(path.join(__dirname, 'offline.html'), {
       query: { retry: isDashboard(url) ? url : startURL(), lang: pageLanguage() },
     });
   });
 
   // The small 4VD loading page shows at once; it stays up until the dashboard paints.
-  win.webContents.once('did-finish-load', () => win.loadURL(startURL()));
-  win.loadFile(path.join(__dirname, 'loading.html'), { query: { lang: pageLanguage() } });
+  page.once('did-finish-load', () => page.loadURL(startURL()));
+  page.loadFile(path.join(__dirname, 'loading.html'), { query: { lang: pageLanguage() } });
+  win.loadFile(path.join(__dirname, 'strip.html'));
 }
 
 /** The welcome screen the first time, then the Counter or the dashboard. */
@@ -253,6 +470,17 @@ ipcMain.on('theme', (_event, preference) => {
 });
 // The counter's fiscal printer: only the dashboard itself may print.
 const fromDashboard = (event) => isDashboard(event.senderFrame?.url ?? '');
+// The strip's keys: only from the strip page itself.
+ipcMain.on('strip', (event, message) => {
+  if (!win || event.sender !== win.webContents) return;
+  if (message?.action === 'ready') sendStripState();
+  else if (message?.action === 'back' || message?.action === 'forward') runCommand(message.action);
+  else if (message?.action === 'menu' && Number.isFinite(message.x) && Number.isFinite(message.y)) showMenu(message.x, message.y);
+});
+// The dashboard listens for the menu's Go, Search and Log out (Windows app 0.6.0 and later).
+ipcMain.on('commands:ready', (event) => {
+  if (view && event.sender === view.webContents && fromDashboard(event)) pageListens = true;
+});
 ipcMain.handle('fiscal:status', (event) => (fromDashboard(event) ? fiscal.status() : null));
 ipcMain.handle('fiscal:send', async (event, job) => {
   if (!fromDashboard(event) || typeof job?.name !== 'string' || typeof job?.text !== 'string' || job.text.length > 20_000 || !fiscal.isAllowedJob(job.text)) {
@@ -284,6 +512,7 @@ ipcMain.on('language', (event, language) => {
   if (!fromDashboard(event) || language === setup.language) return;
   setup = setupStore.merge(setup, { language });
   setupStore.write(setupFile(), setup);
+  sendStripState();
 });
 nativeTheme.on('updated', () => win?.setTitleBarOverlay(captionStyle()));
 
@@ -302,15 +531,16 @@ app.whenReady().then(() => {
   createWindow();
   // Only an installed copy can update itself; `npm start` skips this.
   if (app.isPackaged) {
-    autoUpdater.on('error', (err) => logUpdate(`error: ${err?.message ?? err}`));
-    autoUpdater.on('update-available', (info) => logUpdate(`found ${info?.version}`));
-    autoUpdater.on('update-downloaded', (info) => logUpdate(`downloaded ${info?.version}`));
+    watchUpdates();
     logUpdate(`checking (running ${app.getVersion()})`);
     autoUpdater.checkForUpdatesAndNotify().catch((err) => logUpdate(`check failed: ${err?.message ?? err}`));
   }
 });
 
-app.on('window-all-closed', () => app.quit());
+app.on('window-all-closed', () => {
+  if (restartForUpdate) autoUpdater.quitAndInstall(true, true);
+  else app.quit();
+});
 // One last try at writing the print journal: a write the disk refused a moment ago (journal.js retries every few seconds)
 // would otherwise go with the app, and the next start would only know the receipt as "printing" (then unknown).
 app.on('before-quit', () => {

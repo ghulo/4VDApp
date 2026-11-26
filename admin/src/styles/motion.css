@@ -82,6 +82,32 @@
   box-shadow: none;
 }
 
+/* A menu hangs where it is (absolute); the highlight under the pointer is its sunk hover. */
+.menu[data-pill] {
+  position: absolute;
+}
+
+.menu[data-pill]::after {
+  border-radius: var(--radius-segment);
+  background: var(--surface-sunk);
+}
+
+.menu[data-pill] .menu__item:is(:hover, :focus-visible) {
+  background: transparent;
+}
+
+/* The current page is a raised key like a chosen segment. */
+.pagination__pages[data-pill]::after {
+  border-radius: var(--radius-segment);
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--line-strong), var(--key-drop-pressed);
+}
+
+.pagination__pages[data-pill] .pagination__number[aria-current='page'] {
+  background: transparent;
+  box-shadow: none;
+}
+
 /* ---------- Swiping a panel away (useSwipeToDismiss) ---------- */
 
 /* Sideways drags on the phone drawer are ours; up and down still scroll it.

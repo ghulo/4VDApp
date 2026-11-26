@@ -1,6 +1,6 @@
 /**
- * The chosen option in a segmented control, and the current page in the
- * sidebar, is drawn as one highlight on its group that glides to the next
+ * The chosen option in a segmented control, the current page in the
+ * sidebar and among page numbers, and the line under the pointer in a menu, is drawn as one highlight on its group that glides to the next
  * choice, the way iOS segmented controls do (motion.css, "Sliding selection").
  *
  * Works for every group on the page without changes to the screens: it
@@ -12,7 +12,30 @@
 const GROUPS: { group: string; chosen: string }[] = [
   { group: '.segmented', chosen: ":scope > [aria-checked='true']" },
   { group: '.sidebar__nav', chosen: '.sidebar__link.active' },
+  // The current page among the page numbers under a list.
+  { group: '.pagination__pages', chosen: "[aria-current='page']" },
+  // In a menu, the line under the pointer or the keyboard (marked by followPointer below).
+  { group: '.menu', chosen: '.menu__item[data-hover]' },
 ];
+
+/** Marks the menu line the pointer or the keyboard is on, so the highlight can glide to it. */
+function followPointer(event: Event): void {
+  const target = event.target instanceof Element ? event.target : null;
+  const item = target?.closest<HTMLElement>('.menu__item');
+  const menu = target?.closest<HTMLElement>('.menu');
+  if (!menu) return;
+  for (const other of menu.querySelectorAll<HTMLElement>('.menu__item[data-hover]')) if (other !== item) delete other.dataset.hover;
+  if (item && !item.matches(':disabled')) item.dataset.hover = '';
+}
+
+/** The pointer left the menu (and the keyboard isn't in it): no line is marked. */
+function leaveMenu(event: Event): void {
+  const menu = event.target instanceof Element ? event.target.closest<HTMLElement>('.menu') : null;
+  const next = (event as PointerEvent | FocusEvent).relatedTarget;
+  if (!menu || (next instanceof Node && menu.contains(next))) return;
+  if (event.type === 'pointerout' && menu.contains(document.activeElement)) return;
+  for (const item of menu.querySelectorAll<HTMLElement>('.menu__item[data-hover]')) delete item.dataset.hover;
+}
 
 function place(group: HTMLElement, chosen: string): void {
   // A hidden group (inside a closed panel) keeps its last box.
@@ -74,13 +97,21 @@ export function startSelectionPills(root: HTMLElement = document.body): () => vo
   }
 
   const mutations = new MutationObserver(schedule);
-  mutations.observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-checked', 'class'] });
+  mutations.observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-checked', 'aria-current', 'class', 'data-hover', 'hidden'] });
+  root.addEventListener('pointerover', followPointer);
+  root.addEventListener('focusin', followPointer);
+  root.addEventListener('pointerout', leaveMenu);
+  root.addEventListener('focusout', leaveMenu);
   window.addEventListener('resize', schedule);
   document.fonts?.ready.then(schedule);
   schedule();
 
   return () => {
     mutations.disconnect();
+    root.removeEventListener('pointerover', followPointer);
+    root.removeEventListener('focusin', followPointer);
+    root.removeEventListener('pointerout', leaveMenu);
+    root.removeEventListener('focusout', leaveMenu);
     resize.disconnect();
     window.removeEventListener('resize', schedule);
   };

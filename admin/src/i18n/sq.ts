@@ -5681,6 +5681,7 @@ export const sq: Catalogue = {
     previous: 'Mbrapa',
     next: 'Para',
     pages: 'Faqet',
+    pageNumber: (page) => `Faqja ${page}`,
     pageRange: (p) => `${p.first}–${p.last} nga ${p.total} ${p.items}`,
     breadcrumb: 'Ku ndodhesh',
     done: '(kryer)',

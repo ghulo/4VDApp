@@ -5711,6 +5711,7 @@ export const en = {
     previous: 'Previous',
     next: 'Next',
     pages: 'Pages',
+    pageNumber: (page: number) => `Page ${page}`,
     pageRange: (p: { first: number; last: number; total: number; items: string }) =>
       `${p.first}–${p.last} of ${p.total} ${p.items}`,
     breadcrumb: 'Breadcrumb',

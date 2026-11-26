@@ -1023,10 +1023,13 @@ when it is short (768px monitors, zoom, the QR setup step).
   - A page arrives: its main column fades up 6px from 0.6 opacity over
     `--dur-medium` (`playArrival`, on a path change, never on first load);
     the menu and top bar never move. Sections inside a page show at once.
-  - Selection glides: the chosen segment of every segmented track and the
-    current sidebar item are one grey highlight that slides
-    to the next choice (`selectionPills.ts`); its size changes at once, only
-    its place glides.
+  - Selection glides: the chosen segment of every segmented track, the
+    current sidebar item, the current page among the page numbers under a list
+    and, in a menu, the line under the pointer or the keyboard are one
+    highlight that slides to the next choice (`selectionPills.ts`); its size
+    changes at once, only its place glides. Page numbers (computers; phones
+    keep "3 / 40") show the first, the last and the pages around you, seven
+    places at most, so the row never changes width.
   - A list put in order by hand (`SortableList`; Settings → Counter → Quick
     keys): a row is dragged by its grip with a mouse or a finger and lifts off
     the list (paper, float shadow); the others step aside on the spring; let go,

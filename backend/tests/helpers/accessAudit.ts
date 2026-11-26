@@ -542,6 +542,7 @@ const ACCESS: Record<keyof typeof WHO, string[]> = {
     'PATCH /api/books/accounts/:id',
     'PUT /api/books/settings',
     'PUT /api/counter/settings',
+    'PUT /api/counter/quick-keys',
     'PUT /api/settings/',
     'PUT /api/settings/rules',
     'POST /api/partners/customers/:id/offset',

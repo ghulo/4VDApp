@@ -583,7 +583,7 @@
 
 .counter-head__fact dd {
   margin: 0;
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
@@ -655,6 +655,7 @@
      product, quantity, price and total a step up from body text. */
   padding: var(--space-3);
   border-bottom: 1px solid var(--line);
+  font-size: var(--text-base);
   vertical-align: middle;
 }
 
@@ -1255,7 +1256,43 @@
   position: relative;
   justify-content: flex-start;
   min-width: 0;
-  height: 44px;
+  height: 48px;
+  /* Read at arm's length: key names a step up from the dashboard's buttons. */
+  font-size: var(--text-base);
+}
+
+/* More's three rarer keys, one row under the sale keys. */
+.counter-keys.counter-keys--more {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: calc(var(--space-2) - var(--space-4));
+}
+
+.counter-keys--more .counter-key {
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  height: 64px;
+  padding: 0 var(--space-1);
+  font-size: var(--text-sm);
+}
+
+.counter-keys--more .counter-key > span {
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+/* No line yet: the line keys' room, held by one quiet sentence so the first scan moves nothing. */
+.counter-group__idle {
+  display: flex;
+  align-items: center;
+  min-height: 64px;
+  margin: 0;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-small);
+  background: var(--surface-sunk);
+  box-shadow: var(--shadow-inset);
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
 }
 
 .counter-key > span {
@@ -2745,6 +2782,23 @@
 .counter-opening__text {
   display: grid;
   gap: 2px;
+}
+
+/* Under the scan box (opening cash): one line, the hint beside the title where there is room. */
+.counter-opening--slim {
+  padding: var(--space-2) var(--space-3);
+}
+
+.counter-opening--slim > svg {
+  align-self: center;
+  margin-top: 0;
+}
+
+.counter-opening--slim .counter-opening__text {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-3);
+  align-items: baseline;
 }
 
 .counter-opening p {

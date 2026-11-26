@@ -9,10 +9,12 @@ import {
   Camera,
   Calculator,
   CaretDown,
+  CaretUp,
   CashRegister,
   CheckCircle,
   CircleNotch,
   Coins,
+  DotsThree,
   HandCoins,
   Hash,
   MagnifyingGlass,
@@ -1510,6 +1512,8 @@ export function CounterPage() {
 
   // ---- Keys ----
   const keysEnabled = panel === null;
+  // The rarer sale keys (basket rabat, deliver it, cancel): folded under More until asked for.
+  const [moreOpen, setMoreOpen] = useState(false);
   const hasLines = lines.length > 0;
   const canPrint = printer.reach === 'ready' || printer.reach === 'notRunning' || printer.reach === 'noFolder' || printer.reach === 'checking';
   const tracked = new Set(features.serials ? (serialProducts.data ?? []).map((product) => product.productId) : []);
@@ -1823,6 +1827,20 @@ export function CounterPage() {
 
           </div>
 
+          {/* Before the first sale: one slim line under the scan box, out of the way of the total. */}
+          {needsOpening && (
+            <div className="counter-opening counter-opening--slim">
+              <Coins size={20} weight="bold" aria-hidden="true" />
+              <div className="counter-opening__text">
+                <p className="counter-opening__title">{t.counter.openingMissing}</p>
+                <p>{t.counter.openingMissingHint}</p>
+              </div>
+              <Button size="sm" variant="secondary" icon={Coins} disabled={!keysEnabled} onClick={() => startPanel('opening')}>
+                {t.counter.openingKey}
+              </Button>
+            </div>
+          )}
+
           <div aria-live="polite" className="counter-messages">
             {priceCheck && (
               <p className="counter-message counter-message--info" role="status">
@@ -2075,43 +2093,57 @@ export function CounterPage() {
                   </Button>
                 </div>
               )}
-              {needsOpening && (
-                <div className="counter-opening">
-                  <Coins size={20} weight="bold" aria-hidden="true" />
-                  <div className="counter-opening__text">
-                    <p className="counter-opening__title">{t.counter.openingMissing}</p>
-                    <p>{t.counter.openingMissingHint}</p>
-                  </div>
-                  <Button size="sm" variant="secondary" icon={Coins} disabled={!keysEnabled} onClick={() => startPanel('opening')}>
-                    {t.counter.openingKey}
-                  </Button>
-                </div>
-              )}
               {/* Like the foot of a receipt, right above the key that takes the money. */}
               <BasketSummaryFoot summary={summary} />
               <Button variant="primary" className="counter-pay" disabled={!hasLines} onClick={() => startPanel('pay')} title="F9 · Enter" aria-keyshortcuts="F9">
-                <span>{t.counter.pay}</span>
+                {/* An empty basket: the biggest key says what starts a sale instead of a dim "Pay". */}
+                <span>{hasLines ? t.counter.pay : t.counter.payEmpty}</span>
                 <span className="visually-hidden">{formatMoney(total)}</span>
-                <kbd className="counter-pay__hotkey" aria-hidden="true">
-                  F9
-                </kbd>
+                {hasLines && (
+                  <kbd className="counter-pay__hotkey" aria-hidden="true">
+                    F9
+                  </kbd>
+                )}
               </Button>
 
-              <KeyGroup line title={selected ? `${t.counter.groups.line} · ${selected.product?.name ?? selected.name}` : t.counter.noLine}>
-                <CounterKey icon={Hash} label={t.counter.quantity} hotkey="F2" disabled={!keysEnabled || !selected} onClick={() => startPanel('quantity')} />
-                <CounterKey icon={HandCoins} label={t.counter.price} hotkey="F6" disabled={!keysEnabled || !selected} onClick={() => startPanel('price')} />
-                <CounterKey icon={Percent} label={t.counter.discount} hotkey="F4" disabled={!keysEnabled || !selected} onClick={() => startPanel('discount')} />
-                <CounterKey icon={Trash} label={t.counter.remove} hotkey="Del" disabled={!keysEnabled || !selected} onClick={() => startPanel('remove')} />
-              </KeyGroup>
+              {/* The line keys only once there is a line; the empty basket keeps their room, so nothing jumps on the first scan. */}
+              {selected ? (
+                <KeyGroup line title={`${t.counter.groups.line} · ${selected.product?.name ?? selected.name}`}>
+                  <CounterKey icon={Hash} label={t.counter.quantity} hotkey="F2" disabled={!keysEnabled} onClick={() => startPanel('quantity')} />
+                  <CounterKey icon={HandCoins} label={t.counter.price} hotkey="F6" disabled={!keysEnabled} onClick={() => startPanel('price')} />
+                  <CounterKey icon={Percent} label={t.counter.discount} hotkey="F4" disabled={!keysEnabled} onClick={() => startPanel('discount')} />
+                  <CounterKey icon={Trash} label={t.counter.remove} hotkey="Del" disabled={!keysEnabled} onClick={() => startPanel('remove')} />
+                </KeyGroup>
+              ) : (
+                <section className="counter-group counter-group--line counter-group--idle">
+                  <h2 className="counter-group__title">{t.counter.noLine}</h2>
+                  <p className="counter-group__idle">{t.counter.noLineHint}</p>
+                </section>
+              )}
 
               <KeyGroup title={t.counter.groups.sale}>
                 <CounterKey icon={MagnifyingGlass} label={t.counter.search} hotkey="F3" disabled={!keysEnabled} onClick={openFinder} />
                 <CounterKey icon={User} label={t.counter.customer} hotkey="F5" disabled={!keysEnabled} onClick={() => startPanel('customer')} />
-                <CounterKey icon={SealPercent} label={t.counter.basketRabat} disabled={!keysEnabled || !hasLines} onClick={() => startPanel('basketRabat')} />
                 <CounterKey icon={Tag} label={t.counter.priceCheckKey} hotkey="F10" disabled={!keysEnabled} pressed={priceCheck} onClick={togglePriceCheck} />
-                <CounterKey icon={MapPinLine} label={current.delivery ? t.counter.deliveryKeyOn : t.counter.deliverKey} pressed={Boolean(current.delivery)} disabled={!keysEnabled || !hasLines || !online} onClick={() => startPanel('deliver')} />
-                <CounterKey icon={X} label={t.counter.cancelBasket} disabled={!keysEnabled || !hasLines} onClick={() => startPanel('cancel')} />
+                <CounterKey
+                  icon={moreOpen ? CaretUp : DotsThree}
+                  label={t.counter.moreKeys}
+                  expanded={moreOpen}
+                  controls="counter-more"
+                  onClick={() => {
+                    setMoreOpen((was) => !was);
+                    focusScan();
+                  }}
+                />
               </KeyGroup>
+              {/* The rarer sale keys fold away; what they set (rabat, delivery) still shows above the basket. */}
+              {moreOpen && (
+                <div id="counter-more" className="counter-keys counter-keys--more">
+                  <CounterKey icon={SealPercent} label={t.counter.basketRabat} disabled={!keysEnabled || !hasLines} onClick={() => startPanel('basketRabat')} />
+                  <CounterKey icon={MapPinLine} label={current.delivery ? t.counter.deliveryKeyOn : t.counter.deliverKey} pressed={Boolean(current.delivery)} disabled={!keysEnabled || !hasLines || !online} onClick={() => startPanel('deliver')} />
+                  <CounterKey icon={X} label={t.counter.cancelBasket} disabled={!keysEnabled || !hasLines} onClick={() => startPanel('cancel')} />
+                </div>
+              )}
 
               <div className="counter-side__foot">
                 {lastSale && <LastSaleCard sale={lastSale} canOpen={canOversee(user.role)} />}
@@ -2497,6 +2529,8 @@ function CounterKey({
   disabled,
   title,
   pressed,
+  expanded,
+  controls,
   onClick,
 }: {
   icon: Icon;
@@ -2505,6 +2539,9 @@ function CounterKey({
   disabled?: boolean;
   title?: string;
   pressed?: boolean;
+  /** A key that shows or hides more keys (More). */
+  expanded?: boolean;
+  controls?: string;
   onClick: () => void;
 }) {
   return (
@@ -2514,6 +2551,8 @@ function CounterKey({
       disabled={disabled}
       title={title}
       aria-pressed={pressed}
+      aria-expanded={expanded}
+      aria-controls={expanded ? controls : undefined}
       aria-keyshortcuts={hotkey === 'Del' ? 'Delete' : hotkey}
       onClick={onClick}
     >

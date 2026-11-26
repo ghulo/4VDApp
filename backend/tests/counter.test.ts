@@ -171,6 +171,23 @@ describe('sales history by checkout', () => {
     expect(checkouts[0].lines.find((line: { productName: string }) => line.productName === 'Milk')).toMatchObject({ quantity: 3, returnedQuantity: 1 });
   });
 
+  it('should order checkouts by time or by total, across the pages', async () => {
+    const milk = await createTestProduct(context, adminToken, { name: 'Milk', price: 1, stock: 20 });
+    for (const quantity of [2, 5, 1]) {
+      await request(context.app).post('/api/sales/basket').set(auth()).send({ items: [{ productId: milk, quantity }] });
+    }
+    const totals = async (sort?: string, page = 1) =>
+      (await request(context.app).get('/api/sales/checkouts').query({ ...(sort ? { sort } : {}), page, limit: 2 }).set(auth())).body.data.checkouts.map(
+        (checkout: { total: number }) => checkout.total,
+      );
+
+    expect(await totals()).toEqual([1, 5]);
+    expect(await totals('oldest')).toEqual([2, 5]);
+    expect([...(await totals('biggest')), ...(await totals('biggest', 2))]).toEqual([5, 2, 1]);
+    expect(await totals('smallest')).toEqual([1, 2]);
+    expect((await request(context.app).get('/api/sales/checkouts').query({ sort: 'price; drop table sales' }).set(auth())).status).toBe(400);
+  });
+
   it('should leave an undone sale out of the history and its totals', async () => {
     const milk = await createTestProduct(context, adminToken, { name: 'Milk', price: 1.2, stock: 10 });
     await request(context.app).post('/api/sales/basket').set(auth()).send({ items: [{ productId: milk, quantity: 1 }] });

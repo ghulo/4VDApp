@@ -19,6 +19,8 @@
   }
 }
 
+/* The strip page fills the whole window behind the dashboard, which is clear in places (Mica):
+   only its top 36px (frame.js STRIP_HEIGHT) may hold anything. */
 html, body { height: 100%; margin: 0; overflow: hidden; background: transparent; }
 body {
   color: var(--ink);
@@ -33,7 +35,7 @@ body {
   display: flex;
   align-items: center;
   gap: 2px;
-  height: 100%;
+  height: 36px;
   /* Room for the minimise, maximise and close buttons Windows draws on the right. */
   padding: 0 calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw)) 0 4px;
   box-sizing: border-box;

@@ -55,3 +55,9 @@ test('words for the strip keys and the About box', () => {
   assert.equal(wordsFor('sq').back, 'Prapa');
   assert.equal(wordsFor('en').aboutDetail('0.6.0'), 'Version 0.6.0');
 });
+
+test('the strip page keeps its keys in the strip, not in the middle of the window behind the page', () => {
+  const css = require('node:fs').readFileSync(require('node:path').join(__dirname, 'strip.css'), 'utf8');
+  const rule = css.match(/\.strip \{[^}]*\}/)[0];
+  assert.match(rule, new RegExp(`height: ${STRIP_HEIGHT}px;`));
+});

@@ -1498,10 +1498,13 @@ input.switch {
   border: 0;
   border-radius: var(--radius-pill);
   background: var(--line-strong);
+  /* The track is a well the knob sits in, like a field (DESIGN.md 8: inset wells). */
+  box-shadow: var(--shadow-inset);
   cursor: pointer;
-  transition: background-color 0.12s;
+  transition: background-color var(--dur-small) var(--ease);
 }
 
+/* The knob is a small raised key: it catches the light on top and drops a shadow under it. */
 input.switch::after {
   content: '';
   position: absolute;
@@ -1511,8 +1514,8 @@ input.switch::after {
   height: 16px;
   border-radius: 50%;
   background: var(--switch-knob);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
-  transition: transform 0.12s;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25), inset 0 1px 0 rgb(255 255 255 / 0.5);
+  transform-origin: left center;
 }
 
 input.switch:checked {
@@ -1523,6 +1526,21 @@ input.switch:checked::after {
   /* On the ink track: paper, which is white in light mode and near-black in dark, where the ink turns near-white. */
   background: var(--surface);
   transform: translateX(16px);
+  transform-origin: right center;
+}
+
+/* Held down, the knob leans toward where it is going: it stretches from the side it rests on. */
+input.switch:active:not(:disabled)::after {
+  transform: scaleX(1.25);
+}
+
+input.switch:checked:active:not(:disabled)::after {
+  transform: translateX(16px) scaleX(1.25);
+}
+
+/* The knob slides only under Motion: Full; Reduced and Off move it at once (motion.css rules). */
+:root[data-motion='full'] input.switch::after {
+  transition: transform var(--dur-small) var(--spring);
 }
 
 input.switch:disabled {

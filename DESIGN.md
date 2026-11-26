@@ -1030,6 +1030,9 @@ when it is short (768px monitors, zoom, the QR setup step).
     phone form card down by its head (grab handle) follow the finger 1:1, rubber-band past the open edge, and on release
     project the flick to decide close or stay, starting at the finger's speed.
     Vertical drags still scroll; fields stay free for text selection.
+  - A switch's knob is a small raised key in an inset track: held down it
+    stretches toward where it is going, then slides there on the spring
+    (`--dur-small`; Reduced and Off move it at once).
   - Keys sink into their edge on press. Charts grow in once from their base.
     "Loading" waits 300ms, so a quick answer never flashes it; then a slow wave (opacity, 1.8s, a beat per row) runs down the skeleton so a slow answer never looks frozen. Light/dark
     cross-fades.

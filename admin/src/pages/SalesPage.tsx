@@ -9,12 +9,13 @@ import { Pagination } from '../components/Pagination';
 import { PeriodPicker } from '../components/PeriodPicker';
 import { SearchInput } from '../components/SearchInput';
 import { SourceFilter, sourceFrom, TrefinTag } from '../components/TrefinParts';
-import { reportsApi, salesApi, usersApi } from '../services/api';
+import { type CheckoutSort, reportsApi, salesApi, usersApi } from '../services/api';
 import { ProductPicker } from '../components/ProductPicker';
-import { formatDateWith, formatHeadlineMoney, formatMoney } from '../utils/format';
+import { formatDateTime, formatDateWith, formatHeadlineMoney, formatMoney } from '../utils/format';
 import type { PeriodKey } from '../utils/periods';
 import { usePeriodParams } from '../utils/usePeriodParams';
 import { Badge, Button, DataTable, MetricCard, MetricGrid, PageHeader, Section, Sheet, useNewSheet } from '../components/ui';
+import type { TableSort } from '../components/ui/DataTable';
 import { useCurrentUser } from '../auth/useAuth';
 import { canOversee } from '../auth/roles';
 import type { Checkout } from '../services/types';
@@ -22,6 +23,14 @@ import { useT } from '../i18n/useT';
 
 const PERIODS: PeriodKey[] = ['today', 'yesterday', 'this-week', 'this-month', 'custom'];
 
+const CHECKOUT_SORTS: CheckoutSort[] = ['newest', 'oldest', 'biggest', 'smallest'];
+/** The heading each order belongs to (When, Total) and which way it runs. */
+const SORT_COLUMN: Record<CheckoutSort, TableSort> = {
+  newest: { column: 0, direction: 'desc' },
+  oldest: { column: 0, direction: 'asc' },
+  biggest: { column: 2, direction: 'desc' },
+  smallest: { column: 2, direction: 'asc' },
+};
 const time = (iso: string) => formatDateWith(new Date(iso), { hour: '2-digit', minute: '2-digit' });
 const longDay = (day: string) =>
   formatDateWith(new Date(`${day}T00:00:00Z`), { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
@@ -120,6 +129,9 @@ function SalesHistory({ range }: { range: { startDate: string; endDate: string }
   const soldBy = params.get('seller') ?? '';
   const search = params.get('search') ?? '';
   const source = sourceFrom(params);
+  // Clicking the When or Total heading orders the whole history on the server, not just this page.
+  const sort = CHECKOUT_SORTS.find((key) => key === params.get('sort')) ?? 'newest';
+  const byTime = sort === 'newest' || sort === 'oldest';
   const { role } = useCurrentUser();
   // Everyone who has ever sold: history keeps them all (people need the oversee power, so the accountant filters without names). Products are searched as you type.
   const people = useQuery({ queryKey: ['users'], queryFn: () => usersApi.list(1), enabled: canOversee(role) });
@@ -129,7 +141,7 @@ function SalesHistory({ range }: { range: { startDate: string; endDate: string }
   const [returningId, setReturningId] = useState<number | null>(null);
   const [returnMessage, setReturnMessage] = useState<string | null>(null);
   const sales = useQuery({
-    queryKey: ['sales', 'checkouts', { page, ...range, productId, soldBy, search, source }],
+    queryKey: ['sales', 'checkouts', { page, ...range, productId, soldBy, search, source, sort }],
     queryFn: () =>
       salesApi.checkouts({
         page,
@@ -138,6 +150,7 @@ function SalesHistory({ range }: { range: { startDate: string; endDate: string }
         productId: productId ? Number(productId) : undefined,
         soldBy: soldBy ? Number(soldBy) : undefined,
         search: search || undefined,
+        sort: sort === 'newest' ? undefined : sort,
       }),
     placeholderData: keepPreviousData,
   });
@@ -173,7 +186,13 @@ function SalesHistory({ range }: { range: { startDate: string; endDate: string }
           rowKey={(checkout) => checkout.key}
           rowClassName={(checkout) => (openKey === checkout.key ? 'table__row--open' : undefined)}
           onRowClick={toggle}
-          group={(checkout) => {
+          sort={SORT_COLUMN[sort]}
+          onSortChange={(next) => {
+            const key = next ? CHECKOUT_SORTS.find((one) => SORT_COLUMN[one].column === next.column && SORT_COLUMN[one].direction === next.direction) : undefined;
+            updateParams({ sort: key && key !== 'newest' ? key : '' });
+          }}
+          // Day headings only while the rows run by time; ordered by total, the days would scatter.
+          group={byTime ? (checkout) => {
             const total = dayTotals.get(checkout.day);
             return {
               key: checkout.day,
@@ -184,7 +203,7 @@ function SalesHistory({ range }: { range: { startDate: string; endDate: string }
                 </span>
               ),
             };
-          }}
+          } : undefined}
           toolbar={
             <>
               <SearchInput value={search} onChange={(value) => updateParams({ search: value })} label={t.sales.search} />
@@ -214,7 +233,13 @@ function SalesHistory({ range }: { range: { startDate: string; endDate: string }
             )
           }
           columns={[
-            { header: t.sales.when, className: 'table__phone-hide', cell: (checkout) => time(checkout.saleDate) },
+            {
+              header: t.sales.when,
+              className: 'table__phone-hide',
+              sortValue: (checkout) => checkout.saleDate,
+              sortFirst: 'desc',
+              cell: (checkout) => (byTime ? time(checkout.saleDate) : formatDateTime(checkout.saleDate)),
+            },
             {
               header: t.sales.whatSold,
               title: true,
@@ -228,12 +253,12 @@ function SalesHistory({ range }: { range: { startDate: string; endDate: string }
                     <ReturnedBadge checkout={checkout} />
                   </span>
                   <span className="table__secondary table__phone-only">
-                    {time(checkout.saleDate)} · {checkout.soldBy ?? t.sales.unknown}
+                    {byTime ? time(checkout.saleDate) : formatDateTime(checkout.saleDate)} · {checkout.soldBy ?? t.sales.unknown}
                   </span>
                 </>
               ),
             },
-            { header: t.sales.total, align: 'end', cell: (checkout) => formatMoney(checkout.total) },
+            { header: t.sales.total, align: 'end', sortValue: (checkout) => checkout.total, sortFirst: 'desc', cell: (checkout) => formatMoney(checkout.total) },
             { header: t.sales.soldBy, className: 'table__phone-hide', cell: (checkout) => checkout.soldBy ?? t.sales.unknown },
             {
               header: t.documents.invoice,

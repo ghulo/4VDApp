@@ -482,7 +482,11 @@ export interface SaleListQuery {
   /** Checkouts only: a product name or invoice number. */
   search?: string;
   source?: RecordSource;
+  /** Checkouts only: newest first unless asked otherwise. */
+  sort?: CheckoutSort;
 }
+
+export type CheckoutSort = 'newest' | 'oldest' | 'biggest' | 'smallest';
 
 export interface DocumentListQuery {
   page: number;

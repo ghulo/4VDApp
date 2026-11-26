@@ -96,8 +96,9 @@ export function DataTable<Row>({
   const held = onSortChange !== undefined;
   const [ownSort, setOwnSort] = useState<TableSort | null>(defaultSort ?? null);
   const sort = held ? (heldSort ?? null) : ownSort;
-  // Rows split under day headings keep their order: sorting would scatter the runs.
-  const sortable = (column: Column<Row>) => column.sortValue !== undefined && !group;
+  // Rows split under day headings keep their order (sorting here would scatter the runs),
+  // unless the page holds the sort: then it orders the rows itself, often on the server.
+  const sortable = (column: Column<Row>) => column.sortValue !== undefined && (held || !group);
   const ordered = useMemo(() => {
     if (held || !sort || group) return rows;
     const column = columns[sort.column];

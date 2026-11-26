@@ -829,8 +829,11 @@ a quiet key for a label: click once for its first order (`sortFirst`: money and
 dates biggest/newest first), again to flip, a third time for the list's own
 order. A thin V shows on hover and on the column in use (`aria-sort` on the
 header); names sort the reader's language's way (Ë after E, Ç after C), blanks
-last. Day-grouped tables don't sort; server-paged lists hold the order
-themselves (`sort` + `onSortChange`). **Sticky labels** (`stickyHeader`,
+last. A table that sorts its own rows never splits them into days; a page
+that holds the order (`sort` + `onSortChange`, kept in the address) sorts
+the whole list, on the server when it is paged: Sales by When or Total (by
+Total the day headings drop and each row shows its date), Stock by Product, In
+stock, Runs out in or Value. **Sticky labels** (`stickyHeader`,
 computers): the column labels stay under the top bar while a long list scrolls;
 only for tables no wider than the page.
 

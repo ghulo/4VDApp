@@ -14,6 +14,7 @@ import { ordersApi, reportsApi } from '../services/api';
 import type { ReorderSuggestion } from '../services/types';
 import { formatDate, formatHeadlineMoney, formatMoney } from '../utils/format';
 import { Badge, ButtonLink, DataTable, EmptyState, MultiSelect, PageHeader, StatGrid, StatTile } from '../components/ui';
+import type { SortDirection, TableSort } from '../components/ui/DataTable';
 import { useT } from '../i18n/useT';
 import type { Catalogue } from '../i18n/en';
 
@@ -25,6 +26,13 @@ const FILTERS = ['all', 'low', 'out', 'soon', 'refill'] as const;
 type Filter = (typeof FILTERS)[number];
 const SORTS = ['emptiest', 'soonest', 'name', 'value'] as const;
 type Sort = (typeof SORTS)[number];
+/** The column each order sorts by (Product, In stock, Runs out in, Value) and which way it runs first. */
+const SORT_COLUMN: Record<Sort, { column: number; direction: SortDirection }> = {
+  name: { column: 0, direction: 'asc' },
+  emptiest: { column: 1, direction: 'asc' },
+  soonest: { column: 2, direction: 'asc' },
+  value: { column: 3, direction: 'desc' },
+};
 
 /** A product as the list shows it: with a location picked, `quantity` is what that location holds and `total` the whole shop's. */
 type Row = ReorderSuggestion & { total: number };
@@ -66,6 +74,17 @@ export function InventoryPage() {
   const search = (params.get('search') ?? '').trim().toLowerCase();
   const filter: Filter = FILTERS.find((key) => key === params.get('status')) ?? 'all';
   const sort: Sort = SORTS.find((key) => key === params.get('sort')) ?? 'emptiest';
+  // ?order=rev turns the order round (a second click on the same column heading).
+  const reversed = params.get('order') === 'rev';
+  const tableSort: TableSort = {
+    column: SORT_COLUMN[sort].column,
+    direction: reversed ? (SORT_COLUMN[sort].direction === 'asc' ? 'desc' : 'asc') : SORT_COLUMN[sort].direction,
+  };
+  const pickSort = (next: TableSort | null) => {
+    const key = next ? SORTS.find((one) => SORT_COLUMN[one].column === next.column) : undefined;
+    if (!next || !key) return updateParams({ sort: null, order: null });
+    updateParams({ sort: key === 'emptiest' ? null : key, order: next.direction === SORT_COLUMN[key].direction ? null : 'rev' });
+  };
   // One or more categories, as ?category=3,7 (a single id from an older link still works).
   const chosenCategories = (params.get('category') ?? '').split(',').filter(Boolean);
   const { several, locations } = useLocations();
@@ -101,7 +120,7 @@ export function InventoryPage() {
     .filter(matches[filter])
     .filter((row) => chosenCategories.length === 0 || chosenCategories.includes(String(row.categoryId)))
     .filter((row) => !search || row.productName.toLowerCase().includes(search) || row.sku?.toLowerCase().includes(search))
-    .sort(compare[sort]);
+    .sort(reversed ? (a, b) => compare[sort](b, a) : compare[sort]);
   const pageRows = shown.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const totalValue = rows.reduce((sum, row) => sum + (valueOf(row) ?? 0), 0);
@@ -162,6 +181,8 @@ export function InventoryPage() {
             caption={t.inventory.title}
             rows={pageRows}
             rowKey={(row) => row.productId}
+            sort={tableSort}
+            onSortChange={pickSort}
             toolbar={
               <div className="toolbar">
                 <SearchInput value={params.get('search') ?? ''} onChange={(value) => updateParams({ search: value })} label={t.inventory.search} />
@@ -197,7 +218,7 @@ export function InventoryPage() {
                   values={chosenCategories}
                   onChange={(next) => updateParams({ category: next.join(',') })}
                 />
-                <select aria-label={t.inventory.sortBy} value={sort} onChange={(event) => updateParams({ sort: event.target.value === 'emptiest' ? null : event.target.value })}>
+                <select aria-label={t.inventory.sortBy} value={sort} onChange={(event) => updateParams({ sort: event.target.value === 'emptiest' ? null : event.target.value, order: null })}>
                   {SORTS.map((key) => (
                     <option key={key} value={key}>
                       {t.inventory.sorts[key]}
@@ -213,6 +234,7 @@ export function InventoryPage() {
               {
                 header: t.inventory.product,
                 title: true,
+                sortValue: (row) => row.productName,
                 cell: (row) => (
                   <span className="product-cell">
                     <ProductPhoto src={row.imageUrl} />
@@ -227,6 +249,7 @@ export function InventoryPage() {
               },
               {
                 header: t.inventory.inStock,
+                sortValue: (row) => row.quantity - row.reorderLevel,
                 cell: (row) => (
                   <span className="stock-status">
                     <StockTag quantity={row.quantity} reorderLevel={row.reorderLevel} />
@@ -236,11 +259,14 @@ export function InventoryPage() {
               },
               {
                 header: t.inventory.runsOutIn,
+                sortValue: (row) => row.daysLeft,
                 cell: (row) => <Runway row={row} />,
               },
               {
                 header: t.inventory.value,
                 align: 'end',
+                sortValue: valueOf,
+                sortFirst: 'desc',
                 cell: (row) => {
                   const value = valueOf(row);
                   return value === null ? '–' : formatMoney(value);

@@ -27,9 +27,17 @@ export function remembered<T>(key: string, work: () => Promise<T>, now = Date.no
   return { value, cached: false };
 }
 
+/**
+ * Writes that can't change a To do: signing in or out, keeping the session
+ * alive, and the browser telling the server again where alerts go (the
+ * dashboard does that on every load, which used to wipe the memory each time).
+ */
+const NOT_A_CHANGE = [/^\/api\/auth\//, /^\/api\/notifications\/push(\/|\?|$)/];
+
 /** Forgets every remembered answer once a change has gone through. */
 export function forgetOnChange(req: Request, res: Response, next: NextFunction): void {
-  if (req.method !== 'GET' && req.method !== 'HEAD' && req.method !== 'OPTIONS') {
+  const write = req.method !== 'GET' && req.method !== 'HEAD' && req.method !== 'OPTIONS';
+  if (write && !NOT_A_CHANGE.some((pattern) => pattern.test(req.originalUrl))) {
     res.on('finish', () => {
       changes += 1;
       answers.clear();

@@ -683,6 +683,7 @@ export interface SetupProgress {
   productCount: number;
   peopleCount: number;
   openInvites: number;
+  alertDevices: number;
 }
 
 export const setupApi = {

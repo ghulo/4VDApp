@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Check } from '@phosphor-icons/react';
 import { useId, useState } from 'react';
-import { businessApi, pushApi, setupApi } from '../services/api';
+import { businessApi, setupApi } from '../services/api';
 import { Button, ButtonLink } from '../components/ui';
 import { setupSteps } from './steps';
 import { useCurrentUser } from '../auth/useAuth';
@@ -32,9 +32,8 @@ export function SetupGuide() {
   const business = useQuery({ queryKey: ['business'], queryFn: businessApi.get, enabled: !hidden });
   // One small answer with the three counts, fresh on every visit (it used to load three whole lists).
   const progress = useQuery({ queryKey: ['setup-progress'], queryFn: setupApi.progress, enabled: !hidden, staleTime: 0 });
-  const alerts = useQuery({ queryKey: ['push-settings'], queryFn: pushApi.settings, enabled: !hidden });
 
-  const loaded = business.data && progress.data && alerts.data;
+  const loaded = business.data && progress.data;
   if (hidden || !loaded) return null;
 
   const steps = setupSteps({
@@ -42,7 +41,7 @@ export function SetupGuide() {
     productCount: progress.data.productCount,
     peopleCount: progress.data.peopleCount,
     openInvites: progress.data.openInvites,
-    alertDevices: alerts.data.deviceCount,
+    alertDevices: progress.data.alertDevices,
     canImport: hasPower(role, 'import'),
   }, t);
   const done = steps.filter((step) => step.done).length;

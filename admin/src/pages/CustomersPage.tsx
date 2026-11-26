@@ -164,6 +164,7 @@ export function CustomersPage() {
           caption={t.customers.title}
           rows={rows}
           rowKey={(row) => row.id}
+          stickyHeader
           onRowClick={(row) => navigate(`/customers/${row.id}`)}
           toolbar={
             all.length > 0 && (
@@ -218,6 +219,7 @@ export function CustomersPage() {
             {
               header: t.tabs.name,
               title: true,
+              sortValue: (row) => row.name,
               cell: (row) => (
                 <>
                   <Link to={`/customers/${row.id}`} className="table__primary-link" aria-label={t.tabs.see(row.name)}>
@@ -229,16 +231,19 @@ export function CustomersPage() {
                 </>
               ),
             },
-            { header: t.customers.spentThisYear, align: 'end', cell: (row) => (row.spentThisYear !== 0 ? formatMoney(row.spentThisYear) : '–') },
-            { header: t.customers.lastPurchase, cell: (row) => (row.lastPurchaseAt ? formatDate(row.lastPurchaseAt) : '–') },
+            { header: t.customers.spentThisYear, align: 'end', sortValue: (row) => row.spentThisYear || null, sortFirst: 'desc', cell: (row) => (row.spentThisYear !== 0 ? formatMoney(row.spentThisYear) : '–') },
+            { header: t.customers.lastPurchase, sortValue: (row) => row.lastPurchaseAt, sortFirst: 'desc', cell: (row) => (row.lastPurchaseAt ? formatDate(row.lastPurchaseAt) : '–') },
             {
               header: t.tabs.owingSince,
+              sortValue: (row) => row.owingSince,
               cell: (row) =>
                 row.owingSince === null ? '–' : isOverdue(row) ? <Badge tone="warn">{formatDate(row.owingSince)}</Badge> : formatDate(row.owingSince),
             },
             {
               header: t.customers.owes,
               align: 'end',
+              sortValue: (row) => row.balance || null,
+              sortFirst: 'desc',
               cell: (row) =>
                 row.balance > 0 ? (
                   <strong>{formatMoney(row.balance)}</strong>

@@ -824,6 +824,15 @@ Inspector is marked like the menu: Amber Tint with a 3px Amber bar on its first 
 `table__dock-hide`. Under 600px rows stack:
 title cell first in 600 weight, then "column name: value" lines. An empty table
 shows an empty state instead of headers.
+**Sorting:** a column with `sortValue` (a plain value, never the drawn cell) has
+a quiet key for a label: click once for its first order (`sortFirst`: money and
+dates biggest/newest first), again to flip, a third time for the list's own
+order. A thin V shows on hover and on the column in use (`aria-sort` on the
+header); names sort the reader's language's way (Ë after E, Ç after C), blanks
+last. Day-grouped tables don't sort; server-paged lists hold the order
+themselves (`sort` + `onSortChange`). **Sticky labels** (`stickyHeader`,
+computers): the column labels stay under the top bar while a long list scrolls;
+only for tables no wider than the page.
 
 ### 10.5 Stamps (badges)
 A small status word: 22px, Hanken 12px/600 in sentence case ("Finished", not

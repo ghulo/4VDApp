@@ -724,6 +724,81 @@
   height: calc(var(--space-6) + var(--space-1));
 }
 
+/* A column that sorts: its label is a quiet key. The mark shows only on hover
+   and on the column the rows are in order by, pointing down for biggest/latest first. */
+.table__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-inline: calc(var(--space-1) * -1);
+  padding: var(--space-1);
+  border: 0;
+  border-radius: var(--radius-small);
+  background: none;
+  color: inherit;
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--dur-small) var(--ease), background-color var(--dur-small) var(--ease);
+}
+
+.table__numeric .table__sort {
+  flex-direction: row-reverse;
+}
+
+.table__sort:hover {
+  background: var(--surface-sunk);
+  color: var(--ink);
+}
+
+.table__sort:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.table__sort[data-by] {
+  color: var(--ink);
+}
+
+.table__sort-mark {
+  flex: none;
+  opacity: 0;
+  transition: opacity var(--dur-small) var(--ease);
+}
+
+.table__sort:is(:hover, :focus-visible) .table__sort-mark,
+.table__sort[data-by] .table__sort-mark {
+  opacity: 1;
+}
+
+.table__sort[data-by='asc'] .table__sort-mark {
+  transform: rotate(180deg);
+}
+
+:root[data-motion='full'] .table__sort-mark {
+  transition: opacity var(--dur-small) var(--ease), transform var(--dur-small) var(--spring);
+}
+
+/* Column labels that stay at the top while a long list scrolls by (computers;
+   phones stack the rows and have no labels). The frame clips instead of scrolling
+   sideways, which would hold the labels inside it. */
+@media (min-width: 1024px) {
+  .data-table--sticky {
+    overflow: clip;
+  }
+
+  .data-table--sticky .data-table__scroll {
+    overflow: visible;
+  }
+
+  .data-table--sticky .table thead th {
+    position: sticky;
+    top: var(--topbar-h);
+    z-index: 1;
+    box-shadow: 0 1px 0 var(--line);
+  }
+}
+
 /* Ledger rows (Books): the same table, one step tighter, so a month of
    lines reads as a ledger instead of a list of cards. */
 .data-table--compact .table td,

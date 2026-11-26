@@ -238,10 +238,10 @@ export function KitBasics() {
             toolbar={<SearchInput value={search} onChange={setSearch} label="Search products" />}
             empty={<EmptyState title="No product matches" icon={Package}>Try fewer letters.</EmptyState>}
             columns={[
-              { header: 'Product', cell: (row) => row.name, title: true },
-              { header: 'Supplier', cell: (row) => row.supplier },
-              { header: 'Stock', align: 'end', cell: (row) => <StockTag quantity={row.stock} reorderLevel={10} /> },
-              { header: 'Price', align: 'end', cell: (row) => formatMoney(row.price) },
+              { header: 'Product', cell: (row) => row.name, title: true, sortValue: (row) => row.name },
+              { header: 'Supplier', cell: (row) => row.supplier, sortValue: (row) => row.supplier },
+              { header: 'Stock', align: 'end', sortValue: (row) => row.stock, cell: (row) => <StockTag quantity={row.stock} reorderLevel={10} /> },
+              { header: 'Price', align: 'end', sortValue: (row) => row.price, sortFirst: 'desc', cell: (row) => formatMoney(row.price) },
             ]}
             totals={['Total', '', String(rows.reduce((sum, row) => sum + row.stock, 0)), '']}
           />

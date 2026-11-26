@@ -100,6 +100,7 @@ export function SuppliersPage() {
           caption={t.suppliers.title}
           rows={rows}
           rowKey={(row) => row.id}
+          stickyHeader
           onRowClick={(row) => navigate(`/suppliers/${row.id}`)}
           toolbar={
             suppliers.data.length > 0 && (
@@ -139,6 +140,7 @@ export function SuppliersPage() {
             {
               header: t.orders.supplierName,
               title: true,
+              sortValue: (row) => row.name,
               cell: (row) => (
                 <Link to={`/suppliers/${row.id}`} className="table__primary-link">
                   {row.name}
@@ -149,15 +151,21 @@ export function SuppliersPage() {
             {
               header: t.orders.onTheWay,
               align: 'end',
+              sortValue: (row) => openOrders(row.id) || null,
+              sortFirst: 'desc',
               cell: (row) => (openOrders(row.id) > 0 ? <Badge tone="info">{t.suppliers.ordersCount(openOrders(row.id))}</Badge> : '–'),
             },
             {
               header: t.suppliers.lastDelivery,
+              sortValue: (row) => lastDelivery(row.id),
+              sortFirst: 'desc',
               cell: (row) => (lastDelivery(row.id) ? formatDate(lastDelivery(row.id)!) : '–'),
             },
             {
               header: t.bills.overdue,
               align: 'end',
+              sortValue: (row) => owedBy.get(row.id)?.overdue || null,
+              sortFirst: 'desc',
               cell: (row) => {
                 const overdue = owedBy.get(row.id)?.overdue ?? 0;
                 return overdue > 0 ? <span className="amount--danger">{formatMoney(overdue)}</span> : '–';
@@ -166,6 +174,8 @@ export function SuppliersPage() {
             {
               header: t.bills.owed,
               align: 'end',
+              sortValue: (row) => owedBy.get(row.id)?.owed || null,
+              sortFirst: 'desc',
               cell: (row) => {
                 const owed = owedBy.get(row.id)?.owed ?? 0;
                 return owed > 0 ? <strong>{formatMoney(owed)}</strong> : '–';

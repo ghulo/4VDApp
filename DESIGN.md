@@ -1038,6 +1038,10 @@ when it is short (768px monitors, zoom, the QR setup step).
   - Swipe on touch (`useSwipeToDismiss`): the phone drawer sideways and the
     phone form card down by its head (grab handle) follow the finger 1:1, rubber-band past the open edge, and on release
     project the flick to decide close or stay, starting at the finger's speed.
+    Let go short of closing, it springs back on the Motion library's spring
+    (critically damped, the finger's speed carried in; fetched on the first
+    touch, about 2 KB), and a finger can catch it again mid-way. Toasts on a
+    touch screen flick away sideways the same way and then only fade.
     Vertical drags still scroll; fields stay free for text selection.
   - A switch's knob is a small raised key in an inset track: held down it
     stretches toward where it is going, then slides there on the spring

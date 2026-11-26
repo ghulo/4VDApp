@@ -3,6 +3,7 @@ import { createContext, type CSSProperties, type ReactNode, useCallback, useCont
 import { useT } from '../../i18n/useT';
 import { SuccessCheck } from './Motion';
 import { Tooltip } from './Tooltip';
+import { useSwipeToDismiss } from './useSwipeToDismiss';
 
 export type ToastTone = 'ok' | 'info' | 'danger';
 
@@ -95,6 +96,9 @@ function ToastItem({ toast, depth, paused, onDismiss: dismissById }: { toast: Sh
   const stay = toast.action ? STAY_WITH_ACTION_MS : STAY_MS;
   const left = useRef(stay);
   const onDismiss = useCallback(() => dismissById(toast.id), [dismissById, toast.id]);
+  // On a touch screen a toast can be flicked away sideways (touch shows them in a column, never stacked).
+  const ref = useRef<HTMLLIElement>(null);
+  useSwipeToDismiss(ref, { side: 'right', closed: 'translateX(110%)', onDismiss, enabled: !toast.leaving });
 
   // The clock runs only while the stack isn't paused, and keeps the time already used.
   useEffect(() => {
@@ -109,6 +113,7 @@ function ToastItem({ toast, depth, paused, onDismiss: dismissById }: { toast: Sh
 
   return (
     <li
+      ref={ref}
       className={`toast toast--${tone}`}
       style={depthStyle(depth, stay)}
       data-behind={depth > 0 || undefined}

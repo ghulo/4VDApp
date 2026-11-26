@@ -721,6 +721,11 @@
   animation: toast-out calc(var(--dur-medium) * var(--exit)) var(--ease-in) forwards;
 }
 
+/* A toast flicked away keeps going where it was thrown and only fades. */
+:root[data-motion='full'] .toasts__list > .toast[data-leaving][data-swiped] {
+  animation-name: fade-out;
+}
+
 /* ---------- Menus and panels: open from where they hang, close the same way ---------- */
 
 :root[data-motion='full'] .menu,

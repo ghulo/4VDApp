@@ -22,6 +22,7 @@
     "flag-icons": "7.5.0",
     "input-otp": "^1.4.2",
     "jsbarcode": "^3.12.3",
+    "motion": "^14.14.0",
     "qrcode": "^1.5.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

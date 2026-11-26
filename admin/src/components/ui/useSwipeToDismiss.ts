@@ -1,4 +1,22 @@
 import { type RefObject, useEffect, useRef } from 'react';
+import { motionLevel } from '../../theme/motion';
+
+type MotionModule = typeof import('./springMotion');
+/**
+ * The Motion library, fetched on the first touch (its own small file, not in the first load).
+ * Until it arrives a release settles on the stylesheet's curve, as before.
+ */
+let motionLibrary: MotionModule | null = null;
+let fetching: Promise<void> | null = null;
+function fetchMotion() {
+  fetching ??= import('./springMotion')
+    .then((library) => {
+      motionLibrary = library;
+    })
+    .catch(() => {
+      fetching = null;
+    });
+}
 
 interface SwipeOptions {
   /** The edge the panel leaves by: a side sheet or drawer sideways, a phone card down. */
@@ -65,6 +83,8 @@ export function useSwipeToDismiss(ref: RefObject<HTMLElement | null>, options: S
     let origin = 0;
     let history: { x: number; t: number }[] = [];
     let cleanup: number | undefined;
+    /** A spring back still running: a new drag catches the panel where it is. */
+    let settling: { stop: () => void } | null = null;
 
     const sign = () => (latest.current.side === 'left' ? -1 : 1);
     const vertical = () => latest.current.side === 'bottom';
@@ -80,6 +100,7 @@ export function useSwipeToDismiss(ref: RefObject<HTMLElement | null>, options: S
       if (target.closest('input, textarea, select, [contenteditable], [data-no-swipe]')) return;
       const handle = latest.current.handle;
       if (handle && !target.closest(handle)) return;
+      fetchMotion();
       pointer = event.pointerId;
       state = 'pending';
       startX = event.clientX;
@@ -98,8 +119,16 @@ export function useSwipeToDismiss(ref: RefObject<HTMLElement | null>, options: S
           return;
         }
         state = 'dragging';
+        // Caught mid-way back: hold it where it is and carry on from there, so it never jumps.
+        let caught = 0;
+        if (settling) {
+          settling.stop();
+          settling = null;
+          const matrix = new DOMMatrixReadOnly(getComputedStyle(panel).transform);
+          caught = vertical() ? matrix.m42 : matrix.m41;
+        }
         // Track from here, so the panel doesn't jump by the slop.
-        origin = along(event);
+        origin = along(event) - caught;
         history = [];
         window.clearTimeout(cleanup);
         panel.setPointerCapture(event.pointerId);
@@ -149,14 +178,37 @@ export function useSwipeToDismiss(ref: RefObject<HTMLElement | null>, options: S
 
       if (dismiss) {
         panel.style.transform = latest.current.closed;
+        // A leaving piece that was thrown only fades: its own exit would move it from somewhere else.
+        panel.dataset.swiped = '';
         latest.current.onDismiss();
+      } else if (motionLibrary && motionLevel() === 'full' && out !== 0) {
+        // Back into place on a real spring that starts at the finger's speed and can be caught again.
+        panel.style.transitionProperty = 'none';
+        const shown = out >= 0 ? out : -rubberband(-out, size);
+        const run = motionLibrary.springTo(shown, 0, {
+          visualDuration: time / 1000,
+          velocity,
+          onUpdate: (at) => {
+            panel.style.transform = translate(at * sign());
+          },
+          onComplete: () => {
+            if (settling === run) settling = null;
+            panel.style.removeProperty('transform');
+            panel.style.removeProperty('transition-property');
+            panel.style.removeProperty('transition-duration');
+            panel.style.removeProperty('transition-timing-function');
+          },
+        });
+        settling = run;
       } else {
         panel.style.removeProperty('transform');
       }
       cleanup = window.setTimeout(() => {
+        if (settling) return;
         panel.style.removeProperty('transform');
         panel.style.removeProperty('transition-duration');
         panel.style.removeProperty('transition-timing-function');
+        delete panel.dataset.swiped;
       }, time + 50);
     }
 
@@ -166,6 +218,7 @@ export function useSwipeToDismiss(ref: RefObject<HTMLElement | null>, options: S
     panel.addEventListener('pointercancel', onUp);
     return () => {
       window.clearTimeout(cleanup);
+      settling?.stop();
       panel.removeEventListener('pointerdown', onDown);
       panel.removeEventListener('pointermove', onMove);
       panel.removeEventListener('pointerup', onUp);

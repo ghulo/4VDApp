@@ -13,6 +13,8 @@ interface DateRangePickerProps {
   onChange: (range: { from: string; to: string }) => void;
   min?: string;
   max?: string;
+  /** A filter that may have no dates: the key says this when none are picked, and the panel can clear them. */
+  anyLabel?: string;
 }
 
 const todayIso = () => {
@@ -27,9 +29,16 @@ const todayIso = () => {
  * two dates can also be typed under the calendar. The page gets the range once
  * both ends are picked.
  */
-export function DateRangePicker({ from, to, onChange, min, max }: DateRangePickerProps) {
+export function DateRangePicker({ from, to, onChange, min, max, anyLabel }: DateRangePickerProps) {
   const t = useT();
-  const summary = from && to ? `${isoToDayMonthYear(from)} – ${isoToDayMonthYear(to)}` : t.periods.pickDates;
+  const summary =
+    from && to
+      ? `${isoToDayMonthYear(from)} – ${isoToDayMonthYear(to)}`
+      : from
+        ? `${t.periods.from} ${isoToDayMonthYear(from)}`
+        : to
+          ? `${t.periods.to} ${isoToDayMonthYear(to)}`
+          : (anyLabel ?? t.periods.pickDates);
   return (
     <Popover label={summary} variant="secondary">
       {(close) => (
@@ -43,6 +52,14 @@ export function DateRangePicker({ from, to, onChange, min, max }: DateRangePicke
             close();
           }}
           onTyped={onChange}
+          onClear={
+            anyLabel && (from || to)
+              ? () => {
+                  onChange({ from: '', to: '' });
+                  close();
+                }
+              : undefined
+          }
         />
       )}
     </Popover>
@@ -56,6 +73,7 @@ function RangePanel({
   max,
   onPicked,
   onTyped,
+  onClear,
 }: {
   from: string;
   to: string;
@@ -63,6 +81,7 @@ function RangePanel({
   max?: string;
   onPicked: (range: { from: string; to: string }) => void;
   onTyped: (range: { from: string; to: string }) => void;
+  onClear?: () => void;
 }) {
   const t = useT();
   // The range being picked here; the page only hears about it once both ends are in.
@@ -186,6 +205,11 @@ function RangePanel({
           />
         </label>
       </div>
+      {onClear && (
+        <button type="button" className="multi-select__clear" onClick={onClear}>
+          {t.periods.clearDates}
+        </button>
+      )}
     </div>
   );
 }

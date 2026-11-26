@@ -472,6 +472,8 @@ export const sq: Catalogue = {
     from: 'Nga',
     to: 'Deri',
     pickDates: 'Zgjidh datat',
+    anyDates: 'Çdo datë',
+    clearDates: 'Hiqi datat',
     pickStart: 'Kliko ditën e parë.',
     pickEnd: 'Tani kliko ditën e fundit.',
     weekdaysShort: ['Hë', 'Ma', 'Më', 'En', 'Pr', 'Sh', 'Di'],

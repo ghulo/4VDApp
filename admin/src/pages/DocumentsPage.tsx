@@ -6,7 +6,7 @@ import { ErrorNotice, Loading } from '../components/Feedback';
 import { Pagination } from '../components/Pagination';
 import { PrintDocumentButton } from '../components/PrintDocumentButton';
 import { SearchInput } from '../components/SearchInput';
-import { Badge, DataTable, DateField, EmptyState, PageHeader } from '../components/ui';
+import { Badge, DataTable, DateRangePicker, EmptyState, PageHeader } from '../components/ui';
 import { SourceFilter, sourceFrom, TrefinTag } from '../components/TrefinParts';
 import { useT } from '../i18n/useT';
 import { documentsApi } from '../services/api';
@@ -82,16 +82,12 @@ export function DocumentsPage() {
                   </button>
                 ))}
               </div>
-              <span className="date-range">
-                <label className="inline-field">
-                  {t.sales.from}
-                  <DateField value={startDate} max={endDate || undefined} onChange={(value) => updateParams({ from: value })} />
-                </label>
-                <label className="inline-field">
-                  {t.sales.to}
-                  <DateField value={endDate} min={startDate || undefined} onChange={(value) => updateParams({ to: value })} />
-                </label>
-              </span>
+              <DateRangePicker
+                from={startDate}
+                to={endDate}
+                anyLabel={t.periods.anyDates}
+                onChange={(range) => updateParams({ from: range.from, to: range.to })}
+              />
               <SourceFilter value={source} onChange={(next) => updateParams({ source: next ?? '' })} />
             </div>
           }

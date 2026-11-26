@@ -1566,9 +1566,7 @@ form.product-form > .form-actions {
   }
 
   .toolbar > .inline-field,
-  .data-table__toolbar > .inline-field,
-  .date-range,
-  .date-range > .inline-field {
+  .data-table__toolbar > .inline-field {
     flex: 1 1 100%;
   }
 
@@ -4008,12 +4006,6 @@ fieldset.report-sections {
 }
 
 /* ---------- Sales ---------- */
-
-.date-range {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-3);
-}
 
 .sales-summary {
   display: grid;

@@ -482,6 +482,8 @@ export const en = {
     from: 'From',
     to: 'To',
     pickDates: 'Pick the dates',
+    anyDates: 'Any dates',
+    clearDates: 'Clear the dates',
     pickStart: 'Click the first day.',
     pickEnd: 'Now click the last day.',
     weekdaysShort: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],

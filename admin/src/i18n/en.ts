@@ -481,6 +481,10 @@ export const en = {
     label: 'Period',
     from: 'From',
     to: 'To',
+    pickDates: 'Pick the dates',
+    pickStart: 'Click the first day.',
+    pickEnd: 'Now click the last day.',
+    weekdaysShort: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
     options: {
       today: 'Today',
       yesterday: 'Yesterday',

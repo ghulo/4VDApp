@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { COMPARE_KEYS, type CompareKey, PERIOD_KEYS, type PeriodKey } from '../utils/periods';
 import { useT } from '../i18n/useT';
-import { DateField } from './ui';
+import { DateRangePicker } from './ui';
 
 interface PeriodPickerProps {
   period: PeriodKey;
@@ -58,16 +58,7 @@ export function PeriodPicker({ period, from, to, onChange, periods = PERIOD_KEYS
       )}
       {children}
       {period === 'custom' && (
-        <span className="date-range">
-          <label className="inline-field">
-            {t.periods.from}
-            <DateField value={from} max={to || undefined} onChange={(value) => onChange({ period, from: value, to })} />
-          </label>
-          <label className="inline-field">
-            {t.periods.to}
-            <DateField value={to} min={from || undefined} onChange={(value) => onChange({ period, from, to: value })} />
-          </label>
-        </span>
+        <DateRangePicker from={from} to={to} onChange={(range) => onChange({ period, ...range })} />
       )}
     </div>
   );

@@ -7,6 +7,7 @@ export { Card, SettingRow } from './Card';
 export { ColumnChart, type ChartColumn } from './ColumnChart';
 export { DataTable, type Column } from './DataTable';
 export { DateField } from './DateField';
+export { DateRangePicker } from './DateRangePicker';
 export { DayBars } from './DayBars';
 export { DeveloperMark } from './DeveloperMark';
 export { EmptyState } from './EmptyState';

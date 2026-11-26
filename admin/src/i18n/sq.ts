@@ -471,6 +471,10 @@ export const sq: Catalogue = {
     label: 'Periudha',
     from: 'Nga',
     to: 'Deri',
+    pickDates: 'Zgjidh datat',
+    pickStart: 'Kliko ditën e parë.',
+    pickEnd: 'Tani kliko ditën e fundit.',
+    weekdaysShort: ['Hë', 'Ma', 'Më', 'En', 'Pr', 'Sh', 'Di'],
     options: {
       today: 'Sot',
       yesterday: 'Dje',

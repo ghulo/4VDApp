@@ -840,6 +840,14 @@ or "Category: 3"), opening a short list of ticks (a box to type in past 8);
 with two or more chosen, each shows beside the key as a small raised chip
 whose × drops it. Kept in the address (`?category=3,7`).
 
+**Custom dates** (`DateRangePicker`, inside every PeriodPicker): a key that
+says the range ("01/11/2026 – 15/11/2026", or "Pick the dates") opens one month,
+weeks from Monday; click the first day, then the last (an earlier day swaps
+them), hovering shows the band. The ends are ink keys, the days between a
+sunk band, today underlined. Arrow keys walk the days, Enter picks. The two
+dates can still be typed under the calendar. Month and day names come from
+4VD's own Albanian writer, not the browser.
+
 ### 10.5 Stamps (badges)
 A small status word: 22px, Hanken 12px/600 in sentence case ("Finished", not
 "FINISHED"), the status colour on its soft tint, 6px corners, no outline.

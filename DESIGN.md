@@ -1027,6 +1027,13 @@ when it is short (768px monitors, zoom, the QR setup step).
     current sidebar item are one grey highlight that slides
     to the next choice (`selectionPills.ts`); its size changes at once, only
     its place glides.
+  - A list put in order by hand (`SortableList`; Settings → Counter → Quick
+    keys): a row is dragged by its grip with a mouse or a finger and lifts off
+    the list (paper, float shadow); the others step aside on the spring; let go,
+    it glides the last bit into its place. On the keyboard the grip is a key:
+    the up and down arrows move the row one place, focus stays on it, and a
+    screen reader hears "Bread moved to place 3 of 8". Reduced and Off: rows
+    jump straight to their places.
   - A flow of steps on one card (Settings → Import: drop, found, check,
     bring in) slides the next step in from the right on the spring, and Back
     brings the earlier one in from the left; it answers a key press, so it is

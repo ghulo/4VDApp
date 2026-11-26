@@ -5195,8 +5195,6 @@ export const sq: Catalogue = {
       addPlaceholder: 'Shkruaj emrin e produktit…',
       full: 'Të 24 tastet e shpejta janë në përdorim. Hiq një për të shtuar tjetër.',
       empty: 'Ende pa taste të shpejta. Shto produktet që shiten më shumë pa barkod.',
-      up: (name: string) => `Lëvize ${name} lart`,
-      down: (name: string) => `Lëvize ${name} poshtë`,
       remove: (name: string) => `Hiqe ${name}`,
       saved: 'Tastet e shpejta u ruajtën. Një arkë e hapur i shfaq brenda 3 minutave.',
     },
@@ -5715,6 +5713,8 @@ export const sq: Catalogue = {
     previousMonth: 'Muaji i kaluar',
     nextMonth: 'Muaji tjetër',
     more: (n) => `+${n} të tjera`,
+    moveHandle: (name) => `Lëvize ${name}: tërhiqe, ose përdor shigjetat lart e poshtë`,
+    movedTo: (name, place, total) => `${name} u vendos në vendin ${place} nga ${total}`,
   },
   desktop: {
     welcome: {

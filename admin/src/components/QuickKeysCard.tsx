@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, X } from '@phosphor-icons/react';
+import { X } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { useT } from '../i18n/useT';
@@ -8,7 +8,7 @@ import type { Product } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatMoney } from '../utils/format';
 import { ErrorNotice, Loading, SavedToast } from './Feedback';
-import { Button, Card, Combobox } from './ui';
+import { Button, Card, Combobox, SortableList } from './ui';
 
 const MAX_KEYS = 24;
 
@@ -45,11 +45,6 @@ function QuickKeysForm({ products }: { products: Product[] }) {
   const change = (next: number[]) => {
     setKeys(next);
     setSaved(false);
-  };
-  const move = (index: number, by: -1 | 1) => {
-    const next = [...keys];
-    [next[index], next[index + by]] = [next[index + by]!, next[index]!];
-    change(next);
   };
   const options = useMemo(
     () =>
@@ -101,26 +96,28 @@ function QuickKeysForm({ products }: { products: Product[] }) {
         {keys.length === 0 ? (
           <p className="quick-keys__empty">{words.empty}</p>
         ) : (
-          <ol className="quick-keys">
-            {keys.map((id, index) => {
+          <SortableList
+            className="quick-keys"
+            itemClassName="quick-keys__row"
+            items={keys}
+            itemKey={(id) => id}
+            itemName={(id) => byId.get(id)?.name ?? `#${id}`}
+            onReorder={change}
+            renderItem={(id, index) => {
               const product = byId.get(id);
               const name = product?.name ?? `#${id}`;
               return (
-                <li key={id} className="quick-keys__row">
+                <>
                   <span className="quick-keys__place" aria-hidden="true">
                     {index + 1}
                   </span>
                   <span className="quick-keys__name">{name}</span>
                   {product && <span className="quick-keys__price">{formatMoney(product.price)}</span>}
-                  <span className="quick-keys__actions">
-                    <Button size="sm" variant="ghost" icon={ArrowUp} aria-label={words.up(name)} title={words.up(name)} disabled={index === 0} onClick={() => move(index, -1)} />
-                    <Button size="sm" variant="ghost" icon={ArrowDown} aria-label={words.down(name)} title={words.down(name)} disabled={index === keys.length - 1} onClick={() => move(index, 1)} />
-                    <Button size="sm" variant="ghost" icon={X} aria-label={words.remove(name)} title={words.remove(name)} onClick={() => change(keys.filter((other) => other !== id))} />
-                  </span>
-                </li>
+                  <Button size="sm" variant="ghost" icon={X} aria-label={words.remove(name)} title={words.remove(name)} onClick={() => change(keys.filter((other) => other !== id))} />
+                </>
               );
-            })}
-          </ol>
+            }}
+          />
         )}
       </Card>
     </form>

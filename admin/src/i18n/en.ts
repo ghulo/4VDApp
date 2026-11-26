@@ -5225,8 +5225,6 @@ export const en = {
       addPlaceholder: 'Type a product name…',
       full: 'All 24 quick keys are in use. Remove one to add another.',
       empty: 'No quick keys yet. Add the products sold most without a barcode.',
-      up: (name: string) => `Move ${name} up`,
-      down: (name: string) => `Move ${name} down`,
       remove: (name: string) => `Remove ${name}`,
       saved: 'Quick keys saved. A till already open shows them within 3 minutes.',
     },
@@ -5746,6 +5744,8 @@ export const en = {
     previousMonth: 'Previous month',
     nextMonth: 'Next month',
     more: (n: number) => `+${n} more`,
+    moveHandle: (name: string) => `Move ${name}: drag, or use the up and down arrows`,
+    movedTo: (name: string, place: number, total: number) => `${name} moved to place ${place} of ${total}`,
   },
   desktop: {
     welcome: {

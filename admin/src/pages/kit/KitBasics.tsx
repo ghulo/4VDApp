@@ -25,6 +25,7 @@ import {
   PasswordField,
   RemoveButton,
   Section,
+  SortableList,
   SettingRow,
   Sheet,
   StatGrid,
@@ -68,6 +69,7 @@ export function KitBasics() {
   const [period, setPeriod] = useState<{ period: PeriodKey; from: string; to: string }>({ period: 'this-month', from: '', to: '' });
   const [page, setPage] = useState(1);
   const [onTab, setOnTab] = useState(true);
+  const [order, setOrder] = useState(['Bread', 'Bananas', 'Eggs (10)', 'Milk 1 l', 'Tomatoes']);
   const [sheet, setSheet] = useState<'side' | 'center' | null>(null);
   const [removed, setRemoved] = useState(false);
   const rows = ROWS.filter((row) => row.name.toLowerCase().includes(search.toLowerCase()));
@@ -213,6 +215,25 @@ export function KitBasics() {
         <Card>
           <PeriodPicker period={period.period} from={period.from} to={period.to} onChange={setPeriod} />
         </Card>
+      </Section>
+
+      <Section title="Sortable list" description="Drag a row by its grip, or focus the grip and press the up and down arrows. Settings → Counter → Quick keys uses it.">
+        <SortableList
+          className="quick-keys"
+          itemClassName="quick-keys__row"
+          items={order}
+          itemKey={(item) => item}
+          itemName={(item) => item}
+          onReorder={setOrder}
+          renderItem={(item, index) => (
+            <>
+              <span className="quick-keys__place" aria-hidden="true">
+                {index + 1}
+              </span>
+              <span className="quick-keys__name">{item}</span>
+            </>
+          )}
+        />
       </Section>
 
       <Section title="Figures">

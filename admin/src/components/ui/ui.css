@@ -2655,3 +2655,75 @@ input.switch:focus-visible {
 .menu__item svg {
   color: var(--ink-muted);
 }
+
+/* ---------- Sortable list (a list put in order by hand) ---------- */
+
+.sortable {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sortable__item {
+  position: relative;
+}
+
+/* The grip: a quiet key, grabbed with a mouse or a finger; on the keyboard the arrows move the row. */
+.sortable__grip {
+  display: inline-grid;
+  place-items: center;
+  inline-size: var(--space-6);
+  block-size: var(--space-6);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: none;
+  color: var(--ink-muted);
+  cursor: grab;
+  touch-action: none;
+  transition: color var(--dur-small) var(--ease), background-color var(--dur-small) var(--ease);
+}
+
+.sortable__grip:hover {
+  background: var(--surface-sunk);
+  color: var(--ink);
+}
+
+.sortable__grip:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+/* While a row is held: grabbing everywhere, and nothing gets selected by the drag. */
+.sortable[data-dragging] {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.sortable[data-dragging] .sortable__grip {
+  cursor: grabbing;
+}
+
+/* The held row lifts off the list: paper, a float shadow, on top of the others. */
+.sortable__item[data-lifted] {
+  z-index: 1;
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+}
+
+/* The others step aside on the spring; the held row follows the finger with no delay. */
+:root[data-motion='full'] .sortable__item {
+  transition: transform var(--dur-medium) var(--spring);
+}
+
+:root[data-motion='full'] .sortable__item[data-lifted] {
+  transition: box-shadow var(--dur-small) var(--ease);
+}
+
+@media (pointer: coarse) {
+  .sortable__grip {
+    inline-size: var(--space-7);
+    block-size: var(--space-7);
+  }
+}

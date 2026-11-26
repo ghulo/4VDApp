@@ -155,7 +155,9 @@ function handleKeys(event, input) {
 
 /** The dashboard's page while it is there (it goes first when the window closes), else null. */
 function livePage() {
-  return view && !view.webContents.isDestroyed() ? view.webContents : null;
+  // A view whose page has gone has no webContents at all (undefined), not a destroyed one.
+  const contents = view?.webContents;
+  return contents && !contents.isDestroyed() ? contents : null;
 }
 
 /** The Counter keeps the sale on screen: Back and Forward (keys, mouse side buttons, strip) don't take it away. */
@@ -191,8 +193,8 @@ function step(offset) {
 
 /** The strip shows the page's title and whether Back and Forward go anywhere. */
 function sendStripState() {
-  if (!win || win.isDestroyed() || !view || view.webContents.isDestroyed()) return;
-  const contents = view.webContents;
+  const contents = livePage();
+  if (!win || win.isDestroyed() || !contents) return;
   const words = frame.wordsFor(pageLanguage());
   win.webContents.send('strip:state', {
     title: isDashboard(contents.getURL()) ? contents.getTitle() : '4VD',
@@ -206,8 +208,8 @@ function sendStripState() {
 
 /** One thing from the ☰ menu, a strip key or a shortcut, done on the dashboard. */
 function runCommand(command) {
-  if (!win || win.isDestroyed() || !view || view.webContents.isDestroyed()) return;
-  const contents = view.webContents;
+  const contents = livePage();
+  if (!win || win.isDestroyed() || !contents) return;
   // Zoom only the dashboard: the app's own pages share one zoom with the strip (all file://).
   const zoomBy = (by) => isDashboard(contents.getURL()) && contents.setZoomLevel(Math.max(-3, Math.min(3, contents.getZoomLevel() + by)));
   if (command.startsWith('go:')) {
@@ -479,7 +481,8 @@ ipcMain.on('strip', (event, message) => {
 });
 // The dashboard listens for the menu's Go, Search and Log out (Windows app 0.6.0 and later).
 ipcMain.on('commands:ready', (event) => {
-  if (view && event.sender === view.webContents && fromDashboard(event)) pageListens = true;
+  const contents = livePage();
+  if (contents && event.sender === contents && fromDashboard(event)) pageListens = true;
 });
 ipcMain.handle('fiscal:status', (event) => (fromDashboard(event) ? fiscal.status() : null));
 ipcMain.handle('fiscal:send', async (event, job) => {

@@ -74,7 +74,13 @@ function FinderForm({ products, error, onRetry, initialQuery, onAdd }: FinderPro
           const haystack = `${product.name} ${product.sku ?? ''} ${product.barcode ?? ''}`.toLowerCase();
           return words.every((word) => haystack.includes(word));
         })
-        .sort((a, b) => Number(b.stock.quantity > 0) - Number(a.stock.quantity > 0) || a.name.localeCompare(b.name)),
+        .sort(
+          (a, b) =>
+            // Nothing typed yet: the owner's quick keys first, in their order.
+            (words.length === 0 ? (a.quickKey ?? Infinity) - (b.quickKey ?? Infinity) || 0 : 0) ||
+            Number(b.stock.quantity > 0) - Number(a.stock.quantity > 0) ||
+            a.name.localeCompare(b.name),
+        ),
     [products, words],
   );
   // The categories the words found most, so a chip narrows "cola" to drinks.

@@ -612,6 +612,10 @@ export interface BasketSale {
 export const counterApi = {
   settings: async (till?: TillRead) => (await apiRequest<CounterSettings>('/counter/settings', { expectOwner: till?.expectOwner })).data,
   updateSettings: async (input: CounterSettings) => (await apiRequest<CounterSettings>('/counter/settings', { method: 'PUT', body: input })).data,
+  /** The quick keys, in order (up to 24 product ids); the whole list is replaced. */
+  setQuickKeys: async (productIds: number[]) => {
+    await apiRequest('/counter/quick-keys', { method: 'PUT', body: { productIds } });
+  },
   /** Each may carry the shop PC's id for it (sent twice, kept once) and when it happened. */
   record: async (events: Array<CounterEventInput & { clientId?: string; at?: string }>, till?: TillRequest) => {
     await apiRequest('/counter/events', { method: 'POST', body: { events }, ...till });

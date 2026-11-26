@@ -149,6 +149,29 @@ export class CounterService {
     return this.settings();
   }
 
+  /**
+   * The quick keys on an empty basket, in this order (up to 24). Each product must be this business's own and on sale;
+   * the whole list is replaced, and History keeps the old and new order.
+   */
+  async setQuickKeys(productIds: number[], userId: number): Promise<void> {
+    await this.transactions.run(async (repos) => {
+      const before = (await repos.products.findShelf()).filter((product) => product.quick_key !== null).sort((a, b) => a.quick_key! - b.quick_key!);
+      for (const productId of productIds) {
+        const product = await repos.products.findById(productId, false);
+        if (!product) throw new ValidationError(`Product ${productId} is not on sale in this business`);
+      }
+      await repos.products.setQuickKeys(productIds);
+      await repos.activityLog.create({
+        userId,
+        action: 'counter.quick_keys_changed',
+        entityType: 'settings',
+        entityId: null,
+        say: { key: 'counterQuickKeysChanged', params: { count: productIds.length } },
+        details: { from: before.map((product) => product.id), to: productIds },
+      });
+    });
+  }
+
   /** Record what happened at the counter; the drawer and the printer's reports also go in Activity. */
   async record(events: CounterEventInput[], userId: number): Promise<void> {
     await this.transactions.run(async (repos) => {

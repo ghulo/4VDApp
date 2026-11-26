@@ -4,7 +4,7 @@ import type { CounterService } from '../services/CounterService.js';
 import type { ProductService } from '../services/ProductService.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 import { canOversee } from '../utils/roles.js';
-import { counterEventsQuerySchema, counterReceiptsQuerySchema, counterEventsSchema, counterReportSchema, counterSettingsSchema, counterShelfSchema } from '../validators/counterValidators.js';
+import { counterEventsQuerySchema, counterReceiptsQuerySchema, counterEventsSchema, counterReportSchema, counterSettingsSchema, counterShelfSchema, quickKeysSchema } from '../validators/counterValidators.js';
 import { parseInput } from '../validators/validate.js';
 
 export function createCounterController(counterService: CounterService, productService: ProductService, cashCountService: CashCountService) {
@@ -15,6 +15,11 @@ export function createCounterController(counterService: CounterService, productS
 
     async updateSettings(req: Request, res: Response): Promise<void> {
       sendSuccess(res, await counterService.updateSettings(parseInput(counterSettingsSchema, req.body), req.user!.id), { message: 'Counter settings saved' });
+    },
+
+    async setQuickKeys(req: Request, res: Response): Promise<void> {
+      await counterService.setQuickKeys(parseInput(quickKeysSchema, req.body).productIds, req.user!.id);
+      sendSuccess(res, null, { message: 'Quick keys saved' });
     },
 
     async record(req: Request, res: Response): Promise<void> {

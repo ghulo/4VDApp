@@ -79,5 +79,13 @@ export const counterReceiptsQuerySchema = z.object({
   day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 
+/** The Counter's quick keys, in order: up to 24 different products. */
+export const quickKeysSchema = z.object({
+  productIds: z
+    .array(z.number().int().positive())
+    .max(24)
+    .refine((ids) => new Set(ids).size === ids.length, 'A product can be a quick key only once'),
+});
+
 export type CounterSettingsInput = z.output<typeof counterSettingsSchema>;
 export type CounterEventInput = z.output<typeof eventSchema>;
